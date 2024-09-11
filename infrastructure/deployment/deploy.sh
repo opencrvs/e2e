@@ -42,6 +42,14 @@ for i in "$@"; do
         ENV="${i#*=}"
         shift
         ;;
+    --stack=*)
+        export STACK="${i#*=}"
+        shift
+        ;;
+    --update-dependencies=*)
+        UPDATE_DEPENDENCIES=true
+        shift
+        ;;
     --version=*)
         export VERSION="${i#*=}"
         shift
@@ -66,9 +74,10 @@ done
 SSH_ARGS=${SSH_ARGS:-}
 LOG_LOCATION=${LOG_LOCATION:-/var/log}
 
-COMPOSE_FILES_DOWNLOADED_FROM_CORE="/tmp/docker-compose.deps.yml /tmp/docker-compose.yml"
-ENVIRONMENT_COMPOSE="$INFRASTRUCTURE_DIRECTORY/docker-compose.$ENV-deploy.yml"
-COMPOSE_FILES_USED="$COMPOSE_FILES_DOWNLOADED_FROM_CORE $INFRASTRUCTURE_DIRECTORY/docker-compose.deploy.yml $ENVIRONMENT_COMPOSE"
+DEPENDENCY_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
+APPLICATION_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml"
+
+COMPOSE_FILES_USED="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml $INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
 
 echo $COMPOSE_FILES_USED
 
@@ -92,13 +101,16 @@ print_usage_and_exit () {
   echo 'Usage: ./deploy.sh --host --environment --ssh_host --ssh_port --ssh_user --version --country_config_version --replicas'
   echo "  --environment can be 'production', 'development', 'qa' or similar"
   echo '  --host    is the server to deploy to'
-  echo "  --version can be any OpenCRVS Core docker image tag or 'latest'"
-  echo "  --country_config_version can be any OpenCRVS Country Configuration docker image tag or 'latest'"
   echo "  --replicas number of supported mongo databases in your replica set.  Can be 1, 3 or 5"
   exit 1
 }
 
 validate_options() {
+  if [ -z "$STACK" ] ; then
+    echo 'Error: Argument --stack is required.'
+    print_usage_and_exit
+  fi
+
   if [ -z "$ENV" ] ; then
     echo 'Error: Argument --environment is required.'
     print_usage_and_exit
@@ -106,11 +118,6 @@ validate_options() {
 
   if [ -z "$HOST" ] ; then
     echo 'Error: Argument --host is required'
-    print_usage_and_exit
-  fi
-
-  if [ -z "$VERSION" ] ; then
-    echo 'Error: Argument --version is required.'
     print_usage_and_exit
   fi
 
@@ -126,11 +133,6 @@ validate_options() {
 
   if [ -z "$SSH_USER" ] ; then
     echo 'Error: Argument --ssh_user is required.'
-    print_usage_and_exit
-  fi
-
-  if [ -z "$COUNTRY_CONFIG_VERSION" ] ; then
-    echo 'Error: Argument --country_config_version is required.'
     print_usage_and_exit
   fi
 
@@ -294,8 +296,16 @@ docker_stack_deploy() {
 
   echo "Updating docker swarm stack with new compose files"
 
+  if [ "$UPDATE_DEPENDENCIES" = true ]; then
+    echo "Updating dependency stack"
+    configured_ssh 'cd /opt/opencrvs && \
+      docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $DEPENDENCY_COMPOSE_FILES)")' --with-registry-auth dependencies'
+  fi
+
   configured_ssh 'cd /opt/opencrvs && \
-    docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $COMPOSE_FILES_USED)")' --with-registry-auth opencrvs'
+    docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $APPLICATION_COMPOSE_FILES)")' --with-registry-auth '$STACK
+
+
 }
 
 validate_options
@@ -367,7 +377,6 @@ echo "Syncing configuration files to the target server"
 
 
 configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/ --delete --no-perms --omit-dir-times --verbose
-configured_rsync -rlD /tmp/docker-compose.yml /tmp/docker-compose.deps.yml $SSH_USER@$SSH_HOST:/opt/opencrvs/infrastructure --no-perms --omit-dir-times  --verbose
 
 echo "Logging to Dockerhub"
 
@@ -412,7 +421,7 @@ EMAIL_PAYLOAD='{
   "to": "{{ALERT_EMAIL}}"
 }'
 
-configured_ssh "docker run --rm --network=opencrvs_overlay_net appropriate/curl \
+configured_ssh "docker run --rm --network='$STACK'_overlay_net appropriate/curl \
   -X POST 'http://countryconfig:3040/email' \
   -H 'Content-Type: application/json' \
   -d '$EMAIL_PAYLOAD'"

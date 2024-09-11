@@ -93,7 +93,7 @@ elif [ "$REPLICAS" = "0" ]; then
   NETWORK=opencrvs_default
   echo "Working with no replicas"
 else
-  NETWORK=opencrvs_overlay_net
+  NETWORK=dependencies_overlay_net
   # Construct the HOST string rs0/mongo1,mongo2... based on the number of replicas
   HOST="rs0/"
   for (( i=1; i<=REPLICAS; i++ )); do

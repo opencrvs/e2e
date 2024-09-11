@@ -26,7 +26,7 @@ response_text_from_curl_output() {
 }
 
 curl_raw() {
-  docker run --rm -v /opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson --network=opencrvs_overlay_net curlimages/curl -s -w "\n%{http_code}" "$@"
+  docker run --rm -v /opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson --network=dependencies_overlay_net curlimages/curl -s -w "\n%{http_code}" "$@"
 }
 
 parse_url_from_string() {
@@ -71,7 +71,7 @@ curl() {
 }
 
 jq() {
-  docker run --rm -i --network=opencrvs_overlay_net ghcr.io/jqlang/jq "$@"
+  docker run --rm -i --network=dependencies_overlay_net ghcr.io/jqlang/jq "$@"
 }
 
 # Initial API status check to ensure Kibana is ready

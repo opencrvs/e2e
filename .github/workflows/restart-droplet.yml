@@ -70,7 +70,7 @@ jobs:
           SSH_ARGS: ${{ vars.SSH_ARGS }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
-          ssh $SSH_USER@$SSH_HOST $SSH_ARGS "
+          ssh $SSH_USER@$SSH_HOST $ "
             sudo /opt/opencrvs/infrastructure/cryptfs/mount.sh -p $ENCRYPTION_KEY"
 
           ssh $SSH_USER@$SSH_HOST $SSH_ARGS "

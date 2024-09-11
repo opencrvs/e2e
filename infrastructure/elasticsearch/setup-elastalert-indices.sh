@@ -13,7 +13,7 @@
 
 set -e
 
-docker_command="docker run --rm --network=opencrvs_overlay_net curlimages/curl"
+docker_command="docker run --rm --network=dependencies_overlay_net curlimages/curl"
 
 echo 'Waiting for availability of Elasticsearch'
 ping_status_code=$($docker_command --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD -o /dev/null -w '%{http_code}' "http://elasticsearch:9200")
@@ -27,7 +27,7 @@ fi
 
 echo 'Scaling down Elastalert'
 
-docker service scale opencrvs_elastalert=0
+docker service scale dependencies_elastalert=0
 
 echo 'Deleting Elastalert indices'
 indices='elastalert_status,elastalert_status_error,elastalert_status_past,elastalert_status_silence,elastalert_status_status'
@@ -40,5 +40,5 @@ if [ "$delete_status_code" -ne 200 ]; then
 fi
 
 echo 'Scaling up Elastalert'
-docker service scale opencrvs_elastalert=1
+docker service scale dependencies_elastalert=1
 

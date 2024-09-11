@@ -17,6 +17,17 @@ apt-get install -y curl
 curl -L https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait --output /wait
 chmod +x /wait
 
+
+
+DATABASE_PREFIX=${DATABASE_PREFIX}
+
+if ! [ -z ${DATABASE_PREFIX+x} ]; then
+  echo "DATABASE_PREFIX is set to '$DATABASE_PREFIX'";
+else
+  echo "DATABASE_PREFIX is not set";
+  exit 1
+fi
+
 # Check if REPLICAS is a number and greater than 0
 if ! [[ "$REPLICAS" =~ ^[0-9]+$ ]] || [ "$REPLICAS" -lt 1 ]; then
   echo "Script must be passed a positive integer number of replicas"
@@ -82,7 +93,7 @@ CONFIG_USER=$(echo $(checkIfUserExists "config"))
 if [[ $CONFIG_USER != "FOUND" ]]; then
   echo "config user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use application-config
+  use $DATABASE_PREFIX__application-config
   db.createUser({
     user: 'config',
     pwd: '$CONFIG_MONGODB_PASSWORD',
@@ -92,7 +103,7 @@ EOF
 else
   echo "config user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use application-config
+  use $DATABASE_PREFIX__application-config
   db.updateUser('config', {
     pwd: '$CONFIG_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'application-config' }]
@@ -104,7 +115,7 @@ HEARTH_USER=$(echo $(checkIfUserExists "hearth"))
 if [[ $HEARTH_USER != "FOUND" ]]; then
   echo "hearth user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use hearth-dev
+  use $DATABASE_PREFIX__hearth-dev
   db.createUser({
     user: 'hearth',
     pwd: '$HEARTH_MONGODB_PASSWORD',
@@ -114,7 +125,7 @@ EOF
 else
   echo "hearth user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use hearth-dev
+  use $DATABASE_PREFIX__hearth-dev
   db.updateUser('hearth', {
     pwd: '$HEARTH_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: 'hearth-dev' }]
@@ -126,7 +137,7 @@ USER_MGNT_USER=$(echo $(checkIfUserExists "user-mgnt"))
 if [[ $USER_MGNT_USER != "FOUND" ]]; then
   echo "user-mgnt user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use user-mgnt
+  use $DATABASE_PREFIX__user-mgnt
   db.createUser({
     user: 'user-mgnt',
     pwd: '$USER_MGNT_MONGODB_PASSWORD',
@@ -136,7 +147,7 @@ EOF
 else
   echo "user-mgnt user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use user-mgnt
+  use $DATABASE_PREFIX__user-mgnt
   db.updateUser('user-mgnt', {
     pwd: '$USER_MGNT_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'user-mgnt' }]
@@ -148,7 +159,7 @@ OPENHIM_USER=$(echo $(checkIfUserExists "openhim"))
 if [[ $OPENHIM_USER != "FOUND" ]]; then
   echo "openhim user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use openhim-dev
+  use $DATABASE_PREFIX__openhim-dev
   db.createUser({
     user: 'openhim',
     pwd: '$OPENHIM_MONGODB_PASSWORD',
@@ -158,7 +169,7 @@ EOF
 else
   echo "openhim user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use openhim-dev
+  use $DATABASE_PREFIX__openhim-dev
   db.updateUser('openhim', {
     pwd: '$OPENHIM_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'openhim' }, { role: 'readWrite', db: 'openhim-dev' }]
@@ -170,7 +181,7 @@ PERFORMANCE_USER=$(echo $(checkIfUserExists "performance"))
 if [[ $PERFORMANCE_USER != "FOUND" ]]; then
   echo "performance user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use performance
+  use $DATABASE_PREFIX__performance
   db.createUser({
     user: 'performance',
     pwd: '$PERFORMANCE_MONGODB_PASSWORD',
@@ -180,7 +191,7 @@ EOF
 else
   echo "performance user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use performance
+  use $DATABASE_PREFIX__performance
   db.updateUser('performance', {
     pwd: '$PERFORMANCE_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'performance' }]
@@ -192,7 +203,7 @@ METRICS_USER=$(echo $(checkIfUserExists "metrics"))
 if [[ $METRICS_USER != "FOUND" ]]; then
   echo "metrics user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use metrics
+  use $DATABASE_PREFIX__metrics
   db.createUser({
     user: 'metrics',
     pwd: '$METRICS_MONGODB_PASSWORD',
@@ -202,7 +213,7 @@ EOF
 else
   echo "metrics user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use metrics
+  use $DATABASE_PREFIX__metrics
   db.updateUser('metrics', {
     pwd: '$METRICS_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'metrics' }]
@@ -214,7 +225,7 @@ WEBHOOKS_USER=$(echo $(checkIfUserExists "webhooks"))
 if [[ $WEBHOOKS_USER != "FOUND" ]]; then
   echo "webhooks user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use webhooks
+  use $DATABASE_PREFIX__webhooks
   db.createUser({
     user: 'webhooks',
     pwd: '$WEBHOOKS_MONGODB_PASSWORD',
@@ -224,7 +235,7 @@ EOF
 else
   echo "webhooks user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use webhooks
+  use $DATABASE_PREFIX__webhooks
   db.updateUser('webhooks', {
     pwd: '$WEBHOOKS_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'webhooks' }]
@@ -236,7 +247,7 @@ NOTIFICATION_USER=$(echo $(checkIfUserExists "notification"))
 if [[ $NOTIFICATION_USER != "FOUND" ]]; then
   echo "notification user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use notification
+  use $DATABASE_PREFIX__notification
   db.createUser({
     user: 'notification',
     pwd: '$NOTIFICATION_MONGODB_PASSWORD',
@@ -246,7 +257,7 @@ EOF
 else
   echo "notification user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use notification
+  use $DATABASE_PREFIX__notification
   db.updateUser('notification', {
     pwd: '$NOTIFICATION_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: 'notification' }]

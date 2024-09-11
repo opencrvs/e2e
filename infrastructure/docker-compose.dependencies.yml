@@ -1,0 +1,504 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# OpenCRVS is also distributed under the terms of the Civil Registration
+# & Healthcare Disclaimer located at http://opencrvs.org/license.
+#
+# Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
+services:
+  # Configure reverse proxy for public endpoints
+  # Note: these published port will override UFW rules as Docker manages it's own iptables
+  # Only publish the exact ports that are required for OpenCRVS to work
+  traefik:
+    image: 'traefik:v2.10'
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /data/traefik/acme.json:/acme.json
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --providers.docker.swarmMode=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=WARNING
+      - --certificatesresolvers.certResolver.acme.email=riku@opencrvs.org
+      - --certificatesresolvers.certResolver.acme.storage=acme.json
+      - --certificatesresolvers.certResolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.certResolver.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.certResolver.acme.httpchallenge=true
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --serverstransport.insecureskipverify=true
+      - --entrypoints.websecure.address=:443
+      - --accesslog=true
+      - --accesslog.format=json
+      - --ping=true
+    deploy:
+      replicas: 1
+      labels:
+        - 'traefik.http.services.traefik.loadbalancer.server.port=80'
+        - 'traefik.http.middlewares.gzip-compression.compress=true'
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'traefik'
+    networks:
+      - overlay_net
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.14.3
+    user: root
+    networks:
+      - overlay_net
+    configs:
+      - source: filebeat.{{ts}}
+        target: /usr/share/filebeat/filebeat.yml
+      - source: beat-rollover-policy.{{ts}}
+        target: /usr/share/filebeat/rollover-policy.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
+      - /var/log/:/var/log/:ro
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - KIBANA_HOST=kibana:5601
+    command: ['--strict.perms=false']
+    deploy:
+      mode: global
+      labels:
+        - 'traefik.enable=false'
+
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.14.3
+    user: root
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - /proc:/hostfs/proc:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - KIBANA_HOST=kibana:5601
+      - KIBANA_USERNAME=${KIBANA_USERNAME}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+      - BEATS_USERNAME=beats_system
+      - BEATS_PASSWORD=${ROTATING_METRICBEAT_ELASTIC_PASSWORD}
+    command: ['--strict.perms=false', '-system.hostfs=/hostfs']
+    hostname: 'metricbeat-{{.Node.Hostname}}'
+    restart: always
+    deploy:
+      mode: global
+      labels:
+        - 'traefik.enable=false'
+    networks:
+      - overlay_net
+    configs:
+      - source: metricbeat-conf.{{ts}}
+        target: /usr/share/metricbeat/metricbeat.yml
+      - source: beat-rollover-policy.{{ts}}
+        target: /usr/share/metricbeat/rollover-policy.json
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'metricbeat'
+  setup-kibana-config:
+    image: curlimages/curl:7.88.1
+    entrypoint:
+      [
+        'curl',
+        '-u',
+        'kibana_system:${KIBANA_SYSTEM_PASSWORD}',
+        '-X',
+        'POST',
+        'http://kibana:5601/api/saved_objects/_import?overwrite=true',
+        '-H',
+        'kbn-xsrf: true',
+        '--form',
+        'file=@/config.ndjson'
+      ]
+    restart: on-failure
+    volumes:
+      # Exceed Docker config file 500 kb file limit, thus a volume mount
+      - '/opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson'
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'setup-kibana-config'
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.3
+    restart: always
+    deploy:
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.http.routers.kibana.rule=Host(`kibana.{{hostname}}`)'
+        - 'traefik.http.services.kibana.loadbalancer.server.port=5601'
+        - 'traefik.http.routers.kibana.tls=true'
+        - 'traefik.http.routers.kibana.tls.certresolver=certResolver'
+        - 'traefik.http.routers.kibana.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.traefik.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.traefik.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.traefik.headers.stspreload=true'
+    networks:
+      - overlay_net
+    environment:
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+    configs:
+      - source: kibana.{{ts}}
+        target: /usr/share/kibana/config/kibana.yml
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'kibana'
+  # Configure mongo nodes as a replica set
+  mongo1:
+    image: mongo:4.4
+    restart: unless-stopped
+    command: mongod --auth --replSet rs0 --keyFile /etc/mongodb-keyfile
+    hostname: 'mongo1'
+    volumes:
+      - '/data/mongo:/data/db'
+      - '/mongodb-keyfile:/mongodb-keyfile'
+    # https://github.com/docker-library/mongo/issues/475
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cp /mongodb-keyfile /etc/mongodb-keyfile
+        chmod 400 /etc/mongodb-keyfile
+        chown 999:999 /etc/mongodb-keyfile
+        exec docker-entrypoint.sh $$@
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_ADMIN_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ADMIN_PASSWORD}
+    deploy:
+      replicas: 1
+      labels:
+        - 'traefik.enable=false'
+      placement:
+        constraints:
+          - node.labels.data1 == true
+    networks:
+      - overlay_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'mongo1'
+  # Configure redis
+  redis:
+    image: redis:5
+    restart: unless-stopped
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - traefik.enable=false
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'redis'
+  # Configure elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    restart: unless-stopped
+    volumes:
+      - '/data/elasticsearch:/usr/share/elasticsearch/data'
+      - '/data/backups/elasticsearch:/data/backups/elasticsearch'
+    configs:
+      - source: jvm-options.{{ts}}
+        target: /usr/share/elasticsearch/config/jvm.options.d/jvm.options
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+      replicas: 1
+      labels:
+        - 'traefik.enable=false'
+      placement:
+        constraints:
+          - node.labels.data1 == true
+    environment:
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - path.repo=/data/backups/elasticsearch
+      - cluster.name=docker-cluster
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.authc.api_key.enabled=true
+    networks:
+      - overlay_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'elasticsearch'
+
+  # Configure elasticsearch
+  minio:
+    image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_DOMAIN=minio.{{hostname}}
+      - MINIO_SERVER_URL=http://minio:9000
+      - MINIO_BROWSER_REDIRECT_URL=https://minio-console.{{hostname}}
+    volumes:
+      - '/data/minio:/data'
+    command: server --console-address ":9001" /data
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.data1 == true
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        # Console
+        - 'traefik.http.routers.minio-console.rule=Host(`minio-console.{{hostname}}`)'
+        - 'traefik.http.routers.minio-console.entrypoints=websecure'
+        - 'traefik.http.routers.minio-console.tls.certresolver=certResolver'
+        - 'traefik.http.routers.minio-console.service=minio-console'
+        - 'traefik.http.services.minio-console.loadbalancer.server.port=9001'
+        # API
+        - 'traefik.http.routers.minio.rule=Host(`minio.{{hostname}}`)'
+        - 'traefik.http.routers.minio.entrypoints=websecure,web'
+        - 'traefik.http.routers.minio.tls.certresolver=certResolver'
+        - 'traefik.http.routers.minio.tls=true'
+        - 'traefik.http.routers.minio.service=minio'
+        - 'traefik.http.routers.minio.middlewares=minio-https-redirect'
+        - 'traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https'
+        - 'traefik.http.services.minio.loadbalancer.server.port=9000'
+    networks:
+      - overlay_net
+
+  minio-mc:
+    image: minio/mc
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc admin trace --path ocrvs/* minio
+      "
+    configs:
+      - source: minio-mc-config.{{ts}}
+        target: /root/.mc/config.json
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'minio'
+
+  setup-elasticsearch-users:
+    image: ubuntu:bionic
+    entrypoint: ['bash', '/usr/app/setup.sh']
+    restart: on-failure
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - METRICBEAT_ELASTIC_PASSWORD=${ROTATING_METRICBEAT_ELASTIC_PASSWORD}
+      - APM_ELASTIC_PASSWORD=${ROTATING_APM_ELASTIC_PASSWORD}
+      - SEARCH_ELASTIC_USERNAME=search-user
+      - SEARCH_ELASTIC_PASSWORD=${ROTATING_SEARCH_ELASTIC_PASSWORD}
+      - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      - KIBANA_USERNAME=${KIBANA_USERNAME}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    volumes:
+      - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'setup-elasticsearch-users'
+  elastalert:
+    image: jertel/elastalert2:2.19.0
+    restart: unless-stopped
+    environment:
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+    volumes:
+      - '/opt/opencrvs/infrastructure/monitoring/elastalert/elastalert.yaml:/opt/elastalert/config.yaml'
+      - '/opt/opencrvs/infrastructure/monitoring/elastalert/rules:/opt/elastalert/rules'
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'elastalert'
+
+  logstash:
+    image: logstash:8.14.3
+    command: logstash -f /etc/logstash/logstash.conf --verbose
+    ports:
+      - '12201:12201'
+      - '12201:12201/udp'
+    configs:
+      - source: logstash-pipeline.{{ts}}
+        target: /etc/logstash/logstash.conf
+      - source: logstash.{{ts}}
+        target: /usr/share/logstash/config/logstash.yml
+    environment:
+      - ELASTICSEARCH_SUPERUSER_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+    networks:
+      - overlay_net
+    restart: always
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.17.22
+    cap_add: ['CHOWN', 'DAC_OVERRIDE', 'SETGID', 'SETUID']
+    cap_drop: ['ALL']
+    restart: always
+    networks:
+      - overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+    command:
+      [
+        'apm-server',
+        '-e',
+        '-c',
+        'apm-server.yml',
+        '-E',
+        'output.elasticsearch.username=elastic',
+        '-E',
+        'output.elasticsearch.password=${ELASTICSEARCH_SUPERUSER_PASSWORD}',
+        '-E',
+        'kibana.username=${KIBANA_USERNAME}',
+        '-E',
+        'kibana.password=${KIBANA_PASSWORD}'
+      ]
+    configs:
+      - source: apm.{{ts}}
+        target: /usr/share/apm-server/apm-server.yml
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'apm-server'
+  # Configure influxdb
+  influxdb:
+    image: influxdb:1.8.10
+    restart: unless-stopped
+    volumes:
+      - '/data/influxdb:/var/lib/influxdb'
+      - '/data/backups/influxdb:/data/backups/influxdb'
+    deploy:
+      replicas: 1
+      labels:
+        - 'traefik.enable=false'
+      placement:
+        constraints:
+          - node.labels.data1 == true
+    configs:
+      - source: influxdb-conf.{{ts}}
+        target: /etc/influxdb/influxdb.conf
+    networks:
+      - overlay_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'influxdb'
+
+secrets:
+  jwt-public-key.{{ts}}:
+    external: true
+  jwt-private-key.{{ts}}:
+    external: true
+configs:
+  hearth-check-dupe-plugin.{{ts}}:
+    file: /opt/opencrvs/infrastructure/hearth-plugins/checkDuplicateTask.js
+  hearth-queryparam-extensions-conf.{{ts}}:
+    file: /opt/opencrvs/infrastructure/hearth-queryparam-extensions.json
+  metricbeat-conf.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/beats/metricbeat.yml
+  filebeat.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/filebeat/filebeat.yml
+  mongo-on-deploy.{{ts}}:
+    file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
+  beat-rollover-policy.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/beats/rollover-policy.json
+  kibana.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/kibana/kibana.yml
+  apm.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/apm/apm-server.yml
+  logstash.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.yml
+  logstash-pipeline.{{ts}}:
+    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.conf
+  influxdb-conf.{{ts}}:
+    file: /opt/opencrvs/infrastructure/influxdb.conf
+  jvm-options.{{ts}}:
+    file: /opt/opencrvs/infrastructure/elasticsearch/jvm.options
+  minio-mc-config.{{ts}}:
+    file: /opt/opencrvs/infrastructure/mc-config/config.json
+networks:
+  overlay_net:
+    driver: overlay
+    attachable: true

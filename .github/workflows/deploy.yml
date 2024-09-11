@@ -16,16 +16,21 @@ on:
         type: string
         description: Your Country Config DockerHub image tag
         required: true
+      stack:
+        type: string
+        description: Stack name
+        required: true
+      dependencies:
+        type: string
+        description: Redeploy dependencies
+        default: 'false'
+        required: false
       reset:
         type: string
         description: Reset the environment
         default: 'false'
         required: false
-      debug:
-        type: boolean
-        description: Open SSH session to the runner after deployment
-        default: false
-        required: false
+
   workflow_dispatch:
     inputs:
       environment:
@@ -44,6 +49,15 @@ on:
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
+      stack:
+        type: string
+        description: Stack name
+        required: true
+      dependencies:
+        type: boolean
+        description: Redeploy dependencies
+        default: false
+        required: false
       reset:
         type: boolean
         description: Reset the environment
@@ -62,16 +76,16 @@ jobs:
           fetch-depth: 0
           repository: 'opencrvs/opencrvs-core'
           path: './opencrvs-core'
+
       - name: Clone country config resource package
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           path: './${{ github.event.repository.name }}'
 
       - name: Checkout country branch
         run: |
           cd ${{ github.event.repository.name }}
-          git checkout ${{ inputs.countryconfig-image-tag }}
           cd ../
 
       - name: Checkout core branch
@@ -166,6 +180,8 @@ jobs:
           --clear_data=no \
           --environment=${{ inputs.environment }} \
           --host=${{ vars.DOMAIN }} \
+          --stack=${{ inputs.stack }} \
+          --update-dependencies=${{ inputs.dependencies }} \
           --ssh_host=${{ vars.SSH_HOST || secrets.SSH_HOST }} \
           --ssh_port=${{ vars.SSH_PORT || secrets.SSH_PORT }} \
           --ssh_user=${{ secrets.SSH_USER }} \
