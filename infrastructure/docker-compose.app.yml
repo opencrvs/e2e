@@ -3,6 +3,7 @@ services:
   hearth:
     image: opencrvs/hearth:1.1.0
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - mongodb__url=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - logger__level=warn
@@ -31,6 +32,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
@@ -84,6 +86,7 @@ services:
         - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - FHIR_URL=http://hearth:3447/fhir
@@ -96,6 +99,7 @@ services:
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
+      - SENDER_EMAIL_ADDRESS=${SENDER_EMAIL_ADDRESS}
       # This needs to be the internal swarm url
       # as containers cannot connect to the web
       - GATEWAY_URL=http://gateway:7070
@@ -122,6 +126,7 @@ services:
   login:
     image: opencrvs/ocrvs-login:${VERSION}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
@@ -154,6 +159,7 @@ services:
   client:
     image: opencrvs/ocrvs-client:${VERSION}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - DECLARED_DECLARATION_SEARCH_QUERY_COUNT=100
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
@@ -194,10 +200,12 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
+      - DISABLE_RATE_LIMIT=true
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
@@ -250,6 +258,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
@@ -284,6 +293,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -314,6 +324,7 @@ services:
     volumes:
       - /data/vsexport:/usr/src/app/packages/metrics/src/scripts
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -353,6 +364,7 @@ services:
       - jwt-public-key.{{STACK}}.{{ts}}
       - jwt-private-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -399,6 +411,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -429,6 +442,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -470,6 +484,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -525,6 +540,7 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
       - APN_SERVICE_URL=http://apm-server:8200
@@ -548,6 +564,7 @@ services:
   scheduler:
     image: opencrvs/ocrvs-scheduler:${VERSION}
     environment:
+      - QA_ENV=true
       - NODE_ENV=production
       - METRICS_URL=http://metrics:1050
     deploy:
@@ -566,6 +583,7 @@ services:
   migration:
     image: opencrvs/ocrvs-migration:${VERSION}
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - ELASTICSEARCH_INDEX_NAME=ocrvs--${STACK}
       - USER_MGNT_MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
@@ -614,6 +632,7 @@ services:
       restart_policy:
         condition: none
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       - REPLICAS=1
       - DATABASE_PREFIX=${STACK}
@@ -646,6 +665,7 @@ services:
       - overlay_net
       - dependencies_overlay_net
     environment:
+      - QA_ENV=true
       - HOST=0.0.0.0
       # Note that only mongo1 is used here on purpose for all environments
       # https://discourse.metabase.com/t/solved-add-mongodb-replicaset-database/7404/2

@@ -1,18 +1,12 @@
 name: E2E
-run-name: Deploy to ${{ github.event.inputs.environment }} and E2E
+run-name: Deploy to ${{ github.event.inputs.stack }} and E2E
 on:
-  push:
-    branches:
-      - e2e/*
   workflow_dispatch:
     inputs:
-      environment:
-        type: choice
-        description: Environment to deploy to
+      stack:
+        type: string
+        description: Stack name
         required: true
-        default: 'development'
-        options:
-          - development
 
 jobs:
   discover-tests:
@@ -50,7 +44,7 @@ jobs:
   test:
     needs: [discover-tests]
     runs-on: ubuntu-22.04
-    environment: ${{ github.event.inputs.environment || 'development' }}
+    environment: qa
     strategy:
       fail-fast: false
       matrix:
@@ -92,7 +86,7 @@ jobs:
         if: steps.check-specs.outputs.has_spec_files == 'true'
         run: npx playwright test ./e2e/testcases/${{ matrix.test_dir }}
         env:
-          DOMAIN: '${{ vars.DOMAIN }}'
+          DOMAIN: '${{inputs.stack}}.${{ vars.DOMAIN }}'
 
       - uses: actions/upload-artifact@v4
         if: steps.check-specs.outputs.has_spec_files == 'true'

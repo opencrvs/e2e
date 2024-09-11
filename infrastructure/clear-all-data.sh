@@ -102,11 +102,7 @@ docker run --rm --network=$NETWORK appropriate/curl curl -X POST "http://influxd
 #-----------------------------
 docker run --rm --network=$NETWORK --entrypoint=/bin/sh minio/mc -c "\
   mc alias set myminio http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD && \
-  mc rm --recursive --force myminio/${STACK}__ocrvs && \
-  mc rb myminio/${STACK}__ocrvs && \
-  mc mb myminio/${STACK}__ocrvs"
-
-# Delete all data from metabase
-#-----------------------------
-docker exec $(docker ps | grep opencrvs_dashboards | awk '{print $1}' | head -n 1) /bin/sh -c "rm -rf /data/metabase/*"
+  mc rm --recursive --force myminio/${STACK}--ocrvs && \
+  mc rb myminio/${STACK}--ocrvs && \
+  mc mb myminio/${STACK}--ocrvs"
 

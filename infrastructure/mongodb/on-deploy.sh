@@ -120,7 +120,7 @@ if [[ $HEARTH_USER != "FOUND" ]]; then
   db.createUser({
     user: '${DATABASE_PREFIX}__hearth',
     pwd: '$HEARTH_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
   })
   use performance
   db.createUser({
@@ -135,7 +135,7 @@ else
   use ${DATABASE_PREFIX}__hearth-dev
   db.updateUser('${DATABASE_PREFIX}__hearth', {
     pwd: '$HEARTH_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
   })
   use performance
   db.updateUser('${DATABASE_PREFIX}__hearth', {
