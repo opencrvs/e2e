@@ -3,9 +3,6 @@ run-name: Deploy & E2E, triggered by ${{ github.event.client_payload.actor || gi
 on:
   repository_dispatch:
     types: [run_e2e]
-  push:
-    branches:
-      - develop
   workflow_dispatch:
     inputs:
       environment:
