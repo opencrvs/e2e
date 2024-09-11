@@ -16,7 +16,7 @@ services:
       - source: hearth-queryparam-extensions-conf.{{ts}}
         target: /src/hearth/config/queryparam-extensions.json
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -39,7 +39,7 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -60,7 +60,7 @@ services:
         - 'traefik.http.routers.countryconfig.tls.certresolver=certResolver'
         - 'traefik.http.routers.countryconfig.entrypoints=web,websecure'
         - 'traefik.http.routers.countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
@@ -104,7 +104,7 @@ services:
       - INFOBIP_SENDER_ID=${INFOBIP_SENDER_ID:-}
       - DOMAIN=${STACK}.{{hostname}}
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -125,7 +125,7 @@ services:
         - 'traefik.http.routers.login.tls.certresolver=certResolver'
         - 'traefik.http.routers.login.entrypoints=web,websecure'
         - 'traefik.http.routers.login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.login.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.login.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.login.headers.customresponseheaders.X-Robots-Tag=none'
@@ -134,7 +134,7 @@ services:
         - 'traefik.http.middlewares.login.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -147,7 +147,7 @@ services:
       - DECLARED_DECLARATION_SEARCH_QUERY_COUNT=100
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
-      - MINIO_URL=https://minio.${STACK}.{{hostname}}
+      - MINIO_URL=https://minio.{{hostname}}
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -158,7 +158,7 @@ services:
         - 'traefik.http.routers.client.tls=true'
         - 'traefik.http.routers.client.tls.certresolver=certResolver'
         - 'traefik.http.routers.client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
 
         - 'traefik.http.middlewares.test-replacepathregex.redirectregex.permanent=true'
         - 'traefik.http.middlewares.test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
@@ -172,7 +172,7 @@ services:
         - 'traefik.http.middlewares.client.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -202,7 +202,7 @@ services:
         - 'traefik.http.routers.gateway.tls.certresolver=certResolver'
         - 'traefik.http.routers.gateway.entrypoints=web,websecure'
         - 'traefik.http.routers.gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.gateway.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.gateway.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.gateway.headers.customresponseheaders.X-Robots-Tag=none'
@@ -211,7 +211,7 @@ services:
         - 'traefik.http.middlewares.gateway.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -233,7 +233,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -257,7 +257,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -285,7 +285,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -315,7 +315,7 @@ services:
         - 'traefik.http.routers.auth.tls=true'
         - 'traefik.http.routers.auth.tls.certresolver=certResolver'
         - 'traefik.http.routers.auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.auth.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.auth.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.auth.headers.customresponseheaders.X-Robots-Tag=none'
@@ -324,7 +324,7 @@ services:
         - 'traefik.http.middlewares.auth.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -347,7 +347,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -372,7 +372,7 @@ services:
         - 'traefik.http.routers.webhooks.tls=true'
         - 'traefik.http.routers.webhooks.tls.certresolver=certResolver'
         - 'traefik.http.routers.webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.X-Robots-Tag=none'
@@ -381,7 +381,7 @@ services:
         - 'traefik.http.middlewares.webhooks.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -409,7 +409,7 @@ services:
         - 'traefik.http.routers.config.tls=true'
         - 'traefik.http.routers.config.tls.certresolver=certResolver'
         - 'traefik.http.routers.config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.config.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.config.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.config.headers.customresponseheaders.X-Robots-Tag=none'
@@ -421,7 +421,7 @@ services:
         - 'traefik.http.routers.block-dashboard-queries.middlewares=block-internal-routes'
       replicas: 1
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -442,12 +442,12 @@ services:
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-      - MINIO_URL=minio.${STACK}.{{hostname}}
+      - MINIO_URL=minio.{{hostname}}
       - MINIO_HOST=minio
       - MINIO_PORT=9000
       - MINIO_BUCKET=${STACK}__ocrvs
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -463,7 +463,7 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -494,7 +494,7 @@ services:
       restart_policy:
         condition: on-failure
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -526,7 +526,7 @@ services:
       - WEBHOOKS_MONGODB_PASSWORD=${WEBHOOKS_MONGODB_PASSWORD}
       - NOTIFICATION_MONGODB_PASSWORD=${NOTIFICATION_MONGODB_PASSWORD}
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     logging:
       driver: gelf
       options:
@@ -540,7 +540,7 @@ services:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
       - /opt/opencrvs/infrastructure/metabase/metabase.init.db.sql:/metabase.init.db.sql
     networks:
-      - overlay_net
+      - dependencies_overlay_net
     environment:
       # Note that only mongo1 is used here on purpose for all environments
       # https://discourse.metabase.com/t/solved-add-mongodb-replicaset-database/7404/2
@@ -564,7 +564,7 @@ services:
         - 'traefik.http.routers.metabase.tls=true'
         - 'traefik.http.routers.metabase.tls.certresolver=certResolver'
         - 'traefik.http.routers.metabase.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
         - 'traefik.http.middlewares.metabase.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.metabase.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.metabase.headers.customresponseheaders.X-Robots-Tag=none'
@@ -608,6 +608,5 @@ configs:
   minio-mc-config.{{ts}}:
     file: /opt/opencrvs/infrastructure/mc-config/config.json
 networks:
-  overlay_net:
-    driver: overlay
-    attachable: true
+  dependencies_overlay_net:
+    external: true
