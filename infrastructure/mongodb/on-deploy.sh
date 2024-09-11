@@ -82,185 +82,186 @@ done
 
 function checkIfUserExists {
   local user=$1
-  local JSON="{\"user\": \"$user\"}"
+  local db=$2
+  local JSON="{\"user\": \"$user\",\"db\": \"$db\"}"
   CMD='mongo admin --host $HOST $(mongo_credentials) --quiet --eval "db.getCollection(\"system.users\").find($JSON).length() > 0 ? \"FOUND\" : \"NOT_FOUND\""'
   eval $CMD
 }
 
 # Rotate passwords to match the ones given to this script or create new users
 
-CONFIG_USER=$(echo $(checkIfUserExists "config"))
+CONFIG_USER=$(echo $(checkIfUserExists "config" "${DATABASE_PREFIX}__application-config"))
 if [[ $CONFIG_USER != "FOUND" ]]; then
   echo "config user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__application-config
+  use ${DATABASE_PREFIX}__application-config
   db.createUser({
     user: 'config',
     pwd: '$CONFIG_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'application-config' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__application-config" }]
   })
 EOF
 else
   echo "config user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__application-config
+  use ${DATABASE_PREFIX}__application-config
   db.updateUser('config', {
     pwd: '$CONFIG_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'application-config' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__application-config" }]
   })
 EOF
 fi
 
-HEARTH_USER=$(echo $(checkIfUserExists "hearth"))
+HEARTH_USER=$(echo $(checkIfUserExists "hearth" "${DATABASE_PREFIX}__hearth-dev"))
 if [[ $HEARTH_USER != "FOUND" ]]; then
   echo "hearth user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__hearth-dev
+  use ${DATABASE_PREFIX}__hearth-dev
   db.createUser({
     user: 'hearth',
     pwd: '$HEARTH_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: 'hearth-dev' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
   })
 EOF
 else
   echo "hearth user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__hearth-dev
+  use ${DATABASE_PREFIX}__hearth-dev
   db.updateUser('hearth', {
     pwd: '$HEARTH_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: 'hearth-dev' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
   })
 EOF
 fi
 
-USER_MGNT_USER=$(echo $(checkIfUserExists "user-mgnt"))
+USER_MGNT_USER=$(echo $(checkIfUserExists "user- "${DATABASE_PREFIX}__user-mgnt"mgnt"))
 if [[ $USER_MGNT_USER != "FOUND" ]]; then
   echo "user-mgnt user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__user-mgnt
+  use ${DATABASE_PREFIX}__user-mgnt
   db.createUser({
     user: 'user-mgnt',
     pwd: '$USER_MGNT_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'user-mgnt' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__user-mgnt" }]
   })
 EOF
 else
   echo "user-mgnt user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__user-mgnt
+  use ${DATABASE_PREFIX}__user-mgnt
   db.updateUser('user-mgnt', {
     pwd: '$USER_MGNT_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'user-mgnt' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__user-mgnt" }]
   })
 EOF
 fi
 
-OPENHIM_USER=$(echo $(checkIfUserExists "openhim"))
+OPENHIM_USER=$(echo $(checkIfUserExists "openhim" "${DATABASE_PREFIX}__openhim-dev"))
 if [[ $OPENHIM_USER != "FOUND" ]]; then
   echo "openhim user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__openhim-dev
+  use ${DATABASE_PREFIX}__openhim-dev
   db.createUser({
     user: 'openhim',
     pwd: '$OPENHIM_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'openhim' }, { role: 'readWrite', db: 'openhim-dev' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__openhim" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__openhim-dev" }]
   })
 EOF
 else
   echo "openhim user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__openhim-dev
+  use ${DATABASE_PREFIX}__openhim-dev
   db.updateUser('openhim', {
     pwd: '$OPENHIM_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'openhim' }, { role: 'readWrite', db: 'openhim-dev' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__openhim" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__openhim-dev" }]
   })
 EOF
 fi
 
-PERFORMANCE_USER=$(echo $(checkIfUserExists "performance"))
+PERFORMANCE_USER=$(echo $(checkIfUserExists "performance" "${DATABASE_PREFIX}__performance"))
 if [[ $PERFORMANCE_USER != "FOUND" ]]; then
   echo "performance user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__performance
+  use ${DATABASE_PREFIX}__performance
   db.createUser({
     user: 'performance',
     pwd: '$PERFORMANCE_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'performance' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }]
   })
 EOF
 else
   echo "performance user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__performance
+  use ${DATABASE_PREFIX}__performance
   db.updateUser('performance', {
     pwd: '$PERFORMANCE_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'performance' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }]
   })
 EOF
 fi
 
-METRICS_USER=$(echo $(checkIfUserExists "metrics"))
+METRICS_USER=$(echo $(checkIfUserExists "metrics" "${DATABASE_PREFIX}__metrics"))
 if [[ $METRICS_USER != "FOUND" ]]; then
   echo "metrics user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__metrics
+  use ${DATABASE_PREFIX}__metrics
   db.createUser({
     user: 'metrics',
     pwd: '$METRICS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'metrics' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__metrics" }]
   })
 EOF
 else
   echo "metrics user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__metrics
+  use ${DATABASE_PREFIX}__metrics
   db.updateUser('metrics', {
     pwd: '$METRICS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'metrics' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__metrics" }]
   })
 EOF
 fi
 
-WEBHOOKS_USER=$(echo $(checkIfUserExists "webhooks"))
+WEBHOOKS_USER=$(echo $(checkIfUserExists "webhooks" "${DATABASE_PREFIX}__webhooks"))
 if [[ $WEBHOOKS_USER != "FOUND" ]]; then
   echo "webhooks user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__webhooks
+  use ${DATABASE_PREFIX}__webhooks
   db.createUser({
     user: 'webhooks',
     pwd: '$WEBHOOKS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'webhooks' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__webhooks" }]
   })
 EOF
 else
   echo "webhooks user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__webhooks
+  use ${DATABASE_PREFIX}__webhooks
   db.updateUser('webhooks', {
     pwd: '$WEBHOOKS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'webhooks' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__webhooks" }]
   })
 EOF
 fi
 
-NOTIFICATION_USER=$(echo $(checkIfUserExists "notification"))
+NOTIFICATION_USER=$(echo $(checkIfUserExists "notification" "${DATABASE_PREFIX}__notification"))
 if [[ $NOTIFICATION_USER != "FOUND" ]]; then
   echo "notification user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__notification
+  use ${DATABASE_PREFIX}__notification
   db.createUser({
     user: 'notification',
     pwd: '$NOTIFICATION_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'notification' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__notification" }]
   })
 EOF
 else
   echo "notification user exists"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use $DATABASE_PREFIX__notification
+  use ${DATABASE_PREFIX}__notification
   db.updateUser('notification', {
     pwd: '$NOTIFICATION_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'notification' }]
+    roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__notification" }]
   })
 EOF
 fi
