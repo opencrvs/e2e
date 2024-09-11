@@ -11,7 +11,7 @@
 set -e
 
 print_usage_and_exit () {
-    echo 'Usage: ./clear-all-data.sh REPLICAS'
+    echo 'Usage: ./clear-all-data.sh REPLICAS STACK'
     echo ""
     echo "If your MongoDB is password protected, an admin user's credentials can be given as environment variables:"
     echo "MONGODB_ADMIN_USER=your_user MONGODB_ADMIN_PASSWORD=your_pass"
@@ -26,8 +26,14 @@ if [ -z "$1" ] ; then
     print_usage_and_exit
 fi
 
+if [ -z "$2" ] ; then
+    echo 'Error: Argument STACK is required in position 2.'
+    print_usage_and_exit
+fi
 
 REPLICAS=$1
+STACK=$2
+
 if ! [[ "$REPLICAS" =~ ^[0-9]+$ ]]; then
   echo "Script must be passed a positive integer number of replicas. Got '$REPLICAS'"
   print_usage_and_exit
@@ -66,7 +72,7 @@ elasticsearch_host() {
 }
 
 drop_database () {
-  local database=${1}
+  local database="${STACK}__${1}"
   docker run --rm --network=$NETWORK mongo:4.4 mongo $database $(mongo_credentials) --host $HOST --eval "db.dropDatabase()"
 }
 
@@ -86,19 +92,19 @@ drop_database performance;
 
 # Delete all data from elasticsearch
 #-----------------------------------
-docker run --rm --network=$NETWORK appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/ocrvs" -v
+docker run --rm --network=$NETWORK appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/${STACK}__ocrvs" -v
 
 # Delete all data from metrics
 #-----------------------------
-docker run --rm --network=$NETWORK appropriate/curl curl -X POST 'http://influxdb:8086/query?db=ocrvs' --data-urlencode "q=DROP SERIES FROM /.*/" -v
+docker run --rm --network=$NETWORK appropriate/curl curl -X POST "http://influxdb:8086/query?db=${STACK}__ocrvs" --data-urlencode "q=DROP SERIES FROM /.*/" -v
 
 # Delete all data from minio
 #-----------------------------
 docker run --rm --network=$NETWORK --entrypoint=/bin/sh minio/mc -c "\
   mc alias set myminio http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD && \
-  mc rm --recursive --force myminio/ocrvs && \
-  mc rb myminio/ocrvs && \
-  mc mb myminio/ocrvs"
+  mc rm --recursive --force myminio/${STACK}__ocrvs && \
+  mc rb myminio/${STACK}__ocrvs && \
+  mc mb myminio/${STACK}__ocrvs"
 
 # Delete all data from metabase
 #-----------------------------

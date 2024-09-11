@@ -134,7 +134,7 @@ else
 EOF
 fi
 
-USER_MGNT_USER=$(echo $(checkIfUserExists "user- "${DATABASE_PREFIX}__user-mgnt"mgnt"))
+USER_MGNT_USER=$(echo $(checkIfUserExists "user-mgnt" "${DATABASE_PREFIX}__user-mgnt"))
 if [[ $USER_MGNT_USER != "FOUND" ]]; then
   echo "user-mgnt user not found"
   mongo $(mongo_credentials) --host $HOST <<EOF

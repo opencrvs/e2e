@@ -1,7 +1,9 @@
+version: '3.8'
 services:
   hearth:
     image: opencrvs/hearth:1.1.0
     environment:
+      - HOST=0.0.0.0
       - mongodb__url=mongodb://hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - logger__level=warn
     deploy:
@@ -29,12 +31,14 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
       - MONGO_URL=mongodb://notification:${NOTIFICATION_MONGODB_PASSWORD}@mongo1/${STACK}__notification?replicaSet=rs0
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040
     deploy:
       replicas: 1
       labels:
@@ -56,30 +60,31 @@ services:
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.countryconfig.rule=(Host(`countryconfig.${STACK}.{{hostname}}`) || Host(`registry.${STACK}.{{hostname}}`)) && !Path(`/email`) && !Path(`/notification`) && !Path(`/dashboards/queries.json`)'
-        - 'traefik.http.services.countryconfig.loadbalancer.server.port=3040'
-        - 'traefik.http.routers.countryconfig.tls=true'
-        - 'traefik.http.routers.countryconfig.tls.certresolver=certResolver'
-        - 'traefik.http.routers.countryconfig.entrypoints=web,websecure'
-        - 'traefik.http.routers.countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.countryconfig.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.countryconfig.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.countryconfig.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__countryconfig.rule=(Host(`countryconfig.${STACK}.{{hostname}}`) || Host(`registry.${STACK}.{{hostname}}`)) && !Path(`/email`) && !Path(`/notification`) && !Path(`/dashboards/queries.json`)'
+        - 'traefik.http.services.${STACK}__countryconfig.loadbalancer.server.port=3040'
+        - 'traefik.http.routers.${STACK}__countryconfig.tls=true'
+        - 'traefik.http.routers.${STACK}__countryconfig.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure'
+        - 'traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stspreload=true'
         # This is an invalid IP range, effectively blocking all IPs from accessing below paths.
         # It's only meant to be accessed from the internal docker network.
-        - 'traefik.http.middlewares.block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
-        - 'traefik.http.routers.block-email.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/email`)'
-        - 'traefik.http.routers.block-email.middlewares=block-internal-routes'
-        - 'traefik.http.routers.block-notification.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/notification`)'
-        - 'traefik.http.routers.block-notification.middlewares=block-internal-routes'
-        - 'traefik.http.routers.block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboards/queries.json`)'
-        - 'traefik.http.routers.block-dashboard-queries.middlewares=block-internal-routes'
+        - 'traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
+        - 'traefik.http.routers.${STACK}__block-email.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/email`)'
+        - 'traefik.http.routers.${STACK}__block-email.middlewares=${STACK}__block-internal-routes'
+        - 'traefik.http.routers.${STACK}__block-notification.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/notification`)'
+        - 'traefik.http.routers.${STACK}__block-notification.middlewares=${STACK}__block-internal-routes'
+        - 'traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboards/queries.json`)'
+        - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - FHIR_URL=http://hearth:3447/fhir
       - AUTH_URL=http://auth:4040
@@ -90,10 +95,10 @@ services:
       - APN_SERVICE_URL=http://apm-server:8200
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
+      - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       # This needs to be the internal swarm url
       # as containers cannot connect to the web
       - GATEWAY_URL=http://gateway:7070
-      - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - NOTIFICATION_TRANSPORT=${NOTIFICATION_TRANSPORT}
       - ALERT_EMAIL=${ALERT_EMAIL:-}
       - SMTP_HOST=${SMTP_HOST:-}
@@ -117,24 +122,25 @@ services:
   login:
     image: opencrvs/ocrvs-login:${VERSION}
     environment:
+      - HOST=0.0.0.0
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.login.rule=Host(`login.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.login.loadbalancer.server.port=80'
-        - 'traefik.http.routers.login.tls=true'
-        - 'traefik.http.routers.login.tls.certresolver=certResolver'
-        - 'traefik.http.routers.login.entrypoints=web,websecure'
-        - 'traefik.http.routers.login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.login.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.login.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.login.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.login.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.login.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.login.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__login.rule=Host(`login.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__login.loadbalancer.server.port=80'
+        - 'traefik.http.routers.${STACK}__login.tls=true'
+        - 'traefik.http.routers.${STACK}__login.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__login.entrypoints=web,websecure'
+        - 'traefik.http.routers.${STACK}__login.middlewares=gzip-compression'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__login.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__login.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__login.headers.stspreload=true'
       replicas: 1
     networks:
       - overlay_net
@@ -148,6 +154,7 @@ services:
   client:
     image: opencrvs/ocrvs-client:${VERSION}
     environment:
+      - HOST=0.0.0.0
       - DECLARED_DECLARATION_SEARCH_QUERY_COUNT=100
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
@@ -155,25 +162,23 @@ services:
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.client.rule=Host(`register.${STACK}.{{hostname}}`,`${STACK}.{{hostname}}`)'
-        - 'traefik.http.routers.client.middlewares=test-replacepathregex,gzip-compression'
-        - 'traefik.http.routers.client.service=client'
-        - 'traefik.http.services.client.loadbalancer.server.port=80'
-        - 'traefik.http.routers.client.tls=true'
-        - 'traefik.http.routers.client.tls.certresolver=certResolver'
-        - 'traefik.http.routers.client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
+        - 'traefik.http.routers.${STACK}__client.rule=Host(`register.${STACK}.{{hostname}}`,`${STACK}.{{hostname}}`)'
+        - 'traefik.http.routers.${STACK}__client.middlewares=${STACK}__test-replacepathregex,gzip-compression'
+        - 'traefik.http.services.${STACK}__client.loadbalancer.server.port=80'
+        - 'traefik.http.routers.${STACK}__client.tls=true'
+        - 'traefik.http.routers.${STACK}__client.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__client.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
 
-        - 'traefik.http.middlewares.test-replacepathregex.redirectregex.permanent=true'
-        - 'traefik.http.middlewares.test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
-        - 'traefik.http.middlewares.test-replacepathregex.redirectregex.replacement=https://register.${STACK}.{{hostname}}/$${1}'
-
-        - 'traefik.http.middlewares.client.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.client.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.client.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.client.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.client.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.client.headers.stspreload=true'
+        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true'
+        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
+        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.replacement=https://register.${STACK}.{{hostname}}/$${1}'
+        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__client.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__client.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__client.headers.stspreload=true'
       replicas: 1
     networks:
       - overlay_net
@@ -189,6 +194,7 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -198,22 +204,37 @@ services:
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
       - MINIO_BUCKET=${STACK}__ocrvs
+      - REDIS_HOST=redis
+      - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
+      - CONFIG_TOKEN_EXPIRY_SECONDS=604800
+      - FHIR_URL=http://hearth:3447/fhir
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - SEARCH_URL=http://search:9090/
+      - METRICS_URL=http://metrics:1050
+      - AUTH_URL=http://auth:4040
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040
+      - NOTIFICATION_URL=http://notification:2020/
+      - WORKFLOW_URL=http://workflow:5050/
+      - APPLICATION_CONFIG_URL=http://config:2021/
+      - WEBHOOKS_URL=http://webhooks:2525/
+      - CHECK_INVALID_TOKEN=true
+      - DOCUMENTS_URL=http://documents:9050
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.gateway.rule=Host(`gateway.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.gateway.loadbalancer.server.port=7070'
-        - 'traefik.http.routers.gateway.tls=true'
-        - 'traefik.http.routers.gateway.tls.certresolver=certResolver'
-        - 'traefik.http.routers.gateway.entrypoints=web,websecure'
-        - 'traefik.http.routers.gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.gateway.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.gateway.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.gateway.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.gateway.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.gateway.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.gateway.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__gateway.rule=Host(`gateway.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__gateway.loadbalancer.server.port=7070'
+        - 'traefik.http.routers.${STACK}__gateway.tls=true'
+        - 'traefik.http.routers.${STACK}__gateway.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure'
+        - 'traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true'
       replicas: 1
     networks:
       - overlay_net
@@ -229,11 +250,22 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - SEARCH_URL=http://search:9090/
+      - METRICS_URL=http://metrics:1050
+      - DOCUMENTS_URL=http://documents:9050
+      - NOTIFICATION_SERVICE_URL=http://notification:2020/
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040
+      - FHIR_URL=http://hearth:3447/fhir
+      - WEBHOOKS_URL=http://webhooks:2525/
+      - APPLICATION_CONFIG_URL=http://config:2021/
+      - COUNTRY=${COUNTRY:-bgd}
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -252,13 +284,17 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
-      - OPENCRVS_INDEX_NAME=${STACK}__ocrvs
+      - OPENCRVS_INDEX_NAME=ocrvs--${STACK}
       - ES_HOST=search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
       - HEARTH_MONGO_URL=mongodb://hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - FHIR_URL=http://hearth:3447/fhir
+      - APPLICATION_CONFIG_URL=http://config:2021/
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -278,6 +314,7 @@ services:
     volumes:
       - /data/vsexport:/usr/src/app/packages/metrics/src/scripts
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
@@ -285,6 +322,15 @@ services:
       - MONGO_URL=mongodb://metrics:${METRICS_MONGODB_PASSWORD}@mongo1/${STACK}__metrics?replicaSet=rs0
       - HEARTH_MONGO_URL=mongodb://hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - DASHBOARD_MONGO_URL=mongodb://performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
+      - INFLUX_HOST=influxdb
+      - INFLUX_PORT=8086
+      - INFLUX_DB=ocrvs
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040/
+      - CONFIG_API_URL=http://config:2021
+      - SEARCH_URL=http://search:9090/
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030
+      - DOCUMENTS_URL=http://documents:9050
+      - FHIR_URL=http://hearth:3447/fhir
     deploy:
       placement:
         constraints:
@@ -307,6 +353,7 @@ services:
       - jwt-public-key.{{ts}}
       - jwt-private-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
@@ -316,21 +363,27 @@ services:
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
+      - REDIS_HOST=redis
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - CONFIG_TOKEN_EXPIRY_SECONDS=604800
+      - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
+      - NOTIFICATION_SERVICE_URL=http://notification:2020/
+      - METRICS_URL=http://metrics:1050
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.auth.rule=Host(`auth.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.auth.loadbalancer.server.port=4040'
-        - 'traefik.http.routers.auth.tls=true'
-        - 'traefik.http.routers.auth.tls.certresolver=certResolver'
-        - 'traefik.http.routers.auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.auth.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.auth.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.auth.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.auth.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.auth.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.auth.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__auth.rule=Host(`auth.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__auth.loadbalancer.server.port=4040'
+        - 'traefik.http.routers.${STACK}__auth.tls=true'
+        - 'traefik.http.routers.${STACK}__auth.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__auth.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__auth.headers.stspreload=true'
       replicas: 1
     networks:
       - overlay_net
@@ -346,12 +399,18 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - RECORD_SEARCH_QUOTA=2000
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
       - MONGO_URL=mongodb://user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
+      - NOTIFICATION_SERVICE_URL=http://notification:2020/
+      - METRICS_URL=http://metrics:1050
+      - FHIR_URL=http://hearth:3447/fhir
+      - APPLICATION_CONFIG_URL=http://config:2021/
+      - DOCUMENTS_URL=http://documents:9050
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -370,26 +429,32 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - MONGO_URL=mongodb://webhooks:${WEBHOOKS_MONGODB_PASSWORD}@mongo1/${STACK}__webhooks?replicaSet=rs0
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - REDIS_HOST=redis
+      - AUTH_URL=http://auth:4040
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - CHECK_INVALID_TOKEN=true
+      - FHIR_URL=http://hearth:3447/fhir
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.webhooks.rule=Host(`webhooks.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.webhooks.loadbalancer.server.port=2525'
-        - 'traefik.http.routers.webhooks.tls=true'
-        - 'traefik.http.routers.webhooks.tls.certresolver=certResolver'
-        - 'traefik.http.routers.webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.webhooks.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.webhooks.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.webhooks.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.webhooks.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__webhooks.rule=Host(`webhooks.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__webhooks.loadbalancer.server.port=2525'
+        - 'traefik.http.routers.${STACK}__webhooks.tls=true'
+        - 'traefik.http.routers.${STACK}__webhooks.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true'
       replicas: 1
     networks:
       - overlay_net
@@ -405,6 +470,7 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
@@ -413,24 +479,33 @@ services:
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
+      - AUTH_URL=http://auth:4040
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040
+      - SEARCH_URL=http://search:9090/
+      - METRICS_URL=http://metrics:1050
+      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - FHIR_URL=http://hearth:3447/fhir
+      - GATEWAY_URL=http://gateway:7070/
+      - DOCUMENTS_URL=http://documents:9050
+      - CHECK_INVALID_TOKEN=true
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.config.rule=Host(`config.${STACK}.{{hostname}}`) && !Path(`/dashboardQueries`)'
-        - 'traefik.http.services.config.loadbalancer.server.port=2021'
-        - 'traefik.http.routers.config.tls=true'
-        - 'traefik.http.routers.config.tls.certresolver=certResolver'
-        - 'traefik.http.routers.config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.config.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.config.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.config.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.config.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.config.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.config.headers.stspreload=true'
-        - 'traefik.http.middlewares.block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
-        - 'traefik.http.routers.block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboardQueries`)'
-        - 'traefik.http.routers.block-dashboard-queries.middlewares=block-internal-routes'
+        - 'traefik.http.routers.${STACK}__config.rule=Host(`config.${STACK}.{{hostname}}`) && !Path(`/dashboardQueries`)'
+        - 'traefik.http.services.${STACK}__config.loadbalancer.server.port=2021'
+        - 'traefik.http.routers.${STACK}__config.tls=true'
+        - 'traefik.http.routers.${STACK}__config.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__config.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__config.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__config.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__config.headers.stspreload=true'
+        - 'traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
+        - 'traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboardQueries`)'
+        - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     networks:
       - overlay_net
@@ -450,6 +525,7 @@ services:
     secrets:
       - jwt-public-key.{{ts}}
     environment:
+      - HOST=0.0.0.0
       - NODE_ENV=production
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
@@ -459,6 +535,7 @@ services:
       - MINIO_HOST=minio
       - MINIO_PORT=9000
       - MINIO_BUCKET=${STACK}__ocrvs
+      - COUNTRY_CONFIG_URL=http://countryconfig:3040
     networks:
       - overlay_net
       - dependencies_overlay_net
@@ -472,6 +549,7 @@ services:
     image: opencrvs/ocrvs-scheduler:${VERSION}
     environment:
       - NODE_ENV=production
+      - METRICS_URL=http://metrics:1050
     deploy:
       replicas: 1
       labels:
@@ -488,7 +566,8 @@ services:
   migration:
     image: opencrvs/ocrvs-migration:${VERSION}
     environment:
-      - ELASTICSEARCH_INDEX_NAME=${STACK}__ocrvs
+      - HOST=0.0.0.0
+      - ELASTICSEARCH_INDEX_NAME=ocrvs--${STACK}
       - USER_MGNT_MONGO_URL=mongodb://user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
       - PERFORMANCE_MONGO_URL=mongodb://performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
       - APPLICATION_CONFIG_MONGO_URL=mongodb://config:${CONFIG_MONGODB_PASSWORD}@mongo1/${STACK}__application-config?replicaSet=rs0
@@ -502,6 +581,12 @@ services:
       - MINIO_BUCKET=${STACK}__ocrvs
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
+      - DASHBOARD_MONGO_URL=mongodb://mongo1/${STACK}__performance
+      - SEARCH_URL=http://search:9090/
+      - INFLUX_HOST=influxdb
+      - INFLUX_PORT=8086
+      - INFLUX_DB=ocrvs
+      - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -529,6 +614,7 @@ services:
       restart_policy:
         condition: none
     environment:
+      - HOST=0.0.0.0
       - REPLICAS=1
       - DATABASE_PREFIX=${STACK}
       - MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER}
@@ -560,6 +646,7 @@ services:
       - overlay_net
       - dependencies_overlay_net
     environment:
+      - HOST=0.0.0.0
       # Note that only mongo1 is used here on purpose for all environments
       # https://discourse.metabase.com/t/solved-add-mongodb-replicaset-database/7404/2
       - OPENCRVS_METABASE_DB_HOST=mongo1
@@ -577,18 +664,18 @@ services:
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.metabase.rule=Host(`metabase.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.metabase.loadbalancer.server.port=4444'
-        - 'traefik.http.routers.metabase.tls=true'
-        - 'traefik.http.routers.metabase.tls.certresolver=certResolver'
-        - 'traefik.http.routers.metabase.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_dependencies_overlay_net'
-        - 'traefik.http.middlewares.metabase.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.metabase.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.metabase.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.metabase.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.metabase.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.metabase.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__metabase.rule=Host(`metabase.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__metabase.loadbalancer.server.port=4444'
+        - 'traefik.http.routers.${STACK}__metabase.tls=true'
+        - 'traefik.http.routers.${STACK}__metabase.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__metabase.entrypoints=web,websecure'
+        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__metabase.headers.stspreload=true'
       replicas: 1
       placement:
         constraints:

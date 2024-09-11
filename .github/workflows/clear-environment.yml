@@ -6,20 +6,26 @@ on:
       environment:
         required: true
         type: string
+      stack:
+        required: true
+        type: string
     outputs:
       outcome:
         value: ${{ jobs.reset-data.outputs.outcome }}
   workflow_dispatch:
     inputs:
+      stack:
+        type: string
+        description: Stack name
+        required: true
       environment:
         type: choice
         description: Environment to reset
         required: true
-        default: 'development'
+        default: 'qa'
         options:
-          - staging
           - qa
-          - development
+
 jobs:
   reset-data:
     name: 'Reset data'
@@ -68,6 +74,7 @@ jobs:
           MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
           MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
           SSH_ARGS: ${{ vars.SSH_ARGS }}
+          STACK: ${{ inputs.stack }}
         run: |
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST $SSH_ARGS "
             ELASTICSEARCH_ADMIN_USER=elastic \
@@ -76,7 +83,7 @@ jobs:
             MONGODB_ADMIN_PASSWORD=$MONGODB_ADMIN_PASSWORD \
             MINIO_ROOT_USER=$MINIO_ROOT_USER \
             MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
-            /opt/opencrvs/infrastructure/clear-all-data.sh $REPLICAS"
+            /opt/opencrvs/infrastructure/clear-all-data.sh $REPLICAS $STACK"
 
           echo "Running migrations..."
           echo

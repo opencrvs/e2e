@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          repository: 'opencrvs/opencrvs-farajaland'
 
       - name: List Test Directories
         id: list-tests

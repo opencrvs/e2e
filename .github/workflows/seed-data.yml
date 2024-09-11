@@ -9,20 +9,24 @@ on:
       core-image-tag:
         required: true
         type: string
+      stack:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       environment:
         type: choice
         description: Environment to seed data
         required: true
-        default: 'development'
+        default: 'qa'
         options:
-          - development
           - qa
-          - staging
-          - production
       core-image-tag:
         description: Core DockerHub image tag
+      stack:
+        required: true
+        description: Stack name
+        type: string
 jobs:
   seed-data:
     environment: ${{ inputs.environment }}
@@ -59,7 +63,7 @@ jobs:
             yarn seed:prod
         env:
           ACTIVATE_USERS: ${{ vars.ACTIVATE_USERS }}
-          GATEWAY_HOST: ${{ vars.GATEWAY_HOST }}
-          AUTH_HOST: ${{ vars.AUTH_HOST }}
-          COUNTRY_CONFIG_HOST: ${{ vars.COUNTRY_CONFIG_HOST }}
+          GATEWAY_HOST: '${{inputs.stack}}.${{ vars.GATEWAY_HOST }}'
+          AUTH_HOST: '${{inputs.stack}}.${{ vars.AUTH_HOST }}'
+          COUNTRY_CONFIG_HOST: '${{inputs.stack}}.${{ vars.COUNTRY_CONFIG_HOST }}'
           SUPER_USER_PASSWORD: ${{ secrets.SUPER_USER_PASSWORD }}

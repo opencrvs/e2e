@@ -23,6 +23,10 @@ on:
         description: Your Country Config DockerHub image tag
         required: true
         default: 'v1.4.1'
+      stack:
+        type: string
+        description: Stack name
+        required: true
 
 concurrency:
   group: ci-build
@@ -68,6 +72,7 @@ jobs:
       environment: ${{ github.event.inputs.environment || 'development' }}
       core-image-tag: ${{ github.event.inputs.core-image-tag || needs.get-core-commit.outputs.latest_commit_sha }}
       countryconfig-image-tag: ${{ github.event.inputs.countryconfig-image-tag || needs.get-country-config-commit.outputs.short_sha }}
+      stack: ${{ github.event.inputs.stack }}
       reset: 'true'
     secrets: inherit
 
@@ -133,7 +138,7 @@ jobs:
         if: steps.check-specs.outputs.has_spec_files == 'true'
         run: npx playwright test ./e2e/testcases/${{ matrix.test_dir }}
         env:
-          DOMAIN: '${{ vars.DOMAIN }}'
+          DOMAIN: '${{ inputs.stack }}.${{ vars.DOMAIN }}'
 
       - uses: actions/upload-artifact@v4
         if: steps.check-specs.outputs.has_spec_files == 'true'

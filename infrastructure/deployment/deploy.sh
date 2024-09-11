@@ -399,33 +399,23 @@ echo
 echo "Waiting 2 mins for mongo to deploy before working with data. Please note it can take up to 10 minutes for the entire stack to deploy in some scenarios."
 echo
 
-echo 'Setting up elastalert indices'
 
-while true; do
-  if configured_ssh "/opt/opencrvs/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
-    break
-  fi
-  sleep 5
-done
+if [ "$UPDATE_DEPENDENCIES" = true ]; then
+  echo 'Setting up elastalert indices'
 
-echo "Setting up Kibana config & alerts"
+  while true; do
+    if configured_ssh "/opt/opencrvs/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
+      break
+    fi
+    sleep 5
+  done
 
-while true; do
-  if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/infrastructure/monitoring/kibana/setup-config.sh"; then
-    break
-  fi
-  sleep 5
-done
+  echo "Setting up Kibana config & alerts"
 
-# Send a notification email to confirm emails are working
-EMAIL_PAYLOAD='{
-  "subject": "🚀 Deployment to '$ENV' finished",
-  "html": "Deployment to '$ENV' was successful with images '$VERSION' for core and '$COUNTRY_CONFIG_VERSION' for country config.",
-  "from": "{{SENDER_EMAIL_ADDRESS}}",
-  "to": "{{ALERT_EMAIL}}"
-}'
-
-configured_ssh "docker run --rm --network='$STACK'_overlay_net appropriate/curl \
-  -X POST 'http://countryconfig:3040/email' \
-  -H 'Content-Type: application/json' \
-  -d '$EMAIL_PAYLOAD'"
+  while true; do
+    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/infrastructure/monitoring/kibana/setup-config.sh"; then
+      break
+    fi
+    sleep 5
+  done
+fi

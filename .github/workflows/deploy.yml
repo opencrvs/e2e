@@ -1,5 +1,5 @@
 name: Deploy (development)
-run-name: Deploy to ${{ inputs.environment }} with reset=${{ inputs.reset }} core=${{ inputs.core-image-tag }} country config=${{ inputs.countryconfig-image-tag }}
+run-name: Deploy ${{ inputs.stack }} to ${{ inputs.environment }} with reset=${{ inputs.reset }} core=${{ inputs.core-image-tag }} country config=${{ inputs.countryconfig-image-tag }}
 on:
   workflow_call:
     inputs:
@@ -195,6 +195,7 @@ jobs:
     uses: ./.github/workflows/clear-environment.yml
     with:
       environment: ${{ inputs.environment }}
+      stack: ${{ inputs.stack }}
     secrets: inherit
 
   seed-data:
@@ -204,4 +205,5 @@ jobs:
     with:
       environment: ${{ inputs.environment }}
       core-image-tag: ${{ inputs.core-image-tag }}
+      stack: ${{ inputs.stack }}
     secrets: inherit
