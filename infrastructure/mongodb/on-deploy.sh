@@ -122,6 +122,12 @@ if [[ $HEARTH_USER != "FOUND" ]]; then
     pwd: '$HEARTH_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
   })
+  use performance
+  db.createUser({
+    user: '${DATABASE_PREFIX}__hearth',
+    pwd: '$HEARTH_MONGODB_PASSWORD',
+    roles: [{ role: 'readWrite', db: "performance" }]
+  })
 EOF
 else
   echo "hearth user exists"
@@ -130,6 +136,11 @@ else
   db.updateUser('${DATABASE_PREFIX}__hearth', {
     pwd: '$HEARTH_MONGODB_PASSWORD',
     roles: [{ role: 'readWrite', db: "${DATABASE_PREFIX}__hearth" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__performance" }, { role: 'readWrite', db: "${DATABASE_PREFIX}__hearth-dev" }]
+  })
+  use performance
+  db.updateUser('${DATABASE_PREFIX}__hearth', {
+    pwd: '$HEARTH_MONGODB_PASSWORD',
+    roles: [{ role: 'readWrite', db: "performance" }]
   })
 EOF
 fi

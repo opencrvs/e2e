@@ -11,7 +11,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     configs:
       - source: hearth-check-dupe-plugin.{{ts}}
         target: /src/hearth/lib/plugins/checkDuplicateTask.js
@@ -29,14 +29,14 @@ services:
   notification:
     image: opencrvs/ocrvs-notification:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__notification:${NOTIFICATION_MONGODB_PASSWORD}@mongo1/${STACK}__notification?replicaSet=rs0
       - COUNTRY_CONFIG_URL=http://countryconfig:3040
     deploy:
@@ -56,7 +56,7 @@ services:
     image: ${DOCKERHUB_ACCOUNT}/${DOCKERHUB_REPO}:${COUNTRY_CONFIG_VERSION}
     restart: unless-stopped
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -192,18 +192,18 @@ services:
   gateway:
     image: opencrvs/ocrvs-gateway:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
-      - MINIO_BUCKET=${STACK}__ocrvs
+      - MINIO_BUCKET=${STACK}--ocrvs
       - REDIS_HOST=redis
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
@@ -248,14 +248,14 @@ services:
   workflow:
     image: opencrvs/ocrvs-workflow:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - SEARCH_URL=http://search:9090/
       - METRICS_URL=http://metrics:1050
       - DOCUMENTS_URL=http://documents:9050
@@ -282,7 +282,7 @@ services:
   search:
     image: opencrvs/ocrvs-search:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
@@ -290,7 +290,7 @@ services:
       - OPENCRVS_INDEX_NAME=ocrvs--${STACK}
       - ES_HOST=search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - USER_MANAGEMENT_URL=http://user-mgnt:3030/
       - FHIR_URL=http://hearth:3447/fhir
@@ -310,7 +310,7 @@ services:
   metrics:
     image: opencrvs/ocrvs-metrics:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     volumes:
       - /data/vsexport:/usr/src/app/packages/metrics/src/scripts
     environment:
@@ -318,7 +318,7 @@ services:
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__metrics:${METRICS_MONGODB_PASSWORD}@mongo1/${STACK}__metrics?replicaSet=rs0
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - DASHBOARD_MONGO_URL=mongodb://${STACK}__performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
@@ -350,15 +350,15 @@ services:
   auth:
     image: opencrvs/ocrvs-auth:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
-      - jwt-private-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
+      - jwt-private-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PRIVATE_KEY_PATH=/run/secrets/jwt-private-key.{{ts}}
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PRIVATE_KEY_PATH=/run/secrets/jwt-private-key.{{STACK}}.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
@@ -397,14 +397,14 @@ services:
   user-mgnt:
     image: opencrvs/ocrvs-user-mgnt:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - RECORD_SEARCH_QUOTA=2000
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
       - NOTIFICATION_SERVICE_URL=http://notification:2020/
       - METRICS_URL=http://metrics:1050
@@ -427,14 +427,14 @@ services:
   webhooks:
     image: opencrvs/ocrvs-webhooks:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - MONGO_URL=mongodb://${STACK}__webhooks:${WEBHOOKS_MONGODB_PASSWORD}@mongo1/${STACK}__webhooks?replicaSet=rs0
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - REDIS_HOST=redis
       - AUTH_URL=http://auth:4040
       - USER_MANAGEMENT_URL=http://user-mgnt:3030/
@@ -468,13 +468,13 @@ services:
   config:
     image: opencrvs/ocrvs-config:${VERSION}
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__config:${CONFIG_MONGODB_PASSWORD}@mongo1/${STACK}__application-config?replicaSet=rs0
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
@@ -523,18 +523,18 @@ services:
       labels:
         - 'traefik.enable=false'
     secrets:
-      - jwt-public-key.{{ts}}
+      - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - APN_SERVICE_URL=http://apm-server:8200
-      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{ts}}
+      - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - MINIO_URL=minio.{{hostname}}
       - MINIO_HOST=minio
       - MINIO_PORT=9000
-      - MINIO_BUCKET=${STACK}__ocrvs
+      - MINIO_BUCKET=${STACK}--ocrvs
       - COUNTRY_CONFIG_URL=http://countryconfig:3040
     networks:
       - overlay_net
@@ -578,7 +578,7 @@ services:
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - MINIO_HOST=minio
       - MINIO_PORT=9000
-      - MINIO_BUCKET=${STACK}__ocrvs
+      - MINIO_BUCKET=${STACK}--ocrvs
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
       - DASHBOARD_MONGO_URL=mongodb://mongo1/${STACK}__performance
@@ -681,9 +681,9 @@ services:
         constraints:
           - node.labels.data1 == true
 secrets:
-  jwt-public-key.{{ts}}:
+  jwt-public-key.{{STACK}}.{{ts}}:
     external: true
-  jwt-private-key.{{ts}}:
+  jwt-private-key.{{STACK}}.{{ts}}:
     external: true
 configs:
   hearth-check-dupe-plugin.{{ts}}:
