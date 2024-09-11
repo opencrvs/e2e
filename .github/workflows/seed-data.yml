@@ -63,7 +63,7 @@ jobs:
             yarn seed:prod
         env:
           ACTIVATE_USERS: ${{ vars.ACTIVATE_USERS }}
-          GATEWAY_HOST: '${{inputs.stack}}.${{ vars.GATEWAY_HOST }}'
-          AUTH_HOST: '${{inputs.stack}}.${{ vars.AUTH_HOST }}'
-          COUNTRY_CONFIG_HOST: '${{inputs.stack}}.${{ vars.COUNTRY_CONFIG_HOST }}'
+          GATEWAY_HOST: 'https://gateway.${{inputs.stack}}.opencrvs.dev'
+          AUTH_HOST: 'https://auth.${{inputs.stack}}.opencrvs.dev'
+          COUNTRY_CONFIG_HOST: 'https://countryconfig.${{inputs.stack}}.opencrvs.dev'
           SUPER_USER_PASSWORD: ${{ secrets.SUPER_USER_PASSWORD }}
