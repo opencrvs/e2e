@@ -47,7 +47,11 @@ for i in "$@"; do
         shift
         ;;
     --update-dependencies=*)
-        UPDATE_DEPENDENCIES=true
+        if [ "${i#*=}" = "true" ]; then
+          UPDATE_DEPENDENCIES=true
+        else
+          UPDATE_DEPENDENCIES=false
+        fi
         shift
         ;;
     --version=*)
