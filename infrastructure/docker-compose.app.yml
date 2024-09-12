@@ -335,7 +335,7 @@ services:
       - DASHBOARD_MONGO_URL=mongodb://${STACK}__performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
-      - INFLUX_DB=ocrvs
+      - INFLUX_DB=${STACK}_ocrvs
       - COUNTRY_CONFIG_URL=http://countryconfig:3040/
       - CONFIG_API_URL=http://config:2021
       - SEARCH_URL=http://search:9090/
@@ -603,7 +603,7 @@ services:
       - SEARCH_URL=http://search:9090/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
-      - INFLUX_DB=ocrvs
+      - INFLUX_DB=${STACK}_ocrvs
       - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200
     deploy:
       labels:
