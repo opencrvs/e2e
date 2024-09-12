@@ -298,7 +298,7 @@ services:
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - OPENCRVS_INDEX_NAME=ocrvs--${STACK}
-      - ES_HOST=search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
+      - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
@@ -317,6 +317,38 @@ services:
       options:
         gelf-address: 'udp://127.0.0.1:12201'
         tag: 'search'
+  setup-elasticsearch-users:
+    image: ubuntu:bionic
+    entrypoint: ['bash', '/usr/app/setup.sh']
+    restart: on-failure
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
+      - METRICBEAT_ELASTIC_PASSWORD=${ROTATING_METRICBEAT_ELASTIC_PASSWORD}
+      - APM_ELASTIC_PASSWORD=${ROTATING_APM_ELASTIC_PASSWORD}
+      - SEARCH_ELASTIC_USERNAME={{STACK}}-search-user
+      - SEARCH_ELASTIC_PASSWORD=${ROTATING_SEARCH_ELASTIC_PASSWORD}
+      - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      - KIBANA_USERNAME=${KIBANA_USERNAME}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    volumes:
+      - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
+    networks:
+      - app_net
+      - dependencies_overlay_net
+    deploy:
+      labels:
+        - 'traefik.enable=false'
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    logging:
+      driver: gelf
+      options:
+        gelf-address: 'udp://127.0.0.1:12201'
+        tag: 'setup-elasticsearch-users'
+
   metrics:
     image: opencrvs/ocrvs-metrics:${VERSION}
     secrets:
@@ -591,7 +623,7 @@ services:
       - APPLICATION_CONFIG_MONGO_URL=mongodb://${STACK}__config:${CONFIG_MONGODB_PASSWORD}@mongo1/${STACK}__application-config?replicaSet=rs0
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - OPENHIM_MONGO_URL=mongodb://${STACK}__openhim:${OPENHIM_MONGODB_PASSWORD}@mongo1/${STACK}__openhim-dev?replicaSet=rs0
-      - ES_HOST=search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
+      - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - MINIO_HOST=minio

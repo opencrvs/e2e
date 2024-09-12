@@ -330,36 +330,6 @@ services:
         gelf-address: 'udp://127.0.0.1:12201'
         tag: 'minio'
 
-  setup-elasticsearch-users:
-    image: ubuntu:bionic
-    entrypoint: ['bash', '/usr/app/setup.sh']
-    restart: on-failure
-    environment:
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTIC_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
-      - METRICBEAT_ELASTIC_PASSWORD=${ROTATING_METRICBEAT_ELASTIC_PASSWORD}
-      - APM_ELASTIC_PASSWORD=${ROTATING_APM_ELASTIC_PASSWORD}
-      - SEARCH_ELASTIC_USERNAME=search-user
-      - SEARCH_ELASTIC_PASSWORD=${ROTATING_SEARCH_ELASTIC_PASSWORD}
-      - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
-      - KIBANA_USERNAME=${KIBANA_USERNAME}
-      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
-    volumes:
-      - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
-    networks:
-      - overlay_net
-    deploy:
-      labels:
-        - 'traefik.enable=false'
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
-    logging:
-      driver: gelf
-      options:
-        gelf-address: 'udp://127.0.0.1:12201'
-        tag: 'setup-elasticsearch-users'
   elastalert:
     image: jertel/elastalert2:2.19.0
     restart: unless-stopped
