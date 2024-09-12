@@ -19,7 +19,7 @@ services:
       - source: hearth-queryparam-extensions-conf.{{ts}}
         target: /src/hearth/config/queryparam-extensions.json
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -40,13 +40,13 @@ services:
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__notification:${NOTIFICATION_MONGODB_PASSWORD}@mongo1/${STACK}__notification?replicaSet=rs0
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
     deploy:
       replicas: 1
       labels:
         - 'traefik.enable=false'
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -89,10 +89,10 @@ services:
       - QA_ENV=true
       - HOST=0.0.0.0
       - NODE_ENV=production
-      - FHIR_URL=http://hearth:3447/fhir
-      - AUTH_URL=http://auth:4040
-      - APPLICATION_CONFIG_URL=http://config:2021
-      - CONFIRM_REGISTRATION_URL=http://workflow:5050/confirm/registration
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040
+      - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021
+      - CONFIRM_REGISTRATION_URL=http://workflow.{{STACK}}_app_net:5050/confirm/registration
       - MONGO_URL=mongodb://mongo1/${STACK}__user-mgnt?replicaSet=rs0
       - CONFIG_MONGO_URL=mongodb://mongo1/${STACK}__application-config?replicaSet=rs0
       - APN_SERVICE_URL=http://apm-server:8200
@@ -102,7 +102,7 @@ services:
       - SENDER_EMAIL_ADDRESS=${SENDER_EMAIL_ADDRESS}
       # This needs to be the internal swarm url
       # as containers cannot connect to the web
-      - GATEWAY_URL=http://gateway:7070
+      - GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070
       - NOTIFICATION_TRANSPORT=${NOTIFICATION_TRANSPORT}
       - ALERT_EMAIL=${ALERT_EMAIL:-}
       - SMTP_HOST=${SMTP_HOST:-}
@@ -115,7 +115,7 @@ services:
       - INFOBIP_SENDER_ID=${INFOBIP_SENDER_ID:-}
       - DOMAIN=${STACK}.{{hostname}}
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -148,7 +148,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__login.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -187,7 +187,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__client.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -215,18 +215,18 @@ services:
       - REDIS_HOST=redis
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
-      - FHIR_URL=http://hearth:3447/fhir
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
-      - SEARCH_URL=http://search:9090/
-      - METRICS_URL=http://metrics:1050
-      - AUTH_URL=http://auth:4040
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040
-      - NOTIFICATION_URL=http://notification:2020/
-      - WORKFLOW_URL=http://workflow:5050/
-      - APPLICATION_CONFIG_URL=http://config:2021/
-      - WEBHOOKS_URL=http://webhooks:2525/
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
+      - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+      - NOTIFICATION_URL=http://notification.{{STACK}}_app_net:2020/
+      - WORKFLOW_URL=http://workflow.{{STACK}}_app_net:5050/
+      - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021/
+      - WEBHOOKS_URL=http://webhooks.{{STACK}}_app_net:2525/
       - CHECK_INVALID_TOKEN=true
-      - DOCUMENTS_URL=http://documents:9050
+      - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -245,7 +245,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -265,22 +265,22 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
-      - SEARCH_URL=http://search:9090/
-      - METRICS_URL=http://metrics:1050
-      - DOCUMENTS_URL=http://documents:9050
-      - NOTIFICATION_SERVICE_URL=http://notification:2020/
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040
-      - FHIR_URL=http://hearth:3447/fhir
-      - WEBHOOKS_URL=http://webhooks:2525/
-      - APPLICATION_CONFIG_URL=http://config:2021/
+      - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
+      - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
+      - NOTIFICATION_SERVICE_URL=http://notification.{{STACK}}_app_net:2020/
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - WEBHOOKS_URL=http://webhooks.{{STACK}}_app_net:2525/
+      - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021/
       - COUNTRY=${COUNTRY:-bgd}
     deploy:
       labels:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -302,15 +302,15 @@ services:
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
-      - FHIR_URL=http://hearth:3447/fhir
-      - APPLICATION_CONFIG_URL=http://config:2021/
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021/
     deploy:
       labels:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -336,12 +336,12 @@ services:
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040/
-      - CONFIG_API_URL=http://config:2021
-      - SEARCH_URL=http://search:9090/
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030
-      - DOCUMENTS_URL=http://documents:9050
-      - FHIR_URL=http://hearth:3447/fhir
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040/
+      - CONFIG_API_URL=http://config.{{STACK}}_app_net:2021
+      - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030
+      - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
     deploy:
       placement:
         constraints:
@@ -350,7 +350,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -376,11 +376,11 @@ services:
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
       - REDIS_HOST=redis
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
-      - NOTIFICATION_SERVICE_URL=http://notification:2020/
-      - METRICS_URL=http://metrics:1050
+      - NOTIFICATION_SERVICE_URL=http://notification.{{STACK}}_app_net:2020/
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -398,7 +398,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__auth.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -419,17 +419,17 @@ services:
       - RECORD_SEARCH_QUOTA=2000
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
-      - NOTIFICATION_SERVICE_URL=http://notification:2020/
-      - METRICS_URL=http://metrics:1050
-      - FHIR_URL=http://hearth:3447/fhir
-      - APPLICATION_CONFIG_URL=http://config:2021/
-      - DOCUMENTS_URL=http://documents:9050
+      - NOTIFICATION_SERVICE_URL=http://notification.{{STACK}}_app_net:2020/
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021/
+      - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
     deploy:
       labels:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -450,10 +450,10 @@ services:
       - MONGO_URL=mongodb://${STACK}__webhooks:${WEBHOOKS_MONGODB_PASSWORD}@mongo1/${STACK}__webhooks?replicaSet=rs0
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - REDIS_HOST=redis
-      - AUTH_URL=http://auth:4040
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
       - CHECK_INVALID_TOKEN=true
-      - FHIR_URL=http://hearth:3447/fhir
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -471,7 +471,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -494,14 +494,14 @@ services:
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
-      - AUTH_URL=http://auth:4040
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040
-      - SEARCH_URL=http://search:9090/
-      - METRICS_URL=http://metrics:1050
-      - USER_MANAGEMENT_URL=http://user-mgnt:3030/
-      - FHIR_URL=http://hearth:3447/fhir
-      - GATEWAY_URL=http://gateway:7070/
-      - DOCUMENTS_URL=http://documents:9050
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+      - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
+      - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
+      - GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070/
+      - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
       - CHECK_INVALID_TOKEN=true
     deploy:
       labels:
@@ -523,7 +523,7 @@ services:
         - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -551,9 +551,9 @@ services:
       - MINIO_HOST=minio
       - MINIO_PORT=9000
       - MINIO_BUCKET=${STACK}--ocrvs
-      - COUNTRY_CONFIG_URL=http://countryconfig:3040
+      - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -566,13 +566,13 @@ services:
     environment:
       - QA_ENV=true
       - NODE_ENV=production
-      - METRICS_URL=http://metrics:1050
+      - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
     deploy:
       replicas: 1
       labels:
         - 'traefik.enable=false'
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -600,7 +600,7 @@ services:
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
       - DASHBOARD_MONGO_URL=mongodb://mongo1/${STACK}__performance
-      - SEARCH_URL=http://search:9090/
+      - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
@@ -612,7 +612,7 @@ services:
       restart_policy:
         condition: on-failure
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -647,7 +647,7 @@ services:
       - WEBHOOKS_MONGODB_PASSWORD=${WEBHOOKS_MONGODB_PASSWORD}
       - NOTIFICATION_MONGODB_PASSWORD=${NOTIFICATION_MONGODB_PASSWORD}
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -662,7 +662,7 @@ services:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
       - /opt/opencrvs/infrastructure/metabase/metabase.init.db.sql:/metabase.init.db.sql
     networks:
-      - {{STACK}}_overlay_net
+      - app_net
       - dependencies_overlay_net
     environment:
       - QA_ENV=true
@@ -735,6 +735,6 @@ configs:
 networks:
   dependencies_overlay_net:
     external: true
-  {{STACK}}_overlay_net:
+  app_net:
     driver: overlay
     attachable: true
