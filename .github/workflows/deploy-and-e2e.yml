@@ -1,17 +1,10 @@
 name: Deploy & run E2E
-run-name: Deploy & E2E, triggered by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.inputs.environment || 'development' }}
+run-name: Deploy & E2E, triggered by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.inputs.stack }}
 on:
   repository_dispatch:
     types: [run_e2e]
   workflow_dispatch:
     inputs:
-      environment:
-        type: choice
-        description: Environment to deploy to
-        required: true
-        default: 'development'
-        options:
-          - development
       core-image-tag:
         description: Core DockerHub image tag
         required: true
@@ -66,7 +59,7 @@ jobs:
     needs: [get-country-config-commit, get-core-commit]
     uses: ./.github/workflows/deploy.yml
     with:
-      environment: ${{ github.event.inputs.environment || 'development' }}
+      environment: qa
       core-image-tag: ${{ github.event.inputs.core-image-tag || needs.get-core-commit.outputs.latest_commit_sha }}
       countryconfig-image-tag: ${{ github.event.inputs.countryconfig-image-tag || needs.get-country-config-commit.outputs.short_sha }}
       stack: ${{ github.event.inputs.stack }}
@@ -93,7 +86,7 @@ jobs:
   test:
     needs: [deploy, discover-tests]
     runs-on: ubuntu-22.04
-    environment: ${{ github.event.inputs.environment || 'development' }}
+    environment: qa
     strategy:
       fail-fast: false
       matrix:
