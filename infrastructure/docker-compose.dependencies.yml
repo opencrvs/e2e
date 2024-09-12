@@ -496,4 +496,3 @@ configs:
 networks:
   overlay_net:
     driver: overlay
-    attachable: true

@@ -19,7 +19,7 @@ services:
       - source: hearth-queryparam-extensions-conf.{{ts}}
         target: /src/hearth/config/queryparam-extensions.json
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -46,7 +46,7 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -115,7 +115,7 @@ services:
       - INFOBIP_SENDER_ID=${INFOBIP_SENDER_ID:-}
       - DOMAIN=${STACK}.{{hostname}}
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -148,7 +148,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__login.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -187,7 +187,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__client.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -245,7 +245,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -280,7 +280,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -310,7 +310,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -350,7 +350,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -398,7 +398,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__auth.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -429,7 +429,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -471,7 +471,7 @@ services:
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -523,7 +523,7 @@ services:
         - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -553,7 +553,7 @@ services:
       - MINIO_BUCKET=${STACK}--ocrvs
       - COUNTRY_CONFIG_URL=http://countryconfig:3040
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -572,7 +572,7 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -612,7 +612,7 @@ services:
       restart_policy:
         condition: on-failure
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -647,7 +647,7 @@ services:
       - WEBHOOKS_MONGODB_PASSWORD=${WEBHOOKS_MONGODB_PASSWORD}
       - NOTIFICATION_MONGODB_PASSWORD=${NOTIFICATION_MONGODB_PASSWORD}
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     logging:
       driver: gelf
@@ -662,7 +662,7 @@ services:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
       - /opt/opencrvs/infrastructure/metabase/metabase.init.db.sql:/metabase.init.db.sql
     networks:
-      - overlay_net
+      - {{STACK}}_overlay_net
       - dependencies_overlay_net
     environment:
       - QA_ENV=true
@@ -735,6 +735,6 @@ configs:
 networks:
   dependencies_overlay_net:
     external: true
-  overlay_net:
+  {{STACK}}_overlay_net:
     driver: overlay
     attachable: true
