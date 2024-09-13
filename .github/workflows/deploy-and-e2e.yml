@@ -58,6 +58,9 @@ jobs:
   deploy:
     needs: [get-country-config-commit, get-core-commit]
     uses: ./.github/workflows/deploy.yml
+    concurrency:
+      group: ${{ github.event.inputs.stack }}
+      cancel-in-progress: true
     with:
       environment: qa
       core-image-tag: ${{ github.event.inputs.core-image-tag || needs.get-core-commit.outputs.latest_commit_sha }}
@@ -88,6 +91,9 @@ jobs:
     needs: [deploy, discover-tests]
     runs-on: ubuntu-22.04
     environment: qa
+    concurrency:
+      group: ${{ github.event.inputs.stack }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
