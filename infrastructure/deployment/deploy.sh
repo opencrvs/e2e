@@ -304,19 +304,20 @@ docker_stack_deploy() {
 
   configured_rsync -rlD $SSH_USER@$SSH_HOST:/opt/opencrvs/infrastructure/docker-compose.dependencies.yml ./infrastructure/docker-compose.dependencies.yml
 
+  REFRESH_DEPENDENCY_NETWORKS=false
+
   if echo $EXISTING_STACKS | grep -w $STACK > /dev/null; then
     echo "Stack $STACK exists"
     npx tsx infrastructure/deployment/add-networks.ts infrastructure/docker-compose.dependencies.yml "$EXISTING_STACKS" > ./docker-compose.dependencies.yml
   else
     echo "Stack $STACK doesnt exist. Creating"
-    UPDATE_DEPENDENCIES=true
+    REFRESH_DEPENDENCY_NETWORKS=true
     npx tsx infrastructure/deployment/add-networks.ts infrastructure/docker-compose.dependencies.yml "$EXISTING_STACKS,$STACK" > ./docker-compose.dependencies.yml
   fi
 
   configured_rsync -rlD ./docker-compose.dependencies.yml $SSH_USER@$SSH_HOST:/opt/opencrvs/infrastructure/docker-compose.dependencies.yml
 
-
-  if [ "$UPDATE_DEPENDENCIES" = true ]; then
+  if [ "$REFRESH_DEPENDENCY_NETWORKS" = true ] || [ "$UPDATE_DEPENDENCIES" = true ]; then
     echo "Updating dependency stack"
     configured_ssh 'cd /opt/opencrvs && \
       docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $DEPENDENCY_COMPOSE_FILES)")' --with-registry-auth dependencies'
