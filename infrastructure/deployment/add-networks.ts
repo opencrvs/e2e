@@ -32,7 +32,6 @@ function addNetworksToCompose(composeFile: string, networksList: string) {
     .map((network) => network.trim())
     .filter((network) => network.length > 0)
     .map((stack) => `${stack}_dependencies_net`)
-    .concat('traefik_net')
 
   // Add networks to each service
   for (const serviceName in composeObject.services) {
