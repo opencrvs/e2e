@@ -742,6 +742,8 @@ configs:
     file: /opt/opencrvs/infrastructure/hearth-plugins/checkDuplicateTask.js
   hearth-ext-conf.{{ts}}:
     file: /opt/opencrvs/infrastructure/hearth-queryparam-extensions.json
+  mongo-on-deploy.{{ts}}:
+    file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
 networks:
   dependencies_{{STACK}}_dependencies_net:
     external: true
