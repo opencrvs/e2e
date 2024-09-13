@@ -1,5 +1,5 @@
 name: Deploy & run E2E
-run-name: Deploy & E2E, triggered by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.inputs.stack }}
+run-name: Deploy & E2E, triggered by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }}
 on:
   repository_dispatch:
     types: [run_e2e]
@@ -19,8 +19,8 @@ on:
         required: true
 
 concurrency:
-  group: ci-build
-  cancel-in-progress: false
+  group: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
+  cancel-in-progress: true
 
 jobs:
   get-core-commit:
@@ -58,14 +58,11 @@ jobs:
   deploy:
     needs: [get-country-config-commit, get-core-commit]
     uses: ./.github/workflows/deploy.yml
-    concurrency:
-      group: ${{ github.event.inputs.stack }}
-      cancel-in-progress: true
     with:
       environment: qa
       core-image-tag: ${{ github.event.inputs.core-image-tag || needs.get-core-commit.outputs.latest_commit_sha }}
       countryconfig-image-tag: ${{ github.event.inputs.countryconfig-image-tag || needs.get-country-config-commit.outputs.short_sha }}
-      stack: ${{ github.event.inputs.stack }}
+      stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
       dependencies: false
       reset: 'true'
     secrets: inherit
@@ -91,9 +88,6 @@ jobs:
     needs: [deploy, discover-tests]
     runs-on: ubuntu-22.04
     environment: qa
-    concurrency:
-      group: ${{ github.event.inputs.stack }}
-      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +129,7 @@ jobs:
         if: steps.check-specs.outputs.has_spec_files == 'true'
         run: npx playwright test ./e2e/testcases/${{ matrix.test_dir }}
         env:
-          DOMAIN: '${{ inputs.stack }}.${{ vars.DOMAIN }}'
+          DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}'
 
       - uses: actions/upload-artifact@v4
         if: steps.check-specs.outputs.has_spec_files == 'true'
