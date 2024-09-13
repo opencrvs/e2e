@@ -434,4 +434,13 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
     fi
     sleep 5
   done
+else
+  echo 'Waiting for Elasticsearch to be ready'
+
+  while true; do
+    if configured_ssh "/opt/opencrvs/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
+      break
+    fi
+    sleep 5
+  done
 fi
