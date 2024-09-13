@@ -176,6 +176,7 @@ jobs:
         id: deploy
         run: |
           cd ./${{ github.event.repository.name }}
+          yarn install
           yarn deploy \
           --clear_data=no \
           --environment=${{ inputs.environment }} \

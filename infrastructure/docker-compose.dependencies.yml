@@ -56,14 +56,11 @@ services:
       options:
         gelf-address: 'udp://127.0.0.1:12201'
         tag: 'traefik'
-    networks:
-      - overlay_net
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.14.3
     user: root
-    networks:
-      - overlay_net
+
     configs:
       - source: filebeat.{{ts}}
         target: /usr/share/filebeat/filebeat.yml
@@ -110,8 +107,7 @@ services:
       mode: global
       labels:
         - 'traefik.enable=false'
-    networks:
-      - overlay_net
+
     configs:
       - source: metricbeat-conf.{{ts}}
         target: /usr/share/metricbeat/metricbeat.yml
@@ -141,8 +137,7 @@ services:
     volumes:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
       - '/opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson'
-    networks:
-      - overlay_net
+
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -166,12 +161,11 @@ services:
         - 'traefik.http.routers.kibana.tls=true'
         - 'traefik.http.routers.kibana.tls.certresolver=certResolver'
         - 'traefik.http.routers.kibana.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=traefik_net'
         - 'traefik.http.middlewares.traefik.headers.stsseconds=31536000'
         - 'traefik.http.middlewares.traefik.headers.stsincludesubdomains=true'
         - 'traefik.http.middlewares.traefik.headers.stspreload=true'
-    networks:
-      - overlay_net
+
     environment:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
@@ -211,8 +205,7 @@ services:
       placement:
         constraints:
           - node.labels.data1 == true
-    networks:
-      - overlay_net
+
     logging:
       driver: gelf
       options:
@@ -222,8 +215,7 @@ services:
   redis:
     image: redis:5
     restart: unless-stopped
-    networks:
-      - overlay_net
+
     deploy:
       labels:
         - traefik.enable=false
@@ -260,8 +252,7 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.authc.api_key.enabled=true
-    networks:
-      - overlay_net
+
     logging:
       driver: gelf
       options:
@@ -288,7 +279,7 @@ services:
           - node.labels.data1 == true
       labels:
         - 'traefik.enable=true'
-        - 'traefik.docker.network=dependencies_overlay_net'
+        - 'traefik.docker.network=traefik_net'
         # Console
         - 'traefik.http.routers.minio-console.rule=Host(`minio-console.{{hostname}}`)'
         - 'traefik.http.routers.minio-console.entrypoints=websecure'
@@ -304,8 +295,6 @@ services:
         - 'traefik.http.routers.minio.middlewares=minio-https-redirect'
         - 'traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https'
         - 'traefik.http.services.minio.loadbalancer.server.port=9000'
-    networks:
-      - overlay_net
 
   minio-mc:
     image: minio/mc
@@ -316,8 +305,7 @@ services:
     configs:
       - source: minio-mc-config.{{ts}}
         target: /root/.mc/config.json
-    networks:
-      - overlay_net
+
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -339,8 +327,7 @@ services:
     volumes:
       - '/opt/opencrvs/infrastructure/monitoring/elastalert/elastalert.yaml:/opt/elastalert/config.yaml'
       - '/opt/opencrvs/infrastructure/monitoring/elastalert/rules:/opt/elastalert/rules'
-    networks:
-      - overlay_net
+
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -370,8 +357,7 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
-    networks:
-      - overlay_net
+
     restart: always
     deploy:
       labels:
@@ -382,8 +368,7 @@ services:
     cap_add: ['CHOWN', 'DAC_OVERRIDE', 'SETGID', 'SETUID']
     cap_drop: ['ALL']
     restart: always
-    networks:
-      - overlay_net
+
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -428,8 +413,7 @@ services:
     configs:
       - source: influxdb-conf.{{ts}}
         target: /etc/influxdb/influxdb.conf
-    networks:
-      - overlay_net
+
     logging:
       driver: gelf
       options:
@@ -463,6 +447,3 @@ configs:
     file: /opt/opencrvs/infrastructure/elasticsearch/jvm.options
   minio-mc-config.{{ts}}:
     file: /opt/opencrvs/infrastructure/mc-config/config.json
-networks:
-  overlay_net:
-    driver: overlay

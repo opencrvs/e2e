@@ -300,6 +300,22 @@ docker_stack_deploy() {
 
   echo "Updating docker swarm stack with new compose files"
 
+  EXISTING_STACKS=$(configured_ssh 'docker stack ls --format "{{ .Name }}" | grep -v "dependencies" | paste -sd "," -')
+
+  configured_rsync -rlD $SSH_USER@$SSH_HOST:/opt/opencrvs/infrastructure/docker-compose.dependencies.yml ./infrastructure/docker-compose.dependencies.yml
+
+  if echo $EXISTING_STACKS | grep -w $STACK > /dev/null; then
+    echo "Stack $STACK exists"
+    npx tsx infrastructure/deployment/add-networks.ts infrastructure/docker-compose.dependencies.yml "$EXISTING_STACKS" > ./docker-compose.dependencies.yml
+  else
+    echo "Stack $STACK doesnt exist. Creating"
+    UPDATE_DEPENDENCIES=true
+    npx tsx infrastructure/deployment/add-networks.ts infrastructure/docker-compose.dependencies.yml "$EXISTING_STACKS,$STACK" > ./docker-compose.dependencies.yml
+  fi
+
+  configured_rsync -rlD ./docker-compose.dependencies.yml $SSH_USER@$SSH_HOST:/opt/opencrvs/infrastructure/docker-compose.dependencies.yml
+
+
   if [ "$UPDATE_DEPENDENCIES" = true ]; then
     echo "Updating dependency stack"
     configured_ssh 'cd /opt/opencrvs && \
@@ -378,7 +394,6 @@ echo
 echo "Deploying COUNTRY_CONFIG_VERSION $COUNTRY_CONFIG_VERSION to $SSH_HOST..."
 echo
 echo "Syncing configuration files to the target server"
-
 
 configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/ --delete --no-perms --omit-dir-times --verbose
 
