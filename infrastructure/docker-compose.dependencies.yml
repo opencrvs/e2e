@@ -265,6 +265,8 @@ services:
       replicas: 1
       labels:
         - 'traefik.enable=false'
+      update_config:
+        order: start-first
       placement:
         constraints:
           - node.labels.data1 == true
