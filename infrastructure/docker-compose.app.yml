@@ -14,9 +14,9 @@ services:
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     configs:
-      - source: hearth-check-dupe-plugin.{{ts}}
+      - source: hearth-dupe.{{ts}}
         target: /src/hearth/lib/plugins/checkDuplicateTask.js
-      - source: hearth-queryparam-extensions-conf.{{ts}}
+      - source: hearth-ext-conf.{{ts}}
         target: /src/hearth/config/queryparam-extensions.json
     networks:
       - {{STACK}}_app_net
@@ -738,32 +738,10 @@ secrets:
   jwt-private-key.{{STACK}}.{{ts}}:
     external: true
 configs:
-  hearth-check-dupe-plugin.{{ts}}:
+  hearth-dupe.{{ts}}:
     file: /opt/opencrvs/infrastructure/hearth-plugins/checkDuplicateTask.js
-  hearth-queryparam-extensions-conf.{{ts}}:
+  hearth-ext-conf.{{ts}}:
     file: /opt/opencrvs/infrastructure/hearth-queryparam-extensions.json
-  metricbeat-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/beats/metricbeat.yml
-  filebeat.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/filebeat/filebeat.yml
-  mongo-on-deploy.{{ts}}:
-    file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
-  beat-rollover-policy.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/beats/rollover-policy.json
-  kibana.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/kibana/kibana.yml
-  apm.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/apm/apm-server.yml
-  logstash.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.yml
-  logstash-pipeline.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.conf
-  influxdb-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/influxdb.conf
-  jvm-options.{{ts}}:
-    file: /opt/opencrvs/infrastructure/elasticsearch/jvm.options
-  minio-mc-config.{{ts}}:
-    file: /opt/opencrvs/infrastructure/mc-config/config.json
 networks:
   dependencies_{{STACK}}_dependencies_net:
     external: true
