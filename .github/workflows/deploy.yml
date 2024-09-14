@@ -1,12 +1,8 @@
 name: Deploy (development)
-run-name: Deploy ${{ inputs.stack }} to ${{ inputs.environment }} with reset=${{ inputs.reset }} core=${{ inputs.core-image-tag }} country config=${{ inputs.countryconfig-image-tag }}
+run-name: Deploy ${{ inputs.stack }} with reset=${{ inputs.reset }} core=${{ inputs.core-image-tag }} country config=${{ inputs.countryconfig-image-tag }}
 on:
   workflow_call:
     inputs:
-      environment:
-        type: string
-        description: Environment to deploy to
-        required: true
       core-image-tag:
         type: string
         description: Core DockerHub image tag
@@ -33,15 +29,6 @@ on:
 
   workflow_dispatch:
     inputs:
-      environment:
-        type: choice
-        description: Environment to deploy to
-        required: true
-        default: 'staging'
-        options:
-          - staging
-          - qa
-          - development
       core-image-tag:
         description: Core DockerHub image tag
         required: true
@@ -64,7 +51,7 @@ on:
         default: false
 jobs:
   deploy:
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.stack }}
     runs-on: ubuntu-22.04
     outputs:
       outcome: ${{ steps.deploy.outcome }}
@@ -145,7 +132,7 @@ jobs:
           # This includes SSH_KEY and KNOWN_HOSTS
           #
           while IFS= read -r secret; do
-            echo "$secret" >> .env.${{ inputs.environment }}
+            echo "$secret" >> .env.${{ inputs.stack }}
           done < <(
             jq -r '
               to_entries |
@@ -161,7 +148,7 @@ jobs:
           EOF)
 
           while IFS= read -r var; do
-            echo "$var" >> .env.${{ inputs.environment }}
+            echo "$var" >> .env.${{ inputs.stack }}
           done < <(
             jq -r '
               to_entries |
@@ -172,14 +159,14 @@ jobs:
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
 
-      - name: Deploy to ${{ inputs.environment }}
+      - name: Deploy to ${{ inputs.stack }}
         id: deploy
         run: |
           cd ./${{ github.event.repository.name }}
           yarn install
           yarn deploy \
           --clear_data=no \
-          --environment=${{ inputs.environment }} \
+          --environment=${{ inputs.stack }} \
           --host=${{ vars.DOMAIN }} \
           --stack=${{ inputs.stack }} \
           --update-dependencies=${{ inputs.dependencies }} \
@@ -195,7 +182,7 @@ jobs:
     if: ${{ inputs.reset == 'true' && needs.deploy.outputs.outcome == 'success' }}
     uses: ./.github/workflows/clear-environment.yml
     with:
-      environment: ${{ inputs.environment }}
+      environment: ${{ inputs.stack }}
       stack: ${{ inputs.stack }}
     secrets: inherit
 
@@ -204,7 +191,7 @@ jobs:
     if: ${{ inputs.reset == 'true' && needs.reset.outputs.outcome == 'success' }}
     uses: ./.github/workflows/seed-data.yml
     with:
-      environment: ${{ inputs.environment }}
+      environment: ${{ inputs.stack }}
       core-image-tag: ${{ inputs.core-image-tag }}
       stack: ${{ inputs.stack }}
     secrets: inherit

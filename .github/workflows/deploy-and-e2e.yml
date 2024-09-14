@@ -26,7 +26,6 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy.yml
     with:
-      environment: qa
       core-image-tag: ${{ github.event.client_payload.core-image-tag || github.event.inputs.core-image-tag }}
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
       stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
@@ -54,7 +53,7 @@ jobs:
   test:
     needs: [deploy, discover-tests]
     runs-on: ubuntu-22.04
-    environment: qa
+    environment: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
     strategy:
       fail-fast: false
       matrix:
