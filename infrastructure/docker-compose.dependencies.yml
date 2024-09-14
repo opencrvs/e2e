@@ -19,30 +19,17 @@ services:
       - target: 80
         published: 80
         mode: host
-      - target: 443
-        published: 443
-        mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /data/traefik/acme.json:/acme.json
     command:
       - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
       - --providers.docker
       - --providers.docker.swarmMode=true
       - --api.dashboard=true
       - --api.insecure=true
       - --log.level=WARNING
-      - --certificatesresolvers.certResolver.acme.email=riku@opencrvs.org
-      - --certificatesresolvers.certResolver.acme.storage=acme.json
-      - --certificatesresolvers.certResolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
-      - --certificatesresolvers.certResolver.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.certResolver.acme.httpchallenge=true
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --serverstransport.insecureskipverify=true
-      - --entrypoints.websecure.address=:443
       - --accesslog=true
       - --accesslog.format=json
       - --ping=true
@@ -173,9 +160,7 @@ services:
         - 'traefik.enable=true'
         - 'traefik.http.routers.kibana.rule=Host(`kibana.{{hostname}}`)'
         - 'traefik.http.services.kibana.loadbalancer.server.port=5601'
-        - 'traefik.http.routers.kibana.tls=true'
-        - 'traefik.http.routers.kibana.tls.certresolver=certResolver'
-        - 'traefik.http.routers.kibana.entrypoints=web,websecure'
+        - 'traefik.http.routers.kibana.entrypoints=web'
         - 'traefik.docker.network=traefik_net'
         - 'traefik.http.middlewares.traefik.headers.stsseconds=31536000'
         - 'traefik.http.middlewares.traefik.headers.stsincludesubdomains=true'
@@ -311,18 +296,13 @@ services:
         - 'traefik.docker.network=traefik_net'
         # Console
         - 'traefik.http.routers.minio-console.rule=Host(`minio-console.{{hostname}}`)'
-        - 'traefik.http.routers.minio-console.entrypoints=websecure'
-        - 'traefik.http.routers.minio-console.tls.certresolver=certResolver'
+        - 'traefik.http.routers.minio-console.entrypoints=web'
         - 'traefik.http.routers.minio-console.service=minio-console'
         - 'traefik.http.services.minio-console.loadbalancer.server.port=9001'
         # API
         - 'traefik.http.routers.minio.rule=Host(`minio.{{hostname}}`)'
-        - 'traefik.http.routers.minio.entrypoints=websecure,web'
-        - 'traefik.http.routers.minio.tls.certresolver=certResolver'
-        - 'traefik.http.routers.minio.tls=true'
+        - 'traefik.http.routers.minio.entrypoints=web'
         - 'traefik.http.routers.minio.service=minio'
-        - 'traefik.http.routers.minio.middlewares=minio-https-redirect'
-        - 'traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https'
         - 'traefik.http.services.minio.loadbalancer.server.port=9000'
 
   minio-mc:
