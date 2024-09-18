@@ -212,6 +212,7 @@ services:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
       - QA_ENV=true
+      - COUNTRY=FAR
       - HOST=0.0.0.0
       - NODE_ENV=production
       - LANGUAGES=en,fr
