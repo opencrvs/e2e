@@ -719,54 +719,6 @@ services:
         gelf-address: 'udp://127.0.0.1:12201'
         tag: 'mongo-on-update'
 
-  dashboards:
-    image: opencrvs/ocrvs-dashboards:${VERSION}
-    volumes:
-      - /data/metabase:/data/metabase
-      # Exceed Docker config file 500 kb file limit, thus a volume mount
-      - /opt/opencrvs/infrastructure/metabase/metabase.init.db.sql:/metabase.init.db.sql
-    networks:
-      app_net:
-      dependencies_internal_net:
-        aliases: []
-    environment:
-      - QA_ENV=true
-      - HOST=0.0.0.0
-      # Note that only mongo1 is used here on purpose for all environments
-      # https://discourse.metabase.com/t/solved-add-mongodb-replicaset-database/7404/2
-      - OPENCRVS_METABASE_DB_HOST=mongo1
-      - OPENCRVS_METABASE_DB_USER=performance
-      - OPENCRVS_METABASE_DB_PASS=${PERFORMANCE_MONGODB_PASSWORD}
-      - OPENCRVS_METABASE_DB_AUTH_DB=${STACK}__performance
-      - OPENCRVS_METABASE_SITE_NAME=OpenCRVS Dashboards
-      - OPENCRVS_METABASE_SITE_URL=http://metabase.${STACK}.{{hostname}}
-      - OPENCRVS_METABASE_MAP_NAME=Farajaland
-      - OPENCRVS_METABASE_MAP_URL=http://countryconfig:3040/content/map.geojson
-      - OPENCRVS_METABASE_MAP_REGION_KEY=State
-      - OPENCRVS_METABASE_MAP_REGION_NAME=State
-      - OPENCRVS_METABASE_ADMIN_EMAIL=${OPENCRVS_METABASE_ADMIN_EMAIL}
-      - OPENCRVS_METABASE_ADMIN_PASSWORD=${OPENCRVS_METABASE_ADMIN_PASSWORD}
-    deploy:
-      labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__metabase.rule=Host(`metabase.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__metabase.loadbalancer.server.port=4444'
-        - 'traefik.http.routers.${STACK}__metabase.tls=true'
-        - 'traefik.http.routers.${STACK}__metabase.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__metabase.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__metabase.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__metabase.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_internal_net'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__metabase.headers.stspreload=true'
-      replicas: 1
-      placement:
-        constraints:
-          - node.labels.data1 == true
 secrets:
   jwt-public-key.{{STACK}}.{{ts}}:
     external: true
