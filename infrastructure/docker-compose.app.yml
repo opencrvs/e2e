@@ -19,8 +19,9 @@ services:
       - source: hearth-ext-conf.{{ts}}
         target: /src/hearth/config/queryparam-extensions.json
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -46,8 +47,9 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -70,7 +72,7 @@ services:
         - 'traefik.http.routers.${STACK}__countryconfig.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
@@ -117,8 +119,9 @@ services:
       - INFOBIP_SENDER_ID=${INFOBIP_SENDER_ID:-}
       - DOMAIN=${STACK}.{{hostname}}
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -143,7 +146,7 @@ services:
         - 'traefik.http.routers.${STACK}__login.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__login.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none'
@@ -152,8 +155,9 @@ services:
         - 'traefik.http.middlewares.${STACK}__login.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -180,7 +184,7 @@ services:
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
 
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true'
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
@@ -193,8 +197,9 @@ services:
         - 'traefik.http.middlewares.${STACK}__client.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -244,7 +249,7 @@ services:
         - 'traefik.http.routers.${STACK}__gateway.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none'
@@ -253,8 +258,9 @@ services:
         - 'traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -288,8 +294,9 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -318,8 +325,9 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -342,8 +350,9 @@ services:
     volumes:
       - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     deploy:
       labels:
         - 'traefik.enable=false'
@@ -390,8 +399,9 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -431,7 +441,7 @@ services:
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none'
@@ -440,8 +450,9 @@ services:
         - 'traefik.http.middlewares.${STACK}__auth.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -471,8 +482,9 @@ services:
         - 'traefik.enable=false'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -506,7 +518,7 @@ services:
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none'
@@ -515,8 +527,9 @@ services:
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -557,7 +570,7 @@ services:
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none'
@@ -569,8 +582,9 @@ services:
         - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
       replicas: 1
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -599,8 +613,9 @@ services:
       - MINIO_BUCKET=${STACK}--ocrvs
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_{{STACK}}_app_net:3040
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -618,8 +633,9 @@ services:
       labels:
         - 'traefik.enable=false'
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -658,8 +674,9 @@ services:
       restart_policy:
         condition: on-failure
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -693,8 +710,9 @@ services:
       - WEBHOOKS_MONGODB_PASSWORD=${WEBHOOKS_MONGODB_PASSWORD}
       - NOTIFICATION_MONGODB_PASSWORD=${NOTIFICATION_MONGODB_PASSWORD}
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     logging:
       driver: gelf
       options:
@@ -708,8 +726,9 @@ services:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
       - /opt/opencrvs/infrastructure/metabase/metabase.init.db.sql:/metabase.init.db.sql
     networks:
-      - {{STACK}}_app_net
-      - dependencies_{{STACK}}_dependencies_net
+      {{STACK}}_app_net:
+      dependencies_internal_net:
+        aliases: []
     environment:
       - QA_ENV=true
       - HOST=0.0.0.0
@@ -737,7 +756,7 @@ services:
         - 'traefik.http.routers.${STACK}__metabase.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__metabase.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__metabase.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_{{STACK}}_dependencies_net'
+        - 'traefik.docker.network=dependencies_internal_net'
         - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__metabase.headers.customresponseheaders.X-Robots-Tag=none'
@@ -761,7 +780,7 @@ configs:
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
 networks:
-  dependencies_{{STACK}}_dependencies_net:
+  dependencies_internal_net:
     external: true
   {{STACK}}_app_net:
     driver: overlay
