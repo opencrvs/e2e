@@ -295,8 +295,10 @@ docker_stack_deploy() {
     do
       echo "Server failed to download $tag. Retrying..."
       sleep 5
-    done
+    done &
   done
+
+  wait
 
   echo "Updating docker swarm stack with new compose files"
 
