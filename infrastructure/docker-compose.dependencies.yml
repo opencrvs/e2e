@@ -231,22 +231,7 @@ services:
       options:
         gelf-address: 'udp://127.0.0.1:12201'
         tag: 'mongo1'
-  # Configure redis
-  redis:
-    image: redis:5
-    networks:
-      - traefik_net
-      - internal_net
-    restart: unless-stopped
 
-    deploy:
-      labels:
-        - traefik.enable=false
-    logging:
-      driver: gelf
-      options:
-        gelf-address: 'udp://127.0.0.1:12201'
-        tag: 'redis'
   # Configure elasticsearch
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
