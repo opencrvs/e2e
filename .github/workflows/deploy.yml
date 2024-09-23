@@ -57,6 +57,14 @@ jobs:
       outcome: ${{ steps.deploy.outcome }}
     timeout-minutes: 60
     steps:
+      - name: Generate summary
+        run: |
+          echo "Deploying environment to https://${{ inputs.stack }}.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Reset environment: ${{ inputs.reset }}" >> $GITHUB_STEP_SUMMARY
+          echo "Redeploy dependencies: ${{ inputs.dependencies }}" >> $GITHUB_STEP_SUMMARY
+
       - name: Clone core
         uses: actions/checkout@v3
         with:
