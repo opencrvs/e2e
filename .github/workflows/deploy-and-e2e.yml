@@ -106,7 +106,7 @@ jobs:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}'
 
       - uses: actions/upload-artifact@v4
-        if: steps.check-specs.outputs.has_spec_files == 'true'
+        if: always() && steps.check-specs.outputs.has_spec_files == 'true'
         with:
           name: playwright-report-${{ matrix.test_dir }}
           path: playwright-report/
