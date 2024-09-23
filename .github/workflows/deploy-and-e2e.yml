@@ -60,6 +60,14 @@ jobs:
         test_dir: ${{ fromJson(needs.discover-tests.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: 'opencrvs/opencrvs-farajaland'
+          fetch-depth: 0
+
+      - name: Checkout country branch
+        run: |
+          git checkout ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
