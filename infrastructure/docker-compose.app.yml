@@ -173,6 +173,7 @@ services:
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
       - MINIO_URL=https://minio.{{hostname}}
+      - COUNTRY_CONFIG_URL_INTERNAL=http://countryconfig:3040
     deploy:
       labels:
         - 'traefik.enable=true'
@@ -218,13 +219,13 @@ services:
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
       - DISABLE_RATE_LIMIT=true
+      - REDIS_HOST=redis.${STACK}
       - APN_SERVICE_URL=http://apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
       - MINIO_BUCKET=${STACK}--ocrvs
-      - REDIS_HOST=redis
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
       - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
@@ -275,6 +276,7 @@ services:
     environment:
       - QA_ENV=true
       - HOST=0.0.0.0
+      - REDIS_HOST=redis.${STACK}
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -426,7 +428,7 @@ services:
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
-      - REDIS_HOST=redis
+      - REDIS_HOST=redis.${STACK}
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
@@ -501,10 +503,10 @@ services:
       - HOST=0.0.0.0
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
+      - REDIS_HOST=redis.${STACK}
       - APN_SERVICE_URL=http://apm-server:8200
       - MONGO_URL=mongodb://${STACK}__webhooks:${WEBHOOKS_MONGODB_PASSWORD}@mongo1/${STACK}__webhooks?replicaSet=rs0
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
-      - REDIS_HOST=redis
       - AUTH_URL=http://auth.{{STACK}}_app_net:4040
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
       - CHECK_INVALID_TOKEN=true
