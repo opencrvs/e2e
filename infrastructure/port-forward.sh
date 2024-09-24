@@ -16,7 +16,7 @@ TARGET_SERVER="$1"
 CONTAINER_PORT="$2"
 LOCAL_PORT="$3"
 SSH_USER=${SSH_USER:-root}
-
+NETWORK=${NETWORK:-dependencies_internal_net}
 TARGET_CONTAINER_NAME=$(echo $CONTAINER_PORT | cut -d: -f1)
 PORT=$(echo $CONTAINER_PORT | cut -d: -f2)
 
@@ -34,6 +34,6 @@ echo -e "Internal socat Port on Host: ${GREEN}$SOCAT_PORT${NC}"
 echo -e "Socat Container Name: ${GREEN}$CONTAINER_NAME${NC}"
 
 ssh -tL $LOCAL_PORT:localhost:$SOCAT_PORT $SSH_USER@$TARGET_SERVER \
-'docker run --rm --name '$CONTAINER_NAME' --network=dependencies_internal_net --publish '$SOCAT_PORT:$SOCAT_PORT' alpine/socat tcp-listen:'$SOCAT_PORT',fork,reuseaddr tcp-connect:'$TARGET_CONTAINER_NAME:$PORT''
+'docker run --rm --name '$CONTAINER_NAME' --network='$NETWORK' --publish '$SOCAT_PORT:$SOCAT_PORT' alpine/socat tcp-listen:'$SOCAT_PORT',fork,reuseaddr tcp-connect:'$TARGET_CONTAINER_NAME:$PORT''
 
 echo -e "${GREEN}Port forwarding established and tunnel is online! Press Ctrl+C to close.${NC}"
