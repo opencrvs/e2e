@@ -483,6 +483,12 @@ networks:
   traefik_net:
     driver: overlay
     name: traefik_net
+    ipam:
+      config:
+        - subnet: 10.1.0.0/16
   internal_net:
     driver: overlay
     attachable: true
+    ipam:
+      config:
+        - subnet: 10.1.0.0/16
