@@ -811,6 +811,8 @@ networks:
     external: true
   dependencies_influx_net:
     external: true
+  dependencies_traefik_net:
+    external: true
   dependencies_monitoring_net:
     external: true
   dependencies_monitoring_net_2:
