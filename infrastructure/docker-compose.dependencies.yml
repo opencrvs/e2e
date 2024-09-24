@@ -174,7 +174,7 @@ services:
         - 'traefik.http.routers.kibana.tls=true'
         - 'traefik.http.routers.kibana.tls.certresolver=certResolver'
         - 'traefik.http.routers.kibana.entrypoints=web,websecure'
-        - 'traefik.docker.network=traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.traefik.headers.stsseconds=31536000'
         - 'traefik.http.middlewares.traefik.headers.stsincludesubdomains=true'
         - 'traefik.http.middlewares.traefik.headers.stspreload=true'
@@ -289,7 +289,7 @@ services:
           - node.labels.data1 == true
       labels:
         - 'traefik.enable=true'
-        - 'traefik.docker.network=traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         # Console
         - 'traefik.http.routers.minio-console.rule=Host(`minio-console.{{hostname}}`)'
         - 'traefik.http.routers.minio-console.entrypoints=websecure'
