@@ -476,7 +476,7 @@ configs:
 networks:
   traefik_net:
     driver: overlay
-    name: traefik_net
+    attachable: true
   mongo_net:
     driver: overlay
     attachable: true
