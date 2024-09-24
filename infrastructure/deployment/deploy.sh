@@ -278,27 +278,29 @@ split_and_join() {
 docker_stack_deploy() {
   echo "Deploying this environment: $ENVIRONMENT_COMPOSE"
 
-  echo "Pulling all docker images. This might take a while"
+  if [ "$UPDATE_DEPENDENCIES" = false ]; then
+    echo "Pulling all docker images. This might take a while"
 
-  EXISTING_IMAGES=$(configured_ssh "docker images --format '{{.Repository}}:{{.Tag}}'")
-  IMAGE_TAGS_TO_DOWNLOAD=$(get_docker_tags_from_compose_files "$COMPOSE_FILES_USED")
+    EXISTING_IMAGES=$(configured_ssh "docker images --format '{{.Repository}}:{{.Tag}}'")
+    IMAGE_TAGS_TO_DOWNLOAD=$(get_docker_tags_from_compose_files "$COMPOSE_FILES_USED")
 
-  for tag in ${IMAGE_TAGS_TO_DOWNLOAD[@]}; do
-    if [[ $EXISTING_IMAGES == *"$tag"* ]]; then
-      echo "$tag already exists on the machine. Skipping..."
-      continue
-    fi
+    for tag in ${IMAGE_TAGS_TO_DOWNLOAD[@]}; do
+      if [[ $EXISTING_IMAGES == *"$tag"* ]]; then
+        echo "$tag already exists on the machine. Skipping..."
+        continue
+      fi
 
-    echo "Downloading $tag"
+      echo "Downloading $tag"
 
-    until configured_ssh "cd /opt/opencrvs && docker pull $tag"
-    do
-      echo "Server failed to download $tag. Retrying..."
-      sleep 5
-    done &
-  done
+      until configured_ssh "cd /opt/opencrvs && docker pull $tag"
+      do
+        echo "Server failed to download $tag. Retrying..."
+        sleep 5
+      done &
+    done
 
-  wait
+    wait
+  fi
 
   echo "Updating docker swarm stack with new compose files"
 
@@ -314,10 +316,10 @@ docker_stack_deploy() {
     echo "Updating dependency stack"
     configured_ssh 'cd /opt/opencrvs && \
       docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $DEPENDENCY_COMPOSE_FILES)")' --with-registry-auth dependencies'
+  else
+    configured_ssh 'cd /opt/opencrvs && \
+      docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $APPLICATION_COMPOSE_FILES)")' --with-registry-auth '$STACK
   fi
-
-  configured_ssh 'cd /opt/opencrvs && \
-    docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $APPLICATION_COMPOSE_FILES)")' --with-registry-auth '$STACK
 
 }
 
