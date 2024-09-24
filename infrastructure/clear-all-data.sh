@@ -108,4 +108,6 @@ docker run --rm --network=$NETWORK --entrypoint=/bin/sh minio/mc -c "\
 
 # Delete all data from redis
 #-----------------------------
-docker exec -i $(docker ps --filter "name=${STACK}_redis" --format '{{.ID}}' --latest) redis-cli FLUSHDB
+REDIS_CONTAINER_ID=$(docker ps --filter "name=${STACK}_redis" --format '{{.ID}}' --latest)
+echo "REDIS_CONTAINER_ID: $REDIS_CONTAINER_ID"
+docker exec -i $REDIS_CONTAINER_ID redis-cli FLUSHDB
