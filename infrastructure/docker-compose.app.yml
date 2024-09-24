@@ -449,6 +449,8 @@ services:
         aliases: []
       dependencies_mongo_net:
         aliases: []
+      dependencies_influx_net:
+        aliases: []
       dependencies_elasticsearch_net:
         aliases: []
     logging:
