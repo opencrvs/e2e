@@ -5,6 +5,8 @@ services:
     image: redis:5
     networks:
       app_net:
+      dependencies_monitoring_net:
+        aliases: []
     restart: unless-stopped
     deploy:
       labels:
@@ -35,7 +37,9 @@ services:
         target: /src/hearth/config/queryparam-extensions.json
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -63,7 +67,9 @@ services:
         - 'traefik.enable=false'
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -87,7 +93,7 @@ services:
         - 'traefik.http.routers.${STACK}__countryconfig.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
@@ -135,7 +141,11 @@ services:
       - DOMAIN=${STACK}.{{hostname}}
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_traefik_net:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -161,7 +171,7 @@ services:
         - 'traefik.http.routers.${STACK}__login.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__login.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none'
@@ -171,7 +181,9 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_traefik_net:
         aliases: []
     logging:
       driver: gelf
@@ -200,7 +212,7 @@ services:
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
 
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true'
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
@@ -214,7 +226,9 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_traefik_net:
         aliases: []
     logging:
       driver: gelf
@@ -240,6 +254,7 @@ services:
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
+      # Why is this here?
       - MINIO_BUCKET=${STACK}--ocrvs
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
@@ -266,7 +281,7 @@ services:
         - 'traefik.http.routers.${STACK}__gateway.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none'
@@ -276,7 +291,13 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net:
+        aliases: []
+      dependencies_mongo_net:
+        aliases: []
+      dependencies_traefik_net:
+        aliases: []
+      dependencies_minio_net:
         aliases: []
     logging:
       driver: gelf
@@ -313,7 +334,7 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -344,7 +365,11 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_elasticsearch_net:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -369,7 +394,9 @@ services:
       - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_elasticsearch_net:
         aliases: []
     deploy:
       labels:
@@ -418,7 +445,11 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_mongo_net:
+        aliases: []
+      dependencies_elasticsearch_net:
         aliases: []
     logging:
       driver: gelf
@@ -459,7 +490,7 @@ services:
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none'
@@ -469,7 +500,9 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_traefik_net:
         aliases: []
     logging:
       driver: gelf
@@ -501,7 +534,9 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -536,7 +571,7 @@ services:
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none'
@@ -546,7 +581,11 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_mongo_net:
+        aliases: []
+      dependencies_traefik_net:
         aliases: []
     logging:
       driver: gelf
@@ -588,7 +627,7 @@ services:
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_internal_net'
+        - 'traefik.docker.network=dependencies_traefik_net'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none'
@@ -601,7 +640,11 @@ services:
       replicas: 1
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_mongo_net:
+        aliases: []
+      dependencies_traefik_net:
         aliases: []
     logging:
       driver: gelf
@@ -632,7 +675,9 @@ services:
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_minio_net:
         aliases: []
     logging:
       driver: gelf
@@ -652,7 +697,7 @@ services:
         - 'traefik.enable=false'
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_3:
         aliases: []
     logging:
       driver: gelf
@@ -693,7 +738,15 @@ services:
         condition: on-failure
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_mongo_net:
+        aliases: []
+      dependencies_influx_net:
+        aliases: []
+      dependencies_minio_net:
+        aliases: []
+      dependencies_elasticsearch_net:
         aliases: []
     logging:
       driver: gelf
@@ -729,7 +782,9 @@ services:
       - NOTIFICATION_MONGODB_PASSWORD=${NOTIFICATION_MONGODB_PASSWORD}
     networks:
       app_net:
-      dependencies_internal_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_mongo_net:
         aliases: []
     logging:
       driver: gelf
@@ -750,7 +805,19 @@ configs:
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
 networks:
-  dependencies_internal_net:
+  dependencies_mongo_net:
+    external: true
+  dependencies_elasticsearch_net:
+    external: true
+  dependencies_influx_net:
+    external: true
+  dependencies_monitoring_net:
+    external: true
+  dependencies_monitoring_net_2:
+    external: true
+  dependencies_monitoring_net_3:
+    external: true
+  dependencies_minio_net:
     external: true
   app_net:
     driver: overlay

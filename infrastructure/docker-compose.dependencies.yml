@@ -14,7 +14,6 @@ services:
     image: 'traefik:v2.10'
     networks:
       - traefik_net
-      - internal_net
     ports:
       - target: 80
         published: 80
@@ -65,8 +64,7 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.14.3
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
     user: root
 
     configs:
@@ -92,8 +90,7 @@ services:
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.14.3
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
     user: root
     cap_add:
       - SYS_PTRACE
@@ -132,8 +129,7 @@ services:
   setup-kibana-config:
     image: curlimages/curl:7.88.1
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
     entrypoint:
       [
         'curl',
@@ -168,7 +164,7 @@ services:
     image: docker.elastic.co/kibana/kibana:8.14.3
     networks:
       - traefik_net
-      - internal_net
+      - elasticsearch_net
     restart: always
     deploy:
       labels:
@@ -198,8 +194,7 @@ services:
   mongo1:
     image: mongo:4.4
     networks:
-      - traefik_net
-      - internal_net
+      - mongo_net
     restart: unless-stopped
     command: mongod --auth --replSet rs0 --keyFile /etc/mongodb-keyfile
     hostname: 'mongo1'
@@ -236,8 +231,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
     restart: unless-stopped
     volumes:
       - '/data/elasticsearch:/usr/share/elasticsearch/data'
@@ -277,7 +271,7 @@ services:
     image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
     networks:
       - traefik_net
-      - internal_net
+      - minio_net
     restart: unless-stopped
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
@@ -315,8 +309,7 @@ services:
   minio-mc:
     image: minio/mc
     networks:
-      - traefik_net
-      - internal_net
+      - minio_net
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc admin trace --path ocrvs/* minio
@@ -340,8 +333,7 @@ services:
   elastalert:
     image: jertel/elastalert2:2.19.0
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
     restart: unless-stopped
     environment:
       - ES_USERNAME=elastic
@@ -366,8 +358,10 @@ services:
   logstash:
     image: logstash:8.14.3
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
+      - monitoring_net
+      - monitoring_net_2
+      - monitoring_net_3
     command: logstash -f /etc/logstash/logstash.conf --verbose
     ports:
       - '12201:12201'
@@ -391,8 +385,8 @@ services:
   apm-server:
     image: docker.elastic.co/apm/apm-server:7.17.22
     networks:
-      - traefik_net
-      - internal_net
+      - elasticsearch_net
+      - monitoring_net
     cap_add: ['CHOWN', 'DAC_OVERRIDE', 'SETGID', 'SETUID']
     cap_drop: ['ALL']
     restart: always
@@ -429,7 +423,7 @@ services:
     image: influxdb:1.8.10
     networks:
       - traefik_net
-      - internal_net
+      - influx_net
     restart: unless-stopped
     volumes:
       - '/data/influxdb:/var/lib/influxdb'
@@ -483,12 +477,24 @@ networks:
   traefik_net:
     driver: overlay
     name: traefik_net
-    ipam:
-      config:
-        - subnet: 10.1.0.0/16
-  internal_net:
+  mongo_net:
     driver: overlay
     attachable: true
-    ipam:
-      config:
-        - subnet: 10.1.0.0/16
+  influx_net:
+    driver: overlay
+    attachable: true
+  minio_net:
+    driver: overlay
+    attachable: true
+  elasticsearch_net:
+    driver: overlay
+    attachable: true
+  monitoring_net:
+    driver: overlay
+    attachable: true
+  monitoring_net_2:
+    driver: overlay
+    attachable: true
+  monitoring_net_3:
+    driver: overlay
+    attachable: true
