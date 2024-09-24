@@ -96,7 +96,7 @@ docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -
 
 # Delete all data from metrics
 #-----------------------------
-docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -X POST "http://influxdb:8086/query?db=${STACK}__ocrvs" --data-urlencode "q=DROP SERIES FROM /.*/" -v
+docker run --rm --network=dependencies_influx_net appropriate/curl curl -X POST "http://influxdb:8086/query?db=${STACK}__ocrvs" --data-urlencode "q=DROP SERIES FROM /.*/" -v
 
 # Delete all data from minio
 #-----------------------------
