@@ -92,15 +92,15 @@ drop_database performance;
 
 # Delete all data from elasticsearch
 #-----------------------------------
-docker run --rm --network=$NETWORK appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/${STACK}__ocrvs" -v
+docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/${STACK}__ocrvs" -v
 
 # Delete all data from metrics
 #-----------------------------
-docker run --rm --network=$NETWORK appropriate/curl curl -X POST "http://influxdb:8086/query?db=${STACK}__ocrvs" --data-urlencode "q=DROP SERIES FROM /.*/" -v
+docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -X POST "http://influxdb:8086/query?db=${STACK}__ocrvs" --data-urlencode "q=DROP SERIES FROM /.*/" -v
 
 # Delete all data from minio
 #-----------------------------
-docker run --rm --network=$NETWORK --entrypoint=/bin/sh minio/mc -c "\
+docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -c "\
   mc alias set myminio http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD && \
   mc rm --recursive --force myminio/${STACK}--ocrvs && \
   mc rb myminio/${STACK}--ocrvs && \
