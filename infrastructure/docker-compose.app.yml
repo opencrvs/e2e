@@ -160,6 +160,7 @@ services:
       - HOST=0.0.0.0
       - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
       - CONTENT_SECURITY_POLICY_WILDCARD=${CONTENT_SECURITY_POLICY_WILDCARD}
+      - COUNTRY_CONFIG_URL_INTERNAL=http://countryconfig.{{STACK}}_app_net:3040
     deploy:
       labels:
         - 'traefik.enable=true'
