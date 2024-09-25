@@ -48,8 +48,13 @@ jobs:
           cd opencrvs-core
           git checkout ${{ inputs.core-image-tag }}
 
+      # copy ./opencrvs-core/packages/data-seeder to a new temporary directory
+      - name: Copy data-seeder
+        run: |
+          cp -r ./opencrvs-core/packages/data-seeder ./data-seeder
+
       - name: Install dependencies
-        working-directory: ./opencrvs-core
+        working-directory: ./data-seeder
         run: yarn install
 
       - name: Seed data on given environment
@@ -59,8 +64,8 @@ jobs:
           timeout_minutes: 10
           max_attempts: 5
           command: |
-            cd ./opencrvs-core
-            yarn seed:prod
+            cd ./data-seeder
+            NODE_OPTIONS=--dns-result-order=ipv4first npx ts-node --transpile-only -r tsconfig-paths/register src/index.ts
         env:
           ACTIVATE_USERS: ${{ vars.ACTIVATE_USERS }}
           GATEWAY_HOST: 'https://gateway.${{inputs.stack}}.opencrvs.dev'
