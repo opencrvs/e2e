@@ -57,6 +57,14 @@ jobs:
       outcome: ${{ steps.deploy.outcome }}
     timeout-minutes: 60
     steps:
+      - name: Check if vars.BLOCK_NEW_DEPLOYMENTS is set to true
+        run: |
+          if [[ "${{ vars.BLOCK_NEW_DEPLOYMENTS }}" == "true" ]]; then
+            echo "BLOCK_NEW_DEPLOYMENTS in Github environment settings is set to true, exiting..."
+            echo "Set the variable to anything other than 'true' and redeploy"
+            echo "https://github.com/opencrvs/e2e/settings/environments"
+            exit 1
+          fi
       - name: Generate summary
         run: |
           echo "Deploying environment to https://${{ inputs.stack }}.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
