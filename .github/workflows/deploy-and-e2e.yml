@@ -39,8 +39,14 @@ jobs:
     outputs:
       test_matrix: ${{ steps.list-tests.outputs.test_matrix }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: 'opencrvs/opencrvs-farajaland'
+          fetch-depth: 0
+
+      - name: Checkout country branch
+        run: |
+          git checkout ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
 
       - name: List Test Directories
         id: list-tests
