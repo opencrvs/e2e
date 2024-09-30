@@ -4,22 +4,42 @@ import faker from '@faker-js/faker'
 
 import { readFileSync } from 'fs'
 import uuid from 'uuid'
-import { format } from 'date-fns'
 import { join } from 'path'
-import { getRandomDate } from '../../helpers'
+import {
+  formatDateObjectTo_yyyyMMdd,
+  generateRandomSuffix,
+  getRandomDate
+} from '../../helpers'
 import {
   CREATE_DEATH_REGISTRATION,
   GET_DEATH_REGISTRATION_FOR_REVIEW
 } from './queries'
+import { random } from 'lodash'
+
+export type DeathDeclarationInput = {
+  deceased?: {
+    usual?: {
+      province: string
+      district: string
+    }
+  }
+  event?: {
+    placeOfDeath?:
+      | 'Health Institution'
+      | "Deceased's usual place of residence"
+      | 'Other'
+    deathFacility?: string
+  }
+}
 
 const declaration = {
   deceased: {
     name: {
-      firstNames: faker.name.firstName('male'),
-      familyName: faker.name.lastName('male')
+      firstNames: faker.name.firstName('male') + generateRandomSuffix(),
+      familyName: faker.name.lastName('male') + generateRandomSuffix()
     },
     gender: 'male',
-    birthDate: getRandomDate(75, 200),
+    age: random(20, 100),
     nationality: 'FAR',
     identifier: {
       type: 'NATIONAL_ID',
@@ -82,7 +102,10 @@ function getLocationIdByName(locations: fhir.Location[], name: string) {
   return location.id
 }
 
-export async function createDeathDeclaration(token: string) {
+export async function createDeathDeclaration(
+  token: string,
+  details: DeathDeclarationInput = {}
+) {
   const locations = await getAllLocations('ADMIN_STRUCTURE')
   const facilities = await getAllLocations('HEALTH_FACILITY')
 
@@ -123,14 +146,7 @@ export async function createDeathDeclaration(token: string) {
               }
             ],
             gender: declaration.deceased.gender as 'male',
-            birthDate: format(
-              new Date(
-                Number(declaration.deceased.birthDate.yyyy),
-                Number(declaration.deceased.birthDate.mm) - 1,
-                Number(declaration.deceased.birthDate.dd)
-              ),
-              'yyyy-MM-dd'
-            ),
+            ageOfIndividualInYears: declaration.deceased.age,
             nationality: [declaration.deceased.nationality],
             identifier: [
               {
@@ -141,23 +157,7 @@ export async function createDeathDeclaration(token: string) {
             address: [
               {
                 type: 'PRIMARY_ADDRESS',
-                line: [
-                  declaration.deceased.address.number,
-                  declaration.deceased.address.street,
-                  declaration.deceased.address.residentialArea,
-                  '',
-                  '',
-                  'URBAN',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  ''
-                ],
+                line: formatAddressLine(declaration.deceased.address),
                 country: declaration.deceased.address.country,
                 state: getLocationIdByName(
                   locations,
@@ -176,22 +176,42 @@ export async function createDeathDeclaration(token: string) {
               }
             ],
             deceased: {
-              deathDate: format(
-                new Date(
-                  Number(declaration.event.date.yyyy),
-                  Number(declaration.event.date.mm) - 1,
-                  Number(declaration.event.date.dd)
-                ),
-                'yyyy-MM-dd'
-              )
+              deathDate: formatDateObjectTo_yyyyMMdd(declaration.event.date)
             }
           },
-          eventLocation: {
-            _fhirID: getLocationIdByName(
-              facilities,
-              'Chikobo Rural Health Centre'
-            )
-          },
+          eventLocation:
+            details.event?.placeOfDeath === 'Other'
+              ? {}
+              : details.event?.placeOfDeath ===
+                "Deceased's usual place of residence"
+              ? {
+                  type: 'DECEASED_USUAL_RESIDENCE',
+                  address: {
+                    type: 'PRIMARY_ADDRESS',
+                    line: formatAddressLine(declaration.deceased.address),
+                    country: declaration.deceased.address.country,
+                    state: getLocationIdByName(
+                      locations,
+                      declaration.deceased.address.province
+                    ),
+                    partOf: getLocationIdByName(
+                      locations,
+                      declaration.deceased.address.district
+                    ),
+                    district: getLocationIdByName(
+                      locations,
+                      declaration.deceased.address.district
+                    ),
+                    city: declaration.deceased.address.town,
+                    postalCode: declaration.deceased.address.postcodeOrZip
+                  }
+                }
+              : {
+                  _fhirID: getLocationIdByName(
+                    facilities,
+                    details.event?.deathFacility || 'Kalela Health Post'
+                  )
+                },
           informant: { relationship: 'SPOUSE' },
           questionnaire: [
             {
@@ -212,13 +232,8 @@ export async function createDeathDeclaration(token: string) {
                 familyName: declaration.spouse.name.familyName
               }
             ],
-            birthDate: format(
-              new Date(
-                Number(declaration.spouse.birthDate.yyyy),
-                Number(declaration.spouse.birthDate.mm) - 1,
-                Number(declaration.spouse.birthDate.dd)
-              ),
-              'yyyy-MM-dd'
+            birthDate: formatDateObjectTo_yyyyMMdd(
+              declaration.spouse.birthDate
             ),
             nationality: ['FAR'],
             identifier: [
@@ -230,23 +245,7 @@ export async function createDeathDeclaration(token: string) {
             address: [
               {
                 type: 'PRIMARY_ADDRESS',
-                line: [
-                  declaration.deceased.address.number,
-                  declaration.deceased.address.street,
-                  declaration.deceased.address.residentialArea,
-                  '',
-                  '',
-                  'URBAN',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  '',
-                  ''
-                ],
+                line: formatAddressLine(declaration.deceased.address),
                 country: declaration.deceased.address.country,
                 state: getLocationIdByName(
                   locations,
@@ -302,3 +301,13 @@ type ConvertEnumsToStrings<T> = T extends (infer U)[]
       [K in keyof T]: ConvertEnumsToStrings<T[K]>
     }
   : T
+
+const formatAddressLine = (address: typeof declaration.deceased.address) => [
+  address.number,
+  address.street,
+  address.residentialArea,
+  '',
+  '',
+  'URBAN',
+  ...new Array(9).fill('')
+]

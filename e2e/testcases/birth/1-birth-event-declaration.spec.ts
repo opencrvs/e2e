@@ -4,6 +4,7 @@ import { createDeclaration } from './helpers'
 
 import TEST_DATA_1 from './data/1-both-mother-and-father.json'
 import faker from '@faker-js/faker'
+import { CREDENTIALS } from '../../constants'
 
 test.describe('1. Birth event declaration', () => {
   test.describe.serial('Fill all form sections. Save & Exit', () => {
@@ -17,7 +18,11 @@ test.describe('1. Birth event declaration', () => {
     })
 
     test('1.1. Navigate to the birth event declaration page', async () => {
-      await login(page, 'k.mweene', 'test')
+      await login(
+        page,
+        CREDENTIALS.LOCAL_REGISTRAR.USERNAME,
+        CREDENTIALS.LOCAL_REGISTRAR.PASSWORD
+      )
       await createPIN(page)
       await page.click('#header_new_event')
       await expect(page.getByText('New Declaration')).toBeVisible()
@@ -413,7 +418,11 @@ test.describe('1. Birth event declaration', () => {
   })
   test.describe('1.10 Validate "Exit" Button', async () => {
     test.beforeEach(async ({ page }) => {
-      await login(page, 'k.mweene', 'test')
+      await login(
+        page,
+        CREDENTIALS.LOCAL_REGISTRAR.USERNAME,
+        CREDENTIALS.LOCAL_REGISTRAR.PASSWORD
+      )
       await createPIN(page)
       await page.click('#header_new_event')
       await page.getByLabel('Birth').click()
@@ -458,14 +467,23 @@ test.describe('1. Birth event declaration', () => {
       /*
        * Expected result: should be navigated to "in-progress" tab but no draft will be saved
        */
-      expect(page.locator('#content-name', { hasText: 'In progress' }))
+
+      await page.waitForTimeout(500) // This page renders twice at first
+
+      await expect(
+        page.locator('#content-name', { hasText: 'In progress' })
+      ).toBeVisible()
       await expect(page.getByText('0 seconds ago')).toBeHidden()
     })
   })
 
   test.describe('1.11 Validate "Delete Declaration" Button  ', async () => {
     test.beforeEach(async ({ page }) => {
-      await login(page, 'k.mweene', 'test')
+      await login(
+        page,
+        CREDENTIALS.LOCAL_REGISTRAR.USERNAME,
+        CREDENTIALS.LOCAL_REGISTRAR.PASSWORD
+      )
       await createPIN(page)
       await page.click('#header_new_event')
       await page.getByLabel('Birth').click()
@@ -516,7 +534,12 @@ test.describe('1. Birth event declaration', () => {
       /*
        * Expected result: should be navigated to "in-progress" tab but no draft will be saved
        */
-      expect(page.locator('#content-name', { hasText: 'In progress' }))
+
+      await page.waitForTimeout(500) // This page renders twice at first
+
+      await expect(
+        page.locator('#content-name', { hasText: 'In progress' })
+      ).toBeVisible()
       await expect(page.getByText('0 seconds ago')).toBeHidden()
     })
   })
