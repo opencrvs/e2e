@@ -300,6 +300,28 @@ docker_stack_deploy() {
     done
 
     wait
+  else
+    echo "Pulling all docker images. This might take a while"
+
+    EXISTING_IMAGES=$(configured_ssh "docker images --format '{{.Repository}}:{{.Tag}}'")
+    IMAGE_TAGS_TO_DOWNLOAD=$(get_docker_tags_from_compose_files "$DEPENDENCY_COMPOSE_FILES")
+
+    for tag in ${IMAGE_TAGS_TO_DOWNLOAD[@]}; do
+      if [[ $EXISTING_IMAGES == *"$tag"* ]]; then
+        echo "$tag already exists on the machine. Skipping..."
+        continue
+      fi
+
+      echo "Downloading $tag"
+
+      until configured_ssh "cd /opt/opencrvs && docker pull $tag"
+      do
+        echo "Server failed to download $tag. Retrying..."
+        sleep 5
+      done &
+    done
+
+    wait
   fi
 
   echo "Updating docker swarm stack with new compose files"
