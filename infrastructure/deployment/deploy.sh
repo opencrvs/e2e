@@ -78,10 +78,14 @@ done
 SSH_ARGS=${SSH_ARGS:-}
 LOG_LOCATION=${LOG_LOCATION:-/var/log}
 
-DEPENDENCY_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
-APPLICATION_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml"
+DEPENDENCY_COMPOSE_FILES_RAW="$INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
+APPLICATION_COMPOSE_FILES_RAW="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml"
 
-COMPOSE_FILES_USED="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml $INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
+DEPENDENCY_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml.$STACK"
+APPLICATION_COMPOSE_FILES="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml.$STACK"
+
+COMPOSE_FILES_USED="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml.$STACK $INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml.$STACK"
+COMPOSE_FILES_USED_RAW="$INFRASTRUCTURE_DIRECTORY/docker-compose.app.yml $INFRASTRUCTURE_DIRECTORY/docker-compose.dependencies.yml"
 
 echo $COMPOSE_FILES_USED
 
@@ -165,7 +169,7 @@ validate_environment_variables() {
       print_usage_and_exit
   fi
 
-  npx tsx $BASEDIR/validate-required-variables-in-compose-files.ts $COMPOSE_FILES_USED
+  npx tsx $BASEDIR/validate-required-variables-in-compose-files.ts $COMPOSE_FILES_USED_RAW
 }
 
 configured_rsync() {
@@ -411,6 +415,9 @@ echo
 echo "Deploying COUNTRY_CONFIG_VERSION $COUNTRY_CONFIG_VERSION to $SSH_HOST..."
 echo
 echo "Syncing configuration files to the target server"
+
+cp $DEPENDENCY_COMPOSE_FILES_RAW $DEPENDENCY_COMPOSE_FILES
+cp $APPLICATION_COMPOSE_FILES_RAW $APPLICATION_COMPOSE_FILES
 
 configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/ --delete --no-perms --omit-dir-times --verbose
 

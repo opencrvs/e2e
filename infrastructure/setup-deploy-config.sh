@@ -18,6 +18,10 @@ for file in /opt/opencrvs/infrastructure/docker-compose*.yml; do
     sed -i "s/{{hostname}}/$HOST/g" "$file"
 done
 
+for file in /opt/opencrvs/infrastructure/docker-compose*.yml*; do
+    sed -i "s/{{hostname}}/$HOST/g" "$file"
+done
+
 # Setup an encryption key for Kibana
 KIBANA_ENCRYPTION_KEY=`uuidgen`
 sed -i "s/{{KIBANA_ENCRYPTION_KEY}}/$KIBANA_ENCRYPTION_KEY/g" /opt/opencrvs/infrastructure/monitoring/kibana/kibana.yml
