@@ -482,53 +482,53 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 10.0.0.0/16
+        - subnet: 172.31.0.0/16
   mongo_net:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.1.0.0/16
+        - subnet: 172.32.0.0/16
   influx_net:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.2.0.0/16
+        - subnet: 172.33.0.0/16
   minio_net:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.3.0.0/16
+        - subnet: 172.34.0.0/16
   elasticsearch_net:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.4.0.0/16
+        - subnet: 172.35.0.0/16
   monitoring_net:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.5.0.0/16
+        - subnet: 172.36.0.0/16
   monitoring_net_2:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.6.0.0/16
+        - subnet: 172.37.0.0/16
   monitoring_net_3:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
-        - subnet: 10.7.0.0/16
+        - subnet: 172.38.0.0/16
