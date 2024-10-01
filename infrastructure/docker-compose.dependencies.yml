@@ -229,7 +229,7 @@ services:
 
   # Configure elasticsearch
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
     networks:
       - elasticsearch_net
     restart: unless-stopped
