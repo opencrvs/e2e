@@ -82,9 +82,9 @@ jobs:
             MONGODB_ADMIN_PASSWORD=$MONGODB_ADMIN_PASSWORD \
             MINIO_ROOT_USER=$MINIO_ROOT_USER \
             MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
-            /opt/opencrvs/infrastructure/clear-all-data.sh $REPLICAS ${{ inputs.stack }}"
+            /opt/opencrvs/${{ inputs.stack }}/infrastructure/clear-all-data.sh $REPLICAS ${{ inputs.stack }}"
 
           echo "Running migrations..."
           echo
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST $SSH_ARGS "
-              /opt/opencrvs/infrastructure/run-migrations.sh ${{ inputs.stack }}"
+              /opt/opencrvs/${{ inputs.stack }}/infrastructure/run-migrations.sh ${{ inputs.stack }}"

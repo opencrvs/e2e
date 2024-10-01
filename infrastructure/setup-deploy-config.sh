@@ -10,20 +10,20 @@ set -e
 echo
 
 HOST=$1
-
+STACK=$2
 echo "Setting up deployment config for $HOST - `date --iso-8601=ns`"
 
 # Set hostname in compose file
-for file in /opt/opencrvs/infrastructure/docker-compose*.yml; do
+for file in /opt/opencrvs/$STACK/infrastructure/docker-compose*.yml; do
     sed -i "s/{{hostname}}/$HOST/g" "$file"
 done
 
 # Setup an encryption key for Kibana
 KIBANA_ENCRYPTION_KEY=`uuidgen`
-sed -i "s/{{KIBANA_ENCRYPTION_KEY}}/$KIBANA_ENCRYPTION_KEY/g" /opt/opencrvs/infrastructure/monitoring/kibana/kibana.yml
+sed -i "s/{{KIBANA_ENCRYPTION_KEY}}/$KIBANA_ENCRYPTION_KEY/g" /opt/opencrvs/$STACK/infrastructure/monitoring/kibana/kibana.yml
 
-sed -i -e "s%{{MINIO_ROOT_USER}}%$MINIO_ROOT_USER%" /opt/opencrvs/infrastructure/mc-config/config.json
-sed -i -e "s%{{MINIO_ROOT_PASSWORD}}%$MINIO_ROOT_PASSWORD%" /opt/opencrvs/infrastructure/mc-config/config.json
+sed -i -e "s%{{MINIO_ROOT_USER}}%$MINIO_ROOT_USER%" /opt/opencrvs/$STACK/infrastructure/mc-config/config.json
+sed -i -e "s%{{MINIO_ROOT_PASSWORD}}%$MINIO_ROOT_PASSWORD%" /opt/opencrvs/$STACK/infrastructure/mc-config/config.json
 
 echo "DONE - `date --iso-8601=ns`"
 echo

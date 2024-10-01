@@ -208,12 +208,12 @@ generate_password() {
 
 to_remote_paths() {
   paths=$@
-  echo "$paths" | sed "s|/tmp/|/opt/opencrvs/infrastructure/|g" | sed "s|$INFRASTRUCTURE_DIRECTORY/docker-compose|/opt/opencrvs/infrastructure/docker-compose|g"
+  echo "$paths" | sed "s|/tmp/|/opt/opencrvs/$STACK/infrastructure/|g" | sed "s|$INFRASTRUCTURE_DIRECTORY/docker-compose|/opt/opencrvs/$STACK/infrastructure/docker-compose|g"
 }
 
 rotate_secrets() {
   files_to_rotate=$(to_remote_paths $COMPOSE_FILES_USED)
-  configured_ssh '/opt/opencrvs/infrastructure/rotate-secrets.sh '$files_to_rotate' | tee -a '$LOG_LOCATION'/rotate-secrets.log'
+  configured_ssh '/opt/opencrvs/$STACK/infrastructure/rotate-secrets.sh '$files_to_rotate' | tee -a '$LOG_LOCATION'/rotate-secrets.log'
 }
 
 
@@ -412,14 +412,15 @@ echo "Deploying COUNTRY_CONFIG_VERSION $COUNTRY_CONFIG_VERSION to $SSH_HOST..."
 echo
 echo "Syncing configuration files to the target server"
 
-configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/ --delete --no-perms --omit-dir-times --verbose
+configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/$STACK --delete --no-perms --omit-dir-times --verbose
 
 echo "Logging to Dockerhub"
 
 configured_ssh "docker login -u $DOCKER_USERNAME -p $DOCKER_TOKEN"
 
+
 # Setup configuration files and compose file for the deployment domain
-configured_ssh "/opt/opencrvs/infrastructure/setup-deploy-config.sh $HOST"
+configured_ssh "/opt/opencrvs/$STACK/infrastructure/setup-deploy-config.sh $HOST $STACK"
 
 rotate_secrets
 
@@ -436,7 +437,7 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
   echo 'Setting up elastalert indices'
 
   while true; do
-    if configured_ssh "/opt/opencrvs/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
+    if configured_ssh "/opt/opencrvs/$STACK/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
       break
     fi
     sleep 5
@@ -445,7 +446,7 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
   echo "Setting up Kibana config & alerts"
 
   while true; do
-    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/infrastructure/monitoring/kibana/setup-config.sh"; then
+    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/$STACK/infrastructure/monitoring/kibana/setup-config.sh"; then
       break
     fi
     sleep 5
@@ -454,7 +455,7 @@ else
   echo 'Waiting for Elasticsearch to be ready'
 
   while true; do
-    if configured_ssh "/opt/opencrvs/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
+    if configured_ssh "/opt/opencrvs/$STACK/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
       break
     fi
     sleep 5

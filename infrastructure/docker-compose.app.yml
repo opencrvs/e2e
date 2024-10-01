@@ -392,7 +392,7 @@ services:
       - KIBANA_USERNAME=${KIBANA_USERNAME}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
     volumes:
-      - '/opt/opencrvs/infrastructure/elasticsearch:/usr/app'
+      - '/opt/opencrvs/{{STACK}}/infrastructure/elasticsearch:/usr/app'
     networks:
       app_net:
       dependencies_monitoring_net_2:
@@ -802,11 +802,11 @@ secrets:
     external: true
 configs:
   hearth-dupe.{{ts}}:
-    file: /opt/opencrvs/infrastructure/hearth-plugins/checkDuplicateTask.js
+    file: /opt/opencrvs/{{STACK}}/infrastructure/hearth-plugins/checkDuplicateTask.js
   hearth-ext-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/hearth-queryparam-extensions.json
+    file: /opt/opencrvs/{{STACK}}/infrastructure/hearth-queryparam-extensions.json
   mongo-on-deploy.{{ts}}:
-    file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
+    file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
 networks:
   dependencies_mongo_net:
     external: true

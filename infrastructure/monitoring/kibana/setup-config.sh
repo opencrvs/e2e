@@ -26,7 +26,7 @@ response_text_from_curl_output() {
 }
 
 curl_raw() {
-  docker run --rm -v /opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson --network=dependencies_elasticsearch_net curlimages/curl -s -w "\n%{http_code}" "$@"
+  docker run --rm -v /opt/opencrvs/$STACK/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson --network=dependencies_elasticsearch_net curlimages/curl -s -w "\n%{http_code}" "$@"
 }
 
 parse_url_from_string() {
