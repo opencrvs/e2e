@@ -88,7 +88,7 @@ services:
         - 'traefik.enable=false'
 
   metricbeat:
-    image: docker.elastic.co/beats/metricbeat:8.14.3
+    image: docker.elastic.co/beats/metricbeat:8.15.2
     networks:
       - elasticsearch_net
     user: root
