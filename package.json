@@ -84,7 +84,7 @@
     "@types/chalk": "^2.2.0",
     "@types/code": "^4.0.3",
     "@types/csv2json": "^1.4.0",
-    "@types/fhir": "0.0.30",
+    "@types/fhir": "0.0.41",
     "@types/geojson": "^7946.0.4",
     "@types/hapi__boom": "^9.0.1",
     "@types/hapi__hapi": "^20.0.0",
