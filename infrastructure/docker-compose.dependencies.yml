@@ -13,7 +13,8 @@ services:
   traefik:
     image: 'traefik:v2.10'
     networks:
-      - traefik_net
+      - traefik_net_1
+      - traefik_net_2
     ports:
       - target: 80
         published: 80
@@ -163,7 +164,7 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.3
     networks:
-      - traefik_net
+      - traefik_net_1
       - elasticsearch_net
     restart: always
     deploy:
@@ -174,7 +175,7 @@ services:
         - 'traefik.http.routers.kibana.tls=true'
         - 'traefik.http.routers.kibana.tls.certresolver=certResolver'
         - 'traefik.http.routers.kibana.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
         - 'traefik.http.middlewares.traefik.headers.stsseconds=31536000'
         - 'traefik.http.middlewares.traefik.headers.stsincludesubdomains=true'
         - 'traefik.http.middlewares.traefik.headers.stspreload=true'
@@ -272,7 +273,7 @@ services:
   minio:
     image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
     networks:
-      - traefik_net
+      - traefik_net_2
       - minio_net
     restart: unless-stopped
     environment:
@@ -291,7 +292,7 @@ services:
           - node.labels.data1 == true
       labels:
         - 'traefik.enable=true'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
         # Console
         - 'traefik.http.routers.minio-console.rule=Host(`minio-console.{{hostname}}`)'
         - 'traefik.http.routers.minio-console.entrypoints=websecure'
@@ -426,7 +427,6 @@ services:
   influxdb:
     image: influxdb:1.8.10
     networks:
-      - traefik_net
       - influx_net
     restart: unless-stopped
     volumes:
@@ -478,13 +478,20 @@ configs:
     file: /opt/opencrvs/infrastructure/mc-config/config.json
 
 networks:
-  traefik_net:
+  traefik_net_1:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
         - subnet: 172.31.0.0/16
+  traefik_net_2:
+    driver: overlay
+    attachable: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.43.0.0/16
   mongo_net_1:
     driver: overlay
     attachable: true

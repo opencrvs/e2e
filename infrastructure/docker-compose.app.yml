@@ -93,7 +93,7 @@ services:
         - 'traefik.http.routers.${STACK}__countryconfig.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_1'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
@@ -143,7 +143,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_1:
         aliases: []
       dependencies_mongo_net_3:
         aliases: []
@@ -172,7 +172,7 @@ services:
         - 'traefik.http.routers.${STACK}__login.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__login.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none'
@@ -184,7 +184,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -213,7 +213,7 @@ services:
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_1'
 
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true'
         - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
@@ -229,7 +229,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_1:
         aliases: []
     logging:
       driver: gelf
@@ -282,7 +282,7 @@ services:
         - 'traefik.http.routers.${STACK}__gateway.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure'
         - 'traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none'
@@ -296,7 +296,7 @@ services:
         aliases: []
       dependencies_mongo_net_1:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_2:
         aliases: []
       dependencies_minio_net:
         aliases: []
@@ -493,7 +493,7 @@ services:
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_1'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none'
@@ -505,7 +505,7 @@ services:
       app_net:
       dependencies_monitoring_net_2:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_1:
         aliases: []
     logging:
       driver: gelf
@@ -574,7 +574,7 @@ services:
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none'
@@ -588,7 +588,7 @@ services:
         aliases: []
       dependencies_mongo_net_2:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -630,7 +630,7 @@ services:
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].main=${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.tls.domains[0].sans=*.${STACK}.{{hostname}}'
         - 'traefik.http.routers.${STACK}__config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net'
+        - 'traefik.docker.network=dependencies_traefik_net_1'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store'
         - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none'
@@ -647,7 +647,7 @@ services:
         aliases: []
       dependencies_mongo_net_3:
         aliases: []
-      dependencies_traefik_net:
+      dependencies_traefik_net_1:
         aliases: []
     logging:
       driver: gelf
@@ -818,7 +818,9 @@ networks:
     external: true
   dependencies_influx_net:
     external: true
-  dependencies_traefik_net:
+  dependencies_traefik_net_1:
+    external: true
+  dependencies_traefik_net_2:
     external: true
   dependencies_monitoring_net:
     external: true
