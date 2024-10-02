@@ -39,7 +39,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_1:
         aliases: []
     logging:
       driver: gelf
@@ -69,7 +69,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -145,7 +145,7 @@ services:
         aliases: []
       dependencies_traefik_net:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_3:
         aliases: []
     logging:
       driver: gelf
@@ -294,7 +294,7 @@ services:
       app_net:
       dependencies_monitoring_net:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_1:
         aliases: []
       dependencies_traefik_net:
         aliases: []
@@ -370,7 +370,7 @@ services:
         aliases: []
       dependencies_elasticsearch_net:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -448,7 +448,7 @@ services:
       app_net:
       dependencies_monitoring_net_2:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_3:
         aliases: []
       dependencies_influx_net:
         aliases: []
@@ -539,7 +539,7 @@ services:
       app_net:
       dependencies_monitoring_net_2:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_1:
         aliases: []
     logging:
       driver: gelf
@@ -586,7 +586,7 @@ services:
       app_net:
       dependencies_monitoring_net_2:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_2:
         aliases: []
       dependencies_traefik_net:
         aliases: []
@@ -645,7 +645,7 @@ services:
       app_net:
       dependencies_monitoring_net_3:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_3:
         aliases: []
       dependencies_traefik_net:
         aliases: []
@@ -743,7 +743,7 @@ services:
       app_net:
       dependencies_monitoring_net_3:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_1:
         aliases: []
       dependencies_influx_net:
         aliases: []
@@ -787,7 +787,7 @@ services:
       app_net:
       dependencies_monitoring_net_3:
         aliases: []
-      dependencies_mongo_net:
+      dependencies_mongo_net_2:
         aliases: []
     logging:
       driver: gelf
@@ -808,7 +808,11 @@ configs:
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
 networks:
-  dependencies_mongo_net:
+  dependencies_mongo_net_1:
+    external: true
+  dependencies_mongo_net_2:
+    external: true
+  dependencies_mongo_net_3:
     external: true
   dependencies_elasticsearch_net:
     external: true

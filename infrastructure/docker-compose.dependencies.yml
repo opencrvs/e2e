@@ -194,7 +194,9 @@ services:
   mongo1:
     image: mongo:4.4
     networks:
-      - mongo_net
+      - mongo_net_1
+      - mongo_net_2
+      - mongo_net_3
     restart: unless-stopped
     command: mongod --auth --replSet rs0 --keyFile /etc/mongodb-keyfile
     hostname: 'mongo1'
@@ -483,13 +485,27 @@ networks:
       driver: default
       config:
         - subnet: 172.31.0.0/16
-  mongo_net:
+  mongo_net_1:
     driver: overlay
     attachable: true
     ipam:
       driver: default
       config:
         - subnet: 172.32.0.0/16
+  mongo_net_2:
+    driver: overlay
+    attachable: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.41.0.0/16
+  mongo_net_3:
+    driver: overlay
+    attachable: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.42.0.0/16
   influx_net:
     driver: overlay
     attachable: true

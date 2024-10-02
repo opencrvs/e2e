@@ -16,7 +16,7 @@ TARGET_SERVER="$1"
 CONTAINER_PORT="$2"
 LOCAL_PORT="$3"
 SSH_USER=${SSH_USER:-root}
-NETWORK=${NETWORK:-dependencies_mongo_net}
+NETWORK=${NETWORK:-dependencies_mongo_net_1}
 TARGET_CONTAINER_NAME=$(echo $CONTAINER_PORT | cut -d: -f1)
 PORT=$(echo $CONTAINER_PORT | cut -d: -f2)
 
