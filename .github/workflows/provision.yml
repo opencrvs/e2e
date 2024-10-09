@@ -111,7 +111,7 @@ jobs:
         env:
           encrypted_disk_size: ${{ vars.DISK_SPACE }}
           disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
-          dockerhub_username: ${{ secrets.DOCKER_USERNAME }}
+          dockerhub_username: ${{ vars.DOCKER_USERNAME }}
           dockerhub_password: ${{ secrets.DOCKER_TOKEN }}
           mongodb_admin_username: ${{ secrets.MONGODB_ADMIN_USER }}
           mongodb_admin_password: ${{ secrets.MONGODB_ADMIN_PASSWORD }}
