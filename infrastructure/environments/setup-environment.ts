@@ -286,7 +286,7 @@ const dockerhubQuestions = [
     name: 'dockerhubOrganisation',
     type: 'text' as const,
     message: 'What is the name of your Docker Hub organisation?',
-    valueType: 'SECRET' as const,
+    valueType: 'VARIABLE' as const, // Specific for E2E repository
     valueLabel: 'DOCKERHUB_ACCOUNT',
     validate: notEmpty,
     initial: process.env.DOCKER_ORGANISATION,
