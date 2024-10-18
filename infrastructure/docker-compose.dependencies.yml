@@ -359,7 +359,7 @@ services:
         tag: 'elastalert'
 
   logstash:
-    image: logstash:8.14.3
+    image: logstash:8.15.3
     networks:
       - elasticsearch_net
       - monitoring_net
