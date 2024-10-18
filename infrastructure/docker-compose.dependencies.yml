@@ -63,7 +63,7 @@ services:
         tag: 'traefik'
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:8.14.3
+    image: docker.elastic.co/beats/filebeat:8.15.3
     networks:
       - elasticsearch_net
     user: root
