@@ -671,6 +671,39 @@ services:
         aliases: []
       dependencies_elasticsearch_net:
         aliases: []
+        
+  mosip-api:
+    image: ghcr.io/opencrvs/mosip:4de7d22
+    environment:
+      - NODE_ENV=production
+      - MOSIP_WEBHOOK_URL=http://mosip-mock.{{STACK}}_app_net:20240
+      - OPENCRVS_GRAPHQL_GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070
+    deploy:
+      replicas: 1
+      labels:
+        - 'traefik.enable=false'
+    networks:
+      app_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_traefik_net_1:
+        aliases: []
+
+  mosip-mock:
+    image: ghcr.io/opencrvs/mosip-mock:4de7d22
+    environment:
+      - NODE_ENV=production
+      - OPENCRVS_MOSIP_SERVER_URL=http://mosip-api.{{STACK}}_app_net:2024
+    deploy:
+      replicas: 1
+      labels:
+        - 'traefik.enable=false'
+    networks:
+      app_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_traefik_net_1:
+        aliases: []
 
   mongo-on-update:
     image: mongo:4.4
