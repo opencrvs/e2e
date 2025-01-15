@@ -278,7 +278,7 @@ services:
     environment:
       - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
       - USER_MGNT_MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
-      - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
+      - ES_URL=http://{{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
@@ -332,7 +332,7 @@ services:
       - NODE_ENV=production
       - SENTRY_DSN=${SENTRY_DSN:-}
       - OPENCRVS_INDEX_NAME=ocrvs--${STACK}
-      - ES_URL=http://{{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
+      - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - APN_SERVICE_URL=http://dependencies_apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
