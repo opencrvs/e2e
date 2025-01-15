@@ -282,6 +282,12 @@ services:
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+    networks:
+      app_net:
+      dependencies_monitoring_net_2:
+        aliases: []
+      dependencies_mongo_net_1:
+        aliases: []
 
   workflow:
     image: opencrvs/ocrvs-workflow:${VERSION}
