@@ -282,6 +282,7 @@ services:
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040
     networks:
       app_net:
       dependencies_monitoring_net_2:
