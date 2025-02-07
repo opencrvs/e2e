@@ -224,30 +224,58 @@ split_and_join() {
    SPLIT=$(echo $text | sed -e "s/$separator_for_splitting/$separator_for_joining/g")
    echo $SPLIT
 }
+cleanup_docker_images()
+{
+   echo "Cleaning up the docker images"
+   configured_ssh "/usr/bin/docker system prune -af | sudo tee -a /var/log/docker-prune.log > /dev/null"
+}
 
 docker_stack_deploy() {
+  echo "Deploying this environment: $ENVIRONMENT_COMPOSE"
+
+  echo "Pulling all docker images. This might take a while"
+
+  EXISTING_IMAGES=$(configured_ssh "docker images --format '{{.Repository}}:{{.Tag}}'")
+  IMAGE_TAGS_TO_DOWNLOAD=$(get_docker_tags_from_compose_files "$COMPOSE_FILES_USED")
+
+  for tag in ${IMAGE_TAGS_TO_DOWNLOAD[@]}; do
+    if [[ $EXISTING_IMAGES == *"$tag"* ]]; then
+      echo "$tag already exists on the machine. Skipping..."
+      continue
+    fi
+
+    echo "Downloading $tag"
+
+    until configured_ssh "cd /opt/opencrvs && docker pull $tag"
+    do
+      echo "Server failed to download $tag. Retrying..."
+      sleep 5
+    done &
+  done
+  wait
+  echo "Images are successfully downloaded"
   echo "Updating docker swarm stack with new compose files"
 
-  EXISTING_STACKS=$(configured_ssh 'docker stack ls --format "{{ .Name }}" | grep -v "dependencies" | paste -sd "," -')
+  configured_ssh 'cd /opt/opencrvs && \
+    docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $COMPOSE_FILES_USED)")' --with-registry-auth opencrvs'
+}
 
-  if echo $EXISTING_STACKS | grep -w $STACK > /dev/null; then
-    echo "Stack $STACK exists"
-  else
-    echo "Stack $STACK doesnt exist. Creating"
-  fi
+get_opencrvs_version() {
+  PREVIOUS_VERSION=$(configured_ssh "docker service ls | grep opencrvs_base | cut -d ':' -f 2")
+  echo "Previous opencrvs version: $PREVIOUS_VERSION"
+  echo "Current opencrvs version: $VERSION"
+}
 
-  if [ "$UPDATE_DEPENDENCIES" = true ]; then
-    echo "Updating dependency stack"
-    configured_ssh 'cd /opt/opencrvs && \
-      docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $DEPENDENCY_COMPOSE_FILES)")' --with-registry-auth dependencies'
-  else
-    configured_ssh 'cd /opt/opencrvs && \
-      docker stack deploy --prune -c '$(split_and_join " " " -c " "$(to_remote_paths $APPLICATION_COMPOSE_FILES)")' --with-registry-auth '$STACK
-  fi
-
+reset_metabase() {
+  echo "Reseting metabase"
+  configured_ssh "docker exec \$(docker ps | grep opencrvs_dashboards | awk '{print \$1}' | head -n 1) /bin/sh -c \"rm /data/metabase/metabase.mv.db\" && \
+    docker service scale opencrvs_dashboards=0 && \
+    docker service scale opencrvs_dashboards=1"
 }
 
 validate_options
+
+get_opencrvs_version
 
 # Create new passwords for all MongoDB users created in
 # infrastructure/mongodb/docker-entrypoint-initdb.d/create-mongo-users.sh
@@ -327,6 +355,8 @@ configured_ssh "/opt/opencrvs/$STACK/infrastructure/setup-deploy-config.sh $HOST
 
 rotate_secrets
 
+cleanup_docker_images
+
 docker_stack_deploy
 
 echo
@@ -348,19 +378,31 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
 
   echo "Setting up Kibana config & alerts"
 
-  while true; do
-    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/$STACK/infrastructure/monitoring/kibana/setup-config.sh"; then
-      break
-    fi
-    sleep 5
-  done
-else
-  echo 'Waiting for Elasticsearch to be ready'
+while true; do
+  if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/infrastructure/monitoring/kibana/setup-config.sh"; then
+    break
+  fi
+  sleep 5
+done
 
-  while true; do
-    if configured_ssh "/opt/opencrvs/$STACK/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
-      break
-    fi
-    sleep 5
-  done
+# Send a notification email to confirm emails are working
+EMAIL_PAYLOAD='{
+  "subject": "🚀 Deployment to '$ENV' finished",
+  "html": "Deployment to '$ENV' was successful with images '$VERSION' for core and '$COUNTRY_CONFIG_VERSION' for country config.",
+  "from": "{{SENDER_EMAIL_ADDRESS}}",
+  "to": "{{ALERT_EMAIL}}"
+}'
+
+VERSION=$(echo "$VERSION" | xargs)
+PREVIOUS_VERSION=$(echo "$PREVIOUS_VERSION" | xargs)
+
+if [[ "$VERSION" == "$PREVIOUS_VERSION" ]]; then
+  echo "No reset needed for Metabase."
+else
+  reset_metabase
 fi
+
+configured_ssh "docker run --rm --network=opencrvs_overlay_net appropriate/curl \
+  -X POST 'http://countryconfig:3040/email' \
+  -H 'Content-Type: application/json' \
+  -d '$EMAIL_PAYLOAD'"
