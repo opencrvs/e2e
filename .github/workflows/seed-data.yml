@@ -29,10 +29,8 @@ on:
         type: string
 jobs:
   seed-data:
-    environment: ${{ inputs.environment }}
-    runs-on: ubuntu-22.04
-    outputs:
-      outcome: ${{ steps.seed.outcome }}
+    environment: ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Clone core
@@ -46,17 +44,12 @@ jobs:
         if: ${{ inputs.core-image-tag }}
         run: |
           cd opencrvs-core
-          git checkout ${{ inputs.core-image-tag }}
+          git checkout ${{ github.event.inputs.core-image-tag }}
 
-      - name: Remove other package directories
-        run: |
-          cd ./opencrvs-core
-          for dir in packages/*; do
-            if [ "$dir" != "packages/data-seeder" ] && [ "$dir" != "packages/commons" ]; then
-              echo "Removing $dir"
-              rm -rf "$dir"
-            fi
-          done
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
 
       - name: Install dependencies
         working-directory: ./opencrvs-core
