@@ -51,6 +51,7 @@ services:
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - MONGO_URL=mongodb://${STACK}__notification:${NOTIFICATION_MONGODB_PASSWORD}@mongo1/${STACK}__notification?replicaSet=rs0
       - COUNTRY_CONFIG_URL=http://countryconfig.{{STACK}}_app_net:3040
+      - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
     deploy:
       replicas: 1
       labels:
