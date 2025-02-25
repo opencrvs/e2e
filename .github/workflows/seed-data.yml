@@ -29,7 +29,7 @@ on:
         type: string
 jobs:
   seed-data:
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -45,6 +45,16 @@ jobs:
         run: |
           cd opencrvs-core
           git checkout ${{ github.event.inputs.core-image-tag }}
+      
+      - name: Remove other package directories
+        run: |
+          cd ./opencrvs-core
+          for dir in packages/*; do
+            if [ "$dir" != "packages/data-seeder" ] && [ "$dir" != "packages/commons" ]; then
+              echo "Removing $dir"
+              rm -rf "$dir"
+            fi
+          done
 
       - name: Use Node.js from .nvmrc
         uses: actions/setup-node@v4
