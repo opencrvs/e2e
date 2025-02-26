@@ -38,7 +38,7 @@ services:
         aliases: []
 
   notification:
-    image: opencrvs/ocrvs-notification:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-notification:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -135,7 +135,7 @@ services:
         aliases: []
 
   login:
-    image: opencrvs/ocrvs-login:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-login:${VERSION}
     environment:
       - QA_ENV=true
       - HOST=0.0.0.0
@@ -169,7 +169,7 @@ services:
         aliases: []
 
   client:
-    image: opencrvs/ocrvs-client:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-client:${VERSION}
     environment:
       - QA_ENV=true
       - HOST=0.0.0.0
@@ -210,7 +210,7 @@ services:
         aliases: []
 
   gateway:
-    image: opencrvs/ocrvs-gateway:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-gateway:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -274,7 +274,7 @@ services:
       dependencies_minio_net:
         aliases: []
   events:
-    image: opencrvs/ocrvs-events:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-events:${VERSION}
     restart: unless-stopped
     environment:
       - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
@@ -295,7 +295,7 @@ services:
         aliases: []
 
   workflow:
-    image: opencrvs/ocrvs-workflow:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-workflow:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -328,7 +328,7 @@ services:
         aliases: []
 
   search:
-    image: opencrvs/ocrvs-search:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-search:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -388,7 +388,7 @@ services:
           - node.role == manager
 
   metrics:
-    image: opencrvs/ocrvs-metrics:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-metrics:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     volumes:
@@ -431,7 +431,7 @@ services:
         aliases: []
 
   auth:
-    image: opencrvs/ocrvs-auth:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-auth:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
       - jwt-private-key.{{STACK}}.{{ts}}
@@ -480,7 +480,7 @@ services:
         aliases: []
 
   user-mgnt:
-    image: opencrvs/ocrvs-user-mgnt:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-user-mgnt:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -511,7 +511,7 @@ services:
         aliases: []
 
   webhooks:
-    image: opencrvs/ocrvs-webhooks:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-webhooks:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -556,7 +556,7 @@ services:
         aliases: []
 
   config:
-    image: opencrvs/ocrvs-config:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-config:${VERSION}
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -611,7 +611,7 @@ services:
         aliases: []
 
   documents:
-    image: opencrvs/ocrvs-documents:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-documents:${VERSION}
     deploy:
       replicas: 1
       labels:
@@ -639,7 +639,7 @@ services:
         aliases: []
 
   scheduler:
-    image: opencrvs/ocrvs-scheduler:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-scheduler:${VERSION}
     environment:
       - QA_ENV=true
       - NODE_ENV=production
@@ -654,7 +654,7 @@ services:
         aliases: []
 
   migration:
-    image: opencrvs/ocrvs-migration:${VERSION}
+    image: ghcr.io/opencrvs/ocrvs-migration:${VERSION}
     environment:
       - QA_ENV=true
       - HOST=0.0.0.0
