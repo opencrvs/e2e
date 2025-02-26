@@ -299,24 +299,24 @@ else
 EOF
 fi
 
-EVENTS_USER=$(echo $(checkIfUserExists "events"))
+EVENTS_USER=$(echo $(checkIfUserExists "${DATABASE_PREFIX}__events"))
 if [[ $EVENTS_USER != "FOUND" ]]; then
   echo "events user not found --> creating"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use events
+  use ${DATABASE_PREFIX}__events
   db.createUser({
-    user: 'events',
+    user: '${DATABASE_PREFIX}__events',
     pwd: '$EVENTS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]
+    roles: [{ role: 'readWrite', db: '${DATABASE_PREFIX}__events' }, {role: 'read', db: '${DATABASE_PREFIX}__user-mgnt'}]
   })
 EOF
 else
   echo "events user exists --> updating credentials"
   mongo $(mongo_credentials) --host $HOST <<EOF
-  use events
-  db.updateUser('events', {
+  use ${DATABASE_PREFIX}__events
+  db.updateUser('${DATABASE_PREFIX}__events', {
     pwd: '$EVENTS_MONGODB_PASSWORD',
-    roles: [{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]
+    roles: [{ role: 'readWrite', db: '${DATABASE_PREFIX}__events' }, {role: 'read', db: '${DATABASE_PREFIX}__user-mgnt'}]
   })
 EOF
 fi
