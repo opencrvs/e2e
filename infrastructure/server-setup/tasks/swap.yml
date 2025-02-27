@@ -14,8 +14,8 @@
   tags:
     - swap.file.permissions
 
-- name: Ensure 'file' package is installed
-  apt:
+- name: Ensure 'file' utility is installed
+  ansible.builtin.package:
     name: file
     state: present
   tags:

@@ -52,7 +52,7 @@ on:
 jobs:
   download-images:
     environment: ${{ inputs.stack }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Check if vars.BLOCK_NEW_DEPLOYMENTS is set to true
@@ -153,7 +153,13 @@ jobs:
               ) |
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
-
+          
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          node-version-file: .nvmrc
+          
       - name: Download images for ${{ inputs.stack }}
         run: |
           cd ./${{ github.event.repository.name }}
