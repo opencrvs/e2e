@@ -147,7 +147,7 @@ services:
         constraints:
           - node.role == manager
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.3
+    image: docker.elastic.co/kibana/kibana:8.17.3
     networks:
       - traefik_net_1
       - elasticsearch_net
