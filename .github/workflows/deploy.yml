@@ -154,11 +154,10 @@ jobs:
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
           
-      - name: Use Node.js from .nvmrc
+      - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          node-version-file: .nvmrc
           
       - name: Download images for ${{ inputs.stack }}
         run: |
