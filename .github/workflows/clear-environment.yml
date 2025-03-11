@@ -30,7 +30,7 @@ jobs:
   reset-data:
     name: 'Reset data from stack ${{ inputs.stack }} in ${{ inputs.environment }}'
     environment: ${{ inputs.environment }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       outcome: ${{ steps.reset-data.outcome }}
     timeout-minutes: 60

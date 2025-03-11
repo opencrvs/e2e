@@ -82,9 +82,9 @@ jobs:
         id: check-specs
         run: |
           if ls ./e2e/testcases/${{ matrix.test_dir }}/*.spec.ts > /dev/null 2>&1; then
-            echo "::set-output name=has_spec_files::true"
+            echo "has_spec_files=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=has_spec_files::false"
+            echo "has_spec_files=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Cache Node.js dependencies
@@ -110,7 +110,15 @@ jobs:
         run: npx playwright test ./e2e/testcases/${{ matrix.test_dir }}
         env:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}'
-
+      - id: ctrf_check
+        if: always()
+        run: |
+          [ -d ctrf ] && \
+           echo "ctrf=true" >> $GITHUB_OUTPUT || \
+           echo "ctrf=false" >> $GITHUB_OUTPUT
+      - name: Publish Test Summary Results
+        run: npx github-actions-ctrf ctrf/ctrf-report.json
+        if: always() && steps.ctrf_check.outputs.ctrf == 'true'
       - uses: actions/upload-artifact@v4
         if: always() && steps.check-specs.outputs.has_spec_files == 'true'
         with:
