@@ -23,6 +23,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  debug:
+    name: Debug output
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Print Entire Event Payload
+      run: |
+        echo "${{ toJson(github.event) }}"
   deploy:
     uses: ./.github/workflows/deploy.yml
     with:
