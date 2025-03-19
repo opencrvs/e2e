@@ -94,10 +94,23 @@ drop_database events;
 
 # Delete all data from elasticsearch
 #-----------------------------------
-docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/${STACK}__ocrvs" -v
 
-indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/_alias/events_${STACK}" | jq -r 'keys | join(",")')
-[ -n "$indices" ] && docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/$indices"
+aliases=("ocrvs--${STACK}" "events_${STACK}")
+
+for alias in "${aliases[@]}"; do
+  # Find all indices attached to the alias and delete them
+  indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+    curl -s -XDELETE "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
+
+  if [ -n "$indices" ]; then
+    docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+      curl -XDELETE "http://$(elasticsearch_host)/$indices"
+  fi
+
+  # Delete the alias
+  docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+    curl -XDELETE "http://$(elasticsearch_host)/_alias/$alias"
+done
 
 # Delete all data from metrics
 #-----------------------------
