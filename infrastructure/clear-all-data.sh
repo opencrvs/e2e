@@ -98,21 +98,26 @@ drop_database events;
 aliases=("ocrvs--${STACK}" "events_${STACK}")
 
 for alias in "${aliases[@]}"; do
-  echo "Deleting data for alias $alias"
+  echo "Check if alias $alias exists"
+  exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+    curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/_alias/$alias")
+
+  if [ "$exists" -ne 200 ]; then
+    echo "Alias $alias does not exist, skipping."
+    continue
+  fi
+
+  echo "Alias $alias exists, deleting indices."
+
   # Find all indices attached to the alias and delete them
   indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-    curl -s -XDELETE "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
+    curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
 
-  echo "Found indices: $indices"
-
+  echo "Deleting indices $indices"
   if [ -n "$indices" ]; then
     docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
       curl -XDELETE "http://$(elasticsearch_host)/$indices"
   fi
-
-  # Delete the alias
-  docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-    curl -XDELETE "http://$(elasticsearch_host)/_alias/$alias"
 done
 
 # Delete all data from metrics
