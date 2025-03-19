@@ -90,9 +90,12 @@ drop_database metrics;
 
 drop_database performance;
 
+drop_database events;
+
 # Delete all data from elasticsearch
 #-----------------------------------
 docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/${STACK}__ocrvs" -v
+docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -XDELETE "http://$(elasticsearch_host)/events_${STACK},events_${STACK}*" -v
 
 # Delete all data from metrics
 #-----------------------------
