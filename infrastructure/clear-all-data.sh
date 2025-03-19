@@ -98,9 +98,12 @@ drop_database events;
 aliases=("ocrvs--${STACK}" "events_${STACK}")
 
 for alias in "${aliases[@]}"; do
+  echo "Deleting data for alias $alias"
   # Find all indices attached to the alias and delete them
   indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
     curl -s -XDELETE "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
+
+  echo "Found indices: $indices"
 
   if [ -n "$indices" ]; then
     docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
