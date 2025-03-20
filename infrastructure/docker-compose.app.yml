@@ -111,6 +111,7 @@ services:
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - SENDER_EMAIL_ADDRESS=${SENDER_EMAIL_ADDRESS}
+      - V2_EVENTS=${V2_EVENTS:-}
       # This needs to be the internal swarm url
       # as containers cannot connect to the web
       - GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070
