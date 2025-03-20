@@ -78,3 +78,4 @@ docker-workers:
   hosts:
     e2e-dev-worker: # @todo set this to be the hostname of your target server
       ansible_host: '95.216.155.9'
+      data_label: data2
