@@ -133,9 +133,3 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
   mc rm --recursive --force myminio/${STACK}--ocrvs && \
   mc rb myminio/${STACK}--ocrvs && \
   mc mb myminio/${STACK}--ocrvs"
-
-# Delete all data from redis
-#-----------------------------
-REDIS_CONTAINER_ID=$(docker ps --filter "name=^${STACK}_redis" --format '{{.ID}}' --latest)
-echo "REDIS_CONTAINER_ID: $REDIS_CONTAINER_ID"
-docker exec -i $REDIS_CONTAINER_ID redis-cli FLUSHDB
