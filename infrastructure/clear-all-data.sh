@@ -107,18 +107,20 @@ for alias in "${aliases[@]}"; do
     continue
   fi
 
-  echo "Alias $alias exists, deleting indices."
+  echo "Alias $alias exists, clearing indices."
 
-  # Find all indices attached to the alias and delete them
+  # Find all indices attached to the alias and clear them
   indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
     curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
 
-  echo "Deleting indices $indices"
+  echo "Clearing indices $indices"
   if [ -n "$indices" ]; then
     docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-      curl -XDELETE "http://$(elasticsearch_host)/$indices"
+      curl -XPOST "http://$(elasticsearch_host)/$indices/_delete_by_query" -H "Content-Type: application/json" \
+      -d '{"query": {"match_all": {}}}'
   fi
 done
+
 
 # Delete all data from metrics
 #-----------------------------
