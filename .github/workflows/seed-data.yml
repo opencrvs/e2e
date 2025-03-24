@@ -35,50 +35,18 @@ jobs:
       outcome: ${{ steps.seed.outcome }}
     timeout-minutes: 60
     steps:
-      - name: Clone core
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: 'opencrvs/opencrvs-core'
-          path: './opencrvs-core'
-
-      - name: Set CORE_VERSION from inputs
-        if: ${{ inputs.core-image-tag }}
-        run: |
-          cd opencrvs-core
-          git checkout ${{ inputs.core-image-tag }}
-
-      - name: Remove other package directories
-        run: |
-          cd ./opencrvs-core
-          for dir in packages/*; do
-            if [ "$dir" != "packages/data-seeder" ] && [ "$dir" != "packages/commons" ]; then
-              echo "Removing $dir"
-              rm -rf "$dir"
-            fi
-          done
-
-      - name: Use Node.js 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        working-directory: ./opencrvs-core
-        run: CI="" yarn install --frozen-lockfile
-
-      - name: Seed data on given environment
-        uses: nick-fields/retry@v3
-        id: seed
-        with:
-          timeout_minutes: 10
-          max_attempts: 5
-          command: |
-            cd ./opencrvs-core
-            yarn seed:prod
-        env:
-          ACTIVATE_USERS: ${{ vars.ACTIVATE_USERS }}
-          GATEWAY_HOST: 'https://gateway.${{inputs.stack}}.opencrvs.dev'
-          AUTH_HOST: 'https://auth.${{inputs.stack}}.opencrvs.dev'
-          COUNTRY_CONFIG_HOST: 'https://countryconfig.${{inputs.stack}}.opencrvs.dev'
-          SUPER_USER_PASSWORD: ${{ secrets.SUPER_USER_PASSWORD }}
+       - name: Pull the seed-data image
+         run: docker pull ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }}
+        
+       - name: Run docker container
+         run: |
+           container_id=$(docker run -d \
+             -e ACTIVATE_USERS=${{ vars.ACTIVATE_USERS }} \
+             -e GATEWAY_HOST="https://gateway.${{inputs.stack}}.opencrvs.dev" \
+             -e AUTH_HOST="https://auth.${{inputs.stack}}.opencrvs.dev" \
+             -e COUNTRY_CONFIG_HOST="https://countryconfig.${{inputs.stack}}.opencrvs.dev" \
+             -e SUPER_USER_PASSWORD=${{ secrets.SUPER_USER_PASSWORD }} \
+             ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }} \
+             sh -c "yarn seed")
+           docker wait $container_id
+           docker logs $container_id
