@@ -72,12 +72,28 @@ jobs:
           path: |
             node_modules
             ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
           key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
         run: yarn
+      - uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: npx playwright install --with-deps
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
+          key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+          restore-keys: |
+            ${{ runner.os }}-node-
   test:
     needs: [deploy, discover-tests]
     runs-on: ubuntu-22.04
@@ -107,18 +123,13 @@ jobs:
           path: |
             node_modules
             ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
           key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
         run: yarn
-
-      - uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: npx playwright install --with-deps
 
       - name: Run Playwright Tests
         run: npx playwright test ./e2e/testcases/${{ matrix.test_file }}
