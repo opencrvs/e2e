@@ -40,13 +40,11 @@ jobs:
         
        - name: Run docker container
          run: |
-           container_id=$(docker run -d \
+           docker run -d \
              -e ACTIVATE_USERS=${{ vars.ACTIVATE_USERS }} \
              -e GATEWAY_HOST="https://gateway.${{inputs.stack}}.opencrvs.dev" \
              -e AUTH_HOST="https://auth.${{inputs.stack}}.opencrvs.dev" \
              -e COUNTRY_CONFIG_HOST="https://countryconfig.${{inputs.stack}}.opencrvs.dev" \
              -e SUPER_USER_PASSWORD=${{ secrets.SUPER_USER_PASSWORD }} \
              ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }} \
-             sh -c "yarn seed")
-           docker wait $container_id
-           docker logs $container_id
+             sh -c "yarn seed"
