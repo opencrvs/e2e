@@ -39,6 +39,7 @@ jobs:
          run: docker pull ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }}
         
        - name: Run docker container
+         id: seed
          run: |
            docker run -d \
              -e ACTIVATE_USERS=${{ vars.ACTIVATE_USERS }} \
