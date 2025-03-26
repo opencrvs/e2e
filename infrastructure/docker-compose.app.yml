@@ -673,7 +673,6 @@ services:
       - MINIO_BUCKET=${STACK}--ocrvs
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
-      - DASHBOARD_MONGO_URL=mongodb://mongo1/${STACK}__performance
       - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
