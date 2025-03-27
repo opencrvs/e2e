@@ -662,6 +662,7 @@ services:
       - ELASTICSEARCH_INDEX_NAME=ocrvs--${STACK}
       - USER_MGNT_MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
       - PERFORMANCE_MONGO_URL=mongodb://${STACK}__performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
+      - DASHBOARD_MONGO_URL=mongodb://${STACK}__performance:${PERFORMANCE_MONGODB_PASSWORD}@mongo1/${STACK}__performance?replicaSet=rs0
       - APPLICATION_CONFIG_MONGO_URL=mongodb://${STACK}__config:${CONFIG_MONGODB_PASSWORD}@mongo1/${STACK}__application-config?replicaSet=rs0
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - OPENHIM_MONGO_URL=mongodb://${STACK}__openhim:${OPENHIM_MONGODB_PASSWORD}@mongo1/${STACK}__openhim-dev?replicaSet=rs0
@@ -673,7 +674,6 @@ services:
       - MINIO_BUCKET=${STACK}--ocrvs
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
-      - DASHBOARD_MONGO_URL=mongodb://mongo1/${STACK}__performance
       - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
