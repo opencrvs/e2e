@@ -37,14 +37,14 @@ jobs:
     steps:
        - name: Pull the seed-data image
          run: docker pull ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }}
-        
+
        - name: Run docker container
          id: seed
          run: |
-           docker run -d \
+           docker run \
              -e ACTIVATE_USERS=${{ vars.ACTIVATE_USERS }} \
              -e GATEWAY_HOST="https://gateway.${{inputs.stack}}.opencrvs.dev" \
              -e AUTH_HOST="https://auth.${{inputs.stack}}.opencrvs.dev" \
              -e COUNTRY_CONFIG_HOST="https://countryconfig.${{inputs.stack}}.opencrvs.dev" \
              -e SUPER_USER_PASSWORD=${{ secrets.SUPER_USER_PASSWORD }} \
-             ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }} 
+             ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }}
