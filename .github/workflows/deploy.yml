@@ -151,12 +151,12 @@ jobs:
               ) |
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
-
+          
       - name: Use Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
+          
       - name: Download images for ${{ inputs.stack }}
         run: |
           cd ./${{ github.event.repository.name }}
@@ -304,8 +304,18 @@ jobs:
           --country_config_version=${{ inputs.countryconfig-image-tag }} \
           --replicas=${{ vars.REPLICAS }}
 
-  seed-data:
+  reset:
     needs: deploy
+    if: ${{ inputs.reset == 'true' && needs.deploy.outputs.outcome == 'success' }}
+    uses: ./.github/workflows/clear-environment.yml
+    with:
+      environment: ${{ inputs.stack }}
+      stack: ${{ inputs.stack }}
+    secrets: inherit
+
+  seed-data:
+    needs: reset
+    if: ${{ inputs.reset == 'true' && needs.reset.outputs.outcome == 'success' }}
     uses: ./.github/workflows/seed-data.yml
     with:
       environment: ${{ inputs.stack }}
