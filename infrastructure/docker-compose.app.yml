@@ -666,6 +666,7 @@ services:
       - APPLICATION_CONFIG_MONGO_URL=mongodb://${STACK}__config:${CONFIG_MONGODB_PASSWORD}@mongo1/${STACK}__application-config?replicaSet=rs0
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - OPENHIM_MONGO_URL=mongodb://${STACK}__openhim:${OPENHIM_MONGODB_PASSWORD}@mongo1/${STACK}__openhim-dev?replicaSet=rs0
+      - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
       - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
