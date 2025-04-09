@@ -73,7 +73,7 @@ docker-manager-first:
       ansible_host: '95.217.0.65'
       data_label: data1
 
-# QA and staging servers are not configured to use workers.
+# e2e and staging servers are not configured to use workers.
 docker-workers: 
   hosts:
     e2e-dev-worker: # @todo set this to be the hostname of your target server
