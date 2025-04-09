@@ -6,12 +6,12 @@ on:
       environment:
         type: choice
         description: Machine to provision
-        default: qa
+        default: e2e
         required: true
         options:
           - development
           - staging
-          - qa
+          - e2e
           - production
           - backup
           - jump

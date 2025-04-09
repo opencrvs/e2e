@@ -18,9 +18,9 @@ on:
         type: choice
         description: Environment to seed data
         required: true
-        default: 'qa'
+        default: 'e2e'
         options:
-          - qa
+          - e2e
       core-image-tag:
         description: Core DockerHub image tag
       stack:
