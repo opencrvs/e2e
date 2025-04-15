@@ -3,6 +3,8 @@ services:
   # Configure redis
   redis:
     image: docker.io/bitnami/valkey:8.1
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
     networks:
       app_net:
       dependencies_monitoring_net:
