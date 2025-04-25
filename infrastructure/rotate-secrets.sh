@@ -1,3 +1,4 @@
+#!/bin/bash
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -16,6 +17,9 @@ UNIX_TS=$(date +%s)
 
 echo "$PUB_KEY" | docker secret create jwt-public-key.$STACK.$UNIX_TS -
 echo "$PRIV_KEY" | docker secret create jwt-private-key.$STACK.$UNIX_TS -
+
+INFRASTRUCTURE_DIRECTORY=$(dirname "$0")
+cat $INFRASTRUCTURE_DIRECTORY/redis-acl.conf | docker secret create redis-acl.$STACK.$UNIX_TS -
 
 sed -i "s/{{ts}}/$UNIX_TS/g" "$@"
 sed -i "s/{{STACK}}/$STACK/g" "$@"
