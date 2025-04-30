@@ -217,6 +217,19 @@ rotate_secrets() {
   configured_ssh '/opt/opencrvs/$STACK/infrastructure/rotate-secrets.sh '$files_to_rotate' | tee -a '$LOG_LOCATION'/rotate-secrets.log'
 }
 
+save_redis_acl(){
+  echo "Saving redis acl"
+  printf """
+user default on >$DEFAULT_REDIS_PASSWORD ~* +@all
+user $GATEWAY_REDIS_USERNAME on >$GATEWAY_REDIS_PASSWORD ~* +@all
+user $WORKFLOW_REDIS_USERNAME on >$WORKFLOW_REDIS_PASSWORD ~* +@all
+user $AUTH_REDIS_USERNAME on >$AUTH_REDIS_PASSWORD ~* +@all
+user $WEBHOOKS_REDIS_USERNAME on >$WEBHOOKS_REDIS_PASSWORD ~* +@all
+""" > $INFRASTRUCTURE_DIRECTORY/redis-acl.conf
+  echo "Redis acl saved to $INFRASTRUCTURE_DIRECTORY/redis-acl.conf"
+  cat $INFRASTRUCTURE_DIRECTORY/redis-acl.conf
+}
+
 split_and_join() {
    separator_for_splitting=$1
    separator_for_joining=$2
@@ -265,6 +278,15 @@ export WEBHOOKS_MONGODB_PASSWORD=`generate_password`
 export NOTIFICATION_MONGODB_PASSWORD=`generate_password`
 export EVENTS_MONGODB_PASSWORD=`generate_password`
 
+export DEFAULT_REDIS_PASSWORD=`generate_password`
+export GATEWAY_REDIS_USERNAME=`generate_password`
+export GATEWAY_REDIS_PASSWORD=`generate_password`
+export WORKFLOW_REDIS_USERNAME=`generate_password`
+export WORKFLOW_REDIS_PASSWORD=`generate_password`
+export AUTH_REDIS_USERNAME=`generate_password`
+export AUTH_REDIS_PASSWORD=`generate_password`
+export WEBHOOKS_REDIS_USERNAME=`generate_password`
+export WEBHOOKS_REDIS_PASSWORD=`generate_password`
 #
 # Elasticsearch credentials
 #
@@ -290,6 +312,8 @@ for compose_file in ${COMPOSE_FILES_DOWNLOADED_FROM_CORE[@]}; do
 done
 
 validate_environment_variables
+
+save_redis_acl
 
 if [ "$SSH_PORT" -eq 22 ]; then
     SSH_HOST_TO_CHECK="$SSH_HOST"
