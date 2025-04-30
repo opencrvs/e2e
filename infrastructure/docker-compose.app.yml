@@ -229,10 +229,8 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - DISABLE_RATE_LIMIT=true
       - REDIS_HOST=redis.${STACK}_app_net
-      # TODO: Uncomment when redis is configured
-      # - REDIS_USERNAME=${GATEWAY_REDIS_USERNAME}
-      # - REDIS_PASSWORD=${GATEWAY_REDIS_PASSWORD}
-      - REDIS_PASSWORD=${DEFAULT_REDIS_PASSWORD}
+      - REDIS_USERNAME=${GATEWAY_REDIS_USERNAME}
+      - REDIS_PASSWORD=${GATEWAY_REDIS_PASSWORD}
       - APN_SERVICE_URL=http://dependencies_apm-server:8200
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
@@ -312,10 +310,8 @@ services:
       - QA_ENV=true
       - HOST=0.0.0.0
       - REDIS_HOST=redis.${STACK}_app_net
-      # TODO: Uncomment when redis is configured
-      # - REDIS_USERNAME=${WORKFLOW_REDIS_USERNAME}
-      # - REDIS_PASSWORD=${WORKFLOW_REDIS_PASSWORD}
-      - REDIS_PASSWORD=${DEFAULT_REDIS_PASSWORD}
+      - REDIS_USERNAME=${WORKFLOW_REDIS_USERNAME}
+      - REDIS_PASSWORD=${WORKFLOW_REDIS_PASSWORD}
       - NODE_ENV=production
       - LANGUAGES=en,fr
       - SENTRY_DSN=${SENTRY_DSN:-}
@@ -463,10 +459,8 @@ services:
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
       - REDIS_HOST=redis.${STACK}_app_net
-      # TODO: Uncomment when redis is configured
-      # - REDIS_USERNAME=${AUTH_REDIS_USERNAME}
-      # - REDIS_PASSWORD=${AUTH_REDIS_PASSWORD}
-      - REDIS_PASSWORD=${DEFAULT_REDIS_PASSWORD}
+      - REDIS_USERNAME=${AUTH_REDIS_USERNAME}
+      - REDIS_PASSWORD=${AUTH_REDIS_PASSWORD}
       - USER_MANAGEMENT_URL=http://user-mgnt.{{STACK}}_app_net:3030/
       - CONFIG_TOKEN_EXPIRY_SECONDS=604800
       - CONFIG_SMS_CODE_EXPIRY_SECONDS=600
@@ -539,10 +533,8 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - CERT_PRIVATE_KEY_PATH="THIS IS NOT EVEN USED ANYWHERE @todo"
       - REDIS_HOST=redis.${STACK}_app_net
-      # TODO: Uncomment when redis is configured
-      # - REDIS_USERNAME=${WEBHOOKS_REDIS_USERNAME}
-      # - REDIS_PASSWORD=${WEBHOOKS_REDIS_PASSWORD}
-      - REDIS_PASSWORD=${DEFAULT_REDIS_PASSWORD}
+      - REDIS_USERNAME=${WEBHOOKS_REDIS_USERNAME}
+      - REDIS_PASSWORD=${WEBHOOKS_REDIS_PASSWORD}
       - APN_SERVICE_URL=http://dependencies_apm-server:8200
       - MONGO_URL=mongodb://${STACK}__webhooks:${WEBHOOKS_MONGODB_PASSWORD}@mongo1/${STACK}__webhooks?replicaSet=rs0
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
