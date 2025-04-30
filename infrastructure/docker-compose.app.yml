@@ -6,8 +6,12 @@ services:
     environment:
       - VALKEY_PASSWORD=false
       - VALKEY_ACLFILE=/run/secrets/redis-acl.{{STACK}}.{{ts}}
+      - VALKEY_OVERRIDES_FILE=/opt/bitnami/valkey/mounted-etc/overrides.conf
     secrets:
       - redis-acl.{{STACK}}.{{ts}}
+    configs:
+      - source: redis-overrides.{{ts}}
+        target: /opt/bitnami/valkey/mounted-etc/overrides.conf
     networks:
       app_net:
       dependencies_monitoring_net:
@@ -761,6 +765,8 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/hearth-queryparam-extensions.json
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
+  redis-overrides.{{ts}}:
+    file: /opt/opencrvs/{{STACK}}/infrastructure/redis/overrides.conf
 networks:
   dependencies_mongo_net_1:
     external: true
