@@ -220,7 +220,7 @@ rotate_secrets() {
 save_redis_acl(){
   echo "Saving redis acl"
   printf """
-user default on >$DEFAULT_REDIS_PASSWORD ~* +@all
+user default on nopass ~* +@all
 user $GATEWAY_REDIS_USERNAME on >$GATEWAY_REDIS_PASSWORD ~* +@all
 user $WORKFLOW_REDIS_USERNAME on >$WORKFLOW_REDIS_PASSWORD ~* +@all
 user $AUTH_REDIS_USERNAME on >$AUTH_REDIS_PASSWORD ~* +@all
