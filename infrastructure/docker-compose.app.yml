@@ -758,7 +758,6 @@ services:
 
   mosip-api:
     volumes:
-      - /data/sqlite:/data/sqlite
       - /certs:/certs:ro
     image: ghcr.io/opencrvs/mosip-api:1.8.0-beta.10
     environment:
