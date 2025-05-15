@@ -762,6 +762,7 @@ services:
     image: ghcr.io/opencrvs/mosip-api:1.8.0-beta.10
     environment:
       - NODE_ENV=production
+      - SQLITE_DATABASE_PATH=/mosip-api.db
       - MOSIP_BIRTH_WEBHOOK_URL=http://mosip-mock.{{STACK}}_app_net:20240/webhooks/opencrvs/birth
       - MOSIP_DEATH_WEBHOOK_URL=http://mosip-mock.{{STACK}}_app_net:20240/webhooks/opencrvs/death
       - OPENCRVS_GRAPHQL_GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070/graphql
