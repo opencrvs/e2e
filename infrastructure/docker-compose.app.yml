@@ -800,22 +800,26 @@ services:
       replicas: 1
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.mosip-api.rule=Host(`mosip-api.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.mosip-api.loadbalancer.server.port=2024'
-        - 'traefik.http.routers.mosip-api.tls=true'
-        - 'traefik.http.routers.mosip-api.tls.certresolver=certResolver'
-        - 'traefik.http.routers.mosip-api.entrypoints=web,websecure'
-        - 'traefik.http.routers.mosip-api.middlewares=gzip-compression'
-        - 'traefik.docker.network=opencrvs_overlay_net'
-        - 'traefik.http.middlewares.mosip-api.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.mosip-api.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.mosip-api.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.mosip-api.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.mosip-api.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.mosip-api.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__mosip-api.rule=Host(`mosip-api.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__mosip-api.loadbalancer.server.port=2024'
+        - 'traefik.http.routers.${STACK}__mosip-api.tls=true'
+        - 'traefik.http.routers.${STACK}__mosip-api.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__mosip-api.tls.domains[0].main=${STACK}.{{hostname}}'
+        - 'traefik.http.routers.${STACK}__mosip-api.tls.domains[0].sans=*.${STACK}.{{hostname}}'
+        - 'traefik.http.routers.${STACK}__mosip-api.entrypoints=web,websecure'
+        - 'traefik.http.routers.${STACK}__mosip-api.middlewares=gzip-compression'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stspreload=true'
     networks:
       app_net:
       dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_traefik_net_2:
         aliases: []
 
   mosip-mock:
@@ -849,22 +853,26 @@ services:
       replicas: 1
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.routers.esignet-mock.rule=Host(`esignet-mock.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.esignet-mock.loadbalancer.server.port=20260'
-        - 'traefik.http.routers.esignet-mock.tls=true'
-        - 'traefik.http.routers.esignet-mock.tls.certresolver=certResolver'
-        - 'traefik.http.routers.esignet-mock.entrypoints=web,websecure'
-        - 'traefik.http.routers.esignet-mock.middlewares=gzip-compression'
-        - 'traefik.docker.network=opencrvs_overlay_net'
-        - 'traefik.http.middlewares.esignet-mock.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.esignet-mock.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.esignet-mock.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.esignet-mock.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.esignet-mock.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.esignet-mock.headers.stspreload=true'
+        - 'traefik.http.routers.${STACK}__esignet-mock.rule=Host(`esignet-mock.${STACK}.{{hostname}}`)'
+        - 'traefik.http.services.${STACK}__esignet-mock.loadbalancer.server.port=20260'
+        - 'traefik.http.routers.${STACK}__esignet-mock.tls=true'
+        - 'traefik.http.routers.${STACK}__esignet-mock.tls.certresolver=certResolver'
+        - 'traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].main=${STACK}.{{hostname}}'
+        - 'traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].sans=*.${STACK}.{{hostname}}'
+        - 'traefik.http.routers.${STACK}__esignet-mock.entrypoints=web,websecure'
+        - 'traefik.http.routers.${STACK}__esignet-mock.middlewares=gzip-compression'
+        - 'traefik.docker.network=dependencies_traefik_net_2'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Pragma=no-cache'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Cache-control=no-store'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.X-Robots-Tag=none'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stsseconds=31536000'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stsincludesubdomains=true'
+        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stspreload=true'
     networks:
       app_net:
       dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_traefik_net_2:
         aliases: []
 
 secrets:
