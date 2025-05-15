@@ -762,7 +762,6 @@ services:
     image: ghcr.io/opencrvs/mosip-api:1.8.0-beta.10
     environment:
       - NODE_ENV=production
-      - SQLITE_DATABASE_PATH=/mosip-api.db
       - MOSIP_BIRTH_WEBHOOK_URL=http://mosip-mock.{{STACK}}_app_net:20240/webhooks/opencrvs/birth
       - MOSIP_DEATH_WEBHOOK_URL=http://mosip-mock.{{STACK}}_app_net:20240/webhooks/opencrvs/death
       - OPENCRVS_GRAPHQL_GATEWAY_URL=http://gateway.{{STACK}}_app_net:7070/graphql
@@ -783,7 +782,7 @@ services:
       - SIGN_P12_FILE_PATH=/certs/keystore.p12
       - SIGN_P12_FILE_PASSWORD=mosip123
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
-      - SQLITE_DATABASE_PATH=/data/sqlite/mosip-api.db
+      - SQLITE_DATABASE_PATH=/mosip-api.db
       - MOSIP_AUTH_URL=http://mosip-mock.{{STACK}}_app_net:20240/v1/authmanager/authenticate/clientidsecretkey
       - MOSIP_AUTH_CLIENT_APP_ID=admin
       - MOSIP_PACKET_AUTH_CLIENT_ID=mosip-regproc-client
