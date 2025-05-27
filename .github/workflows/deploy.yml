@@ -155,7 +155,7 @@ jobs:
       - name: Set up Node.js from country .nvmrc
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: 22
 
       - name: Download images for ${{ inputs.stack }}
         run: |
