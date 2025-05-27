@@ -151,14 +151,11 @@ jobs:
               ) |
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
-      - run: |
-          ls -l .
-          pwd
-          find . -name .nvmrc
+
       - name: Set up Node.js from country .nvmrc
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: ./e2e/.nvmrc
 
       - name: Download images for ${{ inputs.stack }}
         run: |
