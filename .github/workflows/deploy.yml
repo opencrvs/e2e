@@ -155,7 +155,7 @@ jobs:
       - name: Set up Node.js from country .nvmrc
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: ./e2e/.nvmrc
 
       - name: Download images for ${{ inputs.stack }}
         run: |
@@ -175,7 +175,7 @@ jobs:
   deploy:
     environment: ${{ inputs.stack }}
     needs: download-images
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     concurrency:
       group: deploy
       cancel-in-progress: false
@@ -285,6 +285,11 @@ jobs:
               ) |
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
+
+      - name: Set up Node.js from country .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ./${{ github.event.repository.name }}/.nvmrc
 
       - name: Deploy to ${{ inputs.stack }}
         id: deploy
