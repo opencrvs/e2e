@@ -118,12 +118,14 @@ jobs:
         run: |
           git checkout ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js from country .nvmrc
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version-file: .nvmrc
 
       - name: Cache Node.js dependencies
         uses: actions/cache@v4
+        id: cache
         with:
           path: |
             node_modules
@@ -133,8 +135,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: yarn
       - uses: nick-fields/retry@v3
+        if: steps.cache.outputs.cache-hit != 'true'
         with:
           timeout_minutes: 10
           max_attempts: 3
