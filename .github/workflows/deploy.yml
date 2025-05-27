@@ -285,7 +285,10 @@ jobs:
               ) |
               .[]' <<< "$VARS_JSON_WITH_NEWLINES"
           )
-
+      - name: Set up Node.js from country .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ${{ github.repository }}/.nvmrc
       - name: Deploy to ${{ inputs.stack }}
         id: deploy
         run: |

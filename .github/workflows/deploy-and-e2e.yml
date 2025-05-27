@@ -46,7 +46,7 @@ jobs:
 
   discover-tests:
     name: Discover test directories
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       test_matrix: ${{ steps.list-tests.outputs.test_matrix }}
     steps:
