@@ -294,6 +294,7 @@ services:
     image: ghcr.io/opencrvs/ocrvs-events:${VERSION}
     restart: unless-stopped
     environment:
+      - NODE_ENV=production
       - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
       - USER_MGNT_MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
       - ES_URL=http://{{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
