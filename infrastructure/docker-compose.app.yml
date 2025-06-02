@@ -758,6 +758,32 @@ services:
       dependencies_mongo_net_2:
         aliases: []
 
+  postgres-on-update:
+    image: postgres:18
+    command: bash /on-deploy.sh
+    configs:
+      - source: postgres-on-deploy.{{ts}}
+        target: /on-deploy.sh
+    deploy:
+      labels:
+        - traefik.enable=false
+      replicas: 1
+      restart_policy:
+        condition: none
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=0.0.0.0
+      - POSTGRES_PORT=5432
+      - EVENTS_APP_POSTGRES_PASSWORD=${EVENTS_APP_POSTGRES_PASSWORD}
+      - EVENTS_MIGRATOR_POSTGRES_PASSWORD=${EVENTS_MIGRATOR_POSTGRES_PASSWORD}
+    networks:
+      app_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_postgres_net:
+        aliases: []
+
   mosip-api:
     volumes:
       - /certs:/certs:ro
@@ -893,6 +919,9 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
   redis-overrides.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/redis/overrides.conf
+  postgres-on-deploy.{{ts}}:
+    file: /opt/opencrvs/{{STACK}}/infrastructure/postgres/on-deploy.sh
+
 networks:
   dependencies_mongo_net_1:
     external: true

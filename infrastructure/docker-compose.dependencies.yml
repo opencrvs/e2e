@@ -438,6 +438,8 @@ configs:
     file: /opt/opencrvs/infrastructure/elasticsearch/jvm.options
   minio-mc-config.{{ts}}:
     file: /opt/opencrvs/infrastructure/mc-config/config.json
+  postgres-on-deploy.{{ts}}:
+    file: /opts/opencrvs/infrastructure/postgres/on-deploy.sh
 
 networks:
   traefik_net_1:
