@@ -2,6 +2,7 @@
 set -e
 
 # Configuration
+: "${STACK:?Must set STACK}"
 : "${POSTGRES_HOST:=postgres}"
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_USER:=postgres}"
@@ -9,6 +10,8 @@ set -e
 : "${TARGET_DB:=events}"
 : "${EVENTS_MIGRATOR_POSTGRES_PASSWORD:?Must set EVENTS_MIGRATOR_POSTGRES_PASSWORD}"
 : "${EVENTS_APP_POSTGRES_PASSWORD:?Must set EVENTS_APP_POSTGRES_PASSWORD}"
+
+TARGET_DB="${STACK}__events"
 
 # Install required tools
 apt-get update && apt-get install -y postgresql-client curl
@@ -28,15 +31,15 @@ else
   echo "Database '$TARGET_DB' does not exist. Initializing..."
 
   PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<EOF
-CREATE DATABASE events;
+CREATE DATABASE "$TARGET_DB";
 
 CREATE ROLE events_migrator WITH LOGIN PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';
 CREATE ROLE events_app WITH LOGIN PASSWORD '${EVENTS_APP_POSTGRES_PASSWORD}';
 
-GRANT CONNECT ON DATABASE events TO events_migrator, events_app;
+GRANT CONNECT ON DATABASE "$TARGET_DB" TO events_migrator, events_app;
 EOF
 
-  PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d events <<EOF
+  PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$TARGET_DB" <<EOF
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM events_migrator;
 

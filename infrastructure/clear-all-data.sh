@@ -141,9 +141,11 @@ POSTGRES_DB="${STACK}__events"
 
 echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
 
-docker exec -i postgres psql -U postgres -d "${POSTGRES_DB}" <<EOF
+docker run --rm --network=dependencies_postgres_net \
+  -e PGPASSWORD="${POSTGRES_PASSWORD}" \
+  postgres:17 bash -c "psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -v ON_ERROR_STOP=1 -c \"
 DROP SCHEMA IF EXISTS app CASCADE;
 CREATE SCHEMA app AUTHORIZATION events_migrator;
-EOF
+\""
 
 echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
