@@ -133,3 +133,17 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
   mc rm --recursive --force myminio/${STACK}--ocrvs && \
   mc rb myminio/${STACK}--ocrvs && \
   mc mb myminio/${STACK}--ocrvs"
+
+# Delete all data from PostgreSQL
+#-------------------------------
+
+POSTGRES_DB="${STACK}__events"
+
+echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
+
+docker exec -i postgres psql -U postgres -d "${POSTGRES_DB}" <<EOF
+DROP SCHEMA IF EXISTS app CASCADE;
+CREATE SCHEMA app AUTHORIZATION events_migrator;
+EOF
+
+echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
