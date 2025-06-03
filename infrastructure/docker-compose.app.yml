@@ -297,6 +297,7 @@ services:
       - NODE_ENV=production
       - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
       - USER_MGNT_MONGO_URL=mongodb://${STACK}__user-mgnt:${USER_MGNT_MONGODB_PASSWORD}@mongo1/${STACK}__user-mgnt?replicaSet=rs0
+      - EVENTS_POSTGRES_URL=postgres://events_app:${EVENTS_APP_POSTGRES_PASSWORD}@postgres/${STACK}__events
       - ES_URL=http://{{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - ES_INDEX_PREFIX=events_{{STACK}}
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
@@ -691,6 +692,7 @@ services:
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
       - OPENHIM_MONGO_URL=mongodb://${STACK}__openhim:${OPENHIM_MONGODB_PASSWORD}@mongo1/${STACK}__openhim-dev?replicaSet=rs0
       - EVENTS_MONGO_URL=mongodb://${STACK}__events:${EVENTS_MONGODB_PASSWORD}@mongo1/${STACK}__events?replicaSet=rs0
+      - EVENTS_POSTGRES_URL=postgres://events_migrator:${EVENTS_MIGRATOR_POSTGRES_PASSWORD}@postgres/${STACK}__events
       - ES_HOST={{STACK}}-search-user:${ROTATING_SEARCH_ELASTIC_PASSWORD}@elasticsearch:9200
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -756,6 +758,32 @@ services:
       dependencies_monitoring_net_3:
         aliases: []
       dependencies_mongo_net_2:
+        aliases: []
+
+  postgres-on-update:
+    image: postgres:17
+    command: bash /on-deploy.sh
+    configs:
+      - source: postgres-on-deploy.{{ts}}
+        target: /on-deploy.sh
+    deploy:
+      labels:
+        - traefik.enable=false
+      replicas: 1
+      restart_policy:
+        condition: none
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=0.0.0.0
+      - POSTGRES_PORT=5432
+      - EVENTS_APP_POSTGRES_PASSWORD=${EVENTS_APP_POSTGRES_PASSWORD}
+      - EVENTS_MIGRATOR_POSTGRES_PASSWORD=${EVENTS_MIGRATOR_POSTGRES_PASSWORD}
+    networks:
+      app_net:
+      dependencies_monitoring_net_3:
+        aliases: []
+      dependencies_postgres_net:
         aliases: []
 
   mosip-api:
@@ -893,6 +921,9 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
   redis-overrides.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/redis/overrides.conf
+  postgres-on-deploy.{{ts}}:
+    file: /opt/opencrvs/{{STACK}}/infrastructure/postgres/on-deploy.sh
+
 networks:
   dependencies_mongo_net_1:
     external: true
