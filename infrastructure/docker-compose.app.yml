@@ -925,6 +925,8 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/postgres/on-deploy.sh
 
 networks:
+  dependencies_postgres_net:
+    external: true
   dependencies_mongo_net_1:
     external: true
   dependencies_mongo_net_2:
