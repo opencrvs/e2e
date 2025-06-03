@@ -307,6 +307,8 @@ services:
       - APN_SERVICE_URL=http://dependencies_apm-server:8200
     networks:
       app_net:
+      dependencies_postgres_net:
+        aliases: []
       dependencies_monitoring_net_2:
         aliases: []
       dependencies_mongo_net_1:
