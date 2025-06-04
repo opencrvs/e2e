@@ -442,7 +442,7 @@ configs:
   minio-mc-config.{{ts}}:
     file: /opt/opencrvs/dependencies/infrastructure/mc-config/config.json
   postgres-on-deploy.{{ts}}:
-    file: /opts/opencrvs/infrastructure/postgres/on-deploy.sh
+    file: /opt/opencrvs/dependencies/infrastructure/postgres/on-deploy.sh
 
 networks:
   traefik_net_1:
