@@ -402,7 +402,7 @@ services:
       - postgres_net
     restart: unless-stopped
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - /data/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
