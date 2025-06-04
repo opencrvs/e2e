@@ -345,6 +345,11 @@ echo "Syncing configuration files to the target server"
 
 configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/$STACK --delete --no-perms --omit-dir-times --verbose
 
+if [ "$UPDATE_DEPENDENCIES" = true ]; then
+  configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/dependencies --delete --no-perms --omit-dir-times --verbose
+fi
+
+
 echo "Logging to Dockerhub"
 
 configured_ssh "docker login -u $DOCKER_USERNAME -p $DOCKER_TOKEN"
@@ -365,8 +370,6 @@ echo
 
 
 if [ "$UPDATE_DEPENDENCIES" = true ]; then
-  configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/dependencies --delete --no-perms --omit-dir-times --verbose
-
   echo 'Setting up elastalert indices'
 
   while true; do
