@@ -373,7 +373,7 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
   echo 'Setting up elastalert indices'
 
   while true; do
-    if configured_ssh "/opt/opencrvs/$STACK/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
+    if configured_ssh "/opt/opencrvs/dependencies/infrastructure/elasticsearch/setup-elastalert-indices.sh"; then
       break
     fi
     sleep 5
@@ -382,7 +382,7 @@ if [ "$UPDATE_DEPENDENCIES" = true ]; then
   echo "Setting up Kibana config & alerts"
 
   while true; do
-    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/$STACK/infrastructure/monitoring/kibana/setup-config.sh"; then
+    if configured_ssh "HOST=kibana.$HOST /opt/opencrvs/dependencies/infrastructure/monitoring/kibana/setup-config.sh"; then
       break
     fi
     sleep 5
@@ -391,7 +391,7 @@ else
   echo 'Waiting for Elasticsearch to be ready'
 
   while true; do
-    if configured_ssh "/opt/opencrvs/$STACK/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
+    if configured_ssh "/opt/opencrvs/dependencies/infrastructure/elasticsearch/wait-for-elasticsearch.sh"; then
       break
     fi
     sleep 5
