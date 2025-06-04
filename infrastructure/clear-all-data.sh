@@ -137,15 +137,15 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
 # Delete all data from PostgreSQL
 #-------------------------------
 
-POSTGRES_DB="${STACK}__events"
+#POSTGRES_DB="${STACK}__events"
 
-echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
+#echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
 
-docker run --rm --network=dependencies_postgres_net \
-  -e PGPASSWORD="${POSTGRES_PASSWORD}" \
-  postgres:17 bash -c "psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -v ON_ERROR_STOP=1 -c \"
-DROP SCHEMA IF EXISTS app CASCADE;
-CREATE SCHEMA app AUTHORIZATION events_migrator;
-\""
+#docker run --rm --network=dependencies_postgres_net \
+#  -e PGPASSWORD="${POSTGRES_PASSWORD}" \
+#  postgres:17 bash -c "psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -v ON_ERROR_STOP=1 -c \"
+#DROP SCHEMA IF EXISTS app CASCADE;
+#CREATE SCHEMA app AUTHORIZATION events_migrator;
+#\""
 
-echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
+#echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
