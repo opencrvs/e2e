@@ -14,12 +14,14 @@ set -e
 TARGET_DB="${STACK}__events"
 
 # Install required tools
-apt-get update && apt-get install -y postgresql-client curl
+apt-get update
+apt-get install -y curl
 
 # Wait for PostgreSQL to be ready
-curl -L https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait --output /wait
-chmod +x /wait
-/wait
+until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do
+  echo "Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+  sleep 2
+done
 
 # Check if database exists
 echo "Checking if database '$TARGET_DB' exists..."
