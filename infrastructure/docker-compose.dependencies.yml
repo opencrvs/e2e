@@ -137,7 +137,7 @@ services:
     restart: on-failure
     volumes:
       # Exceed Docker config file 500 kb file limit, thus a volume mount
-      - '/opt/opencrvs/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson'
+      - '/opt/opencrvs/dependencies/infrastructure/monitoring/kibana/config.ndjson:/config.ndjson'
 
     deploy:
       labels:
@@ -305,8 +305,8 @@ services:
       - ES_USERNAME=elastic
       - ES_PASSWORD=${ELASTICSEARCH_SUPERUSER_PASSWORD}
     volumes:
-      - '/opt/opencrvs/infrastructure/monitoring/elastalert/elastalert.yaml:/opt/elastalert/config.yaml'
-      - '/opt/opencrvs/infrastructure/monitoring/elastalert/rules:/opt/elastalert/rules'
+      - '/opt/opencrvs/dependencies/infrastructure/monitoring/elastalert/elastalert.yaml:/opt/elastalert/config.yaml'
+      - '/opt/opencrvs/dependencies/infrastructure/monitoring/elastalert/rules:/opt/elastalert/rules'
 
     deploy:
       labels:
@@ -416,31 +416,31 @@ services:
 
 configs:
   hearth-check-dupe-plugin.{{ts}}:
-    file: /opt/opencrvs/infrastructure/hearth-plugins/checkDuplicateTask.js
+    file: /opt/opencrvs/dependencies/infrastructure/hearth-plugins/checkDuplicateTask.js
   hearth-queryparam-extensions-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/hearth-queryparam-extensions.json
+    file: /opt/opencrvs/dependencies/infrastructure/hearth-queryparam-extensions.json
   metricbeat-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/beats/metricbeat.yml
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/beats/metricbeat.yml
   filebeat.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/filebeat/filebeat.yml
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/filebeat/filebeat.yml
   mongo-on-deploy.{{ts}}:
-    file: /opt/opencrvs/infrastructure/mongodb/on-deploy.sh
+    file: /opt/opencrvs/dependencies/infrastructure/mongodb/on-deploy.sh
   beat-rollover-policy.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/beats/rollover-policy.json
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/beats/rollover-policy.json
   kibana.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/kibana/kibana.yml
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/kibana/kibana.yml
   apm.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/apm/apm-server.yml
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/apm/apm-server.yml
   logstash.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.yml
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/logstash/logstash.yml
   logstash-pipeline.{{ts}}:
-    file: /opt/opencrvs/infrastructure/monitoring/logstash/logstash.conf
+    file: /opt/opencrvs/dependencies/infrastructure/monitoring/logstash/logstash.conf
   influxdb-conf.{{ts}}:
-    file: /opt/opencrvs/infrastructure/influxdb.conf
+    file: /opt/opencrvs/dependencies/infrastructure/influxdb.conf
   jvm-options.{{ts}}:
-    file: /opt/opencrvs/infrastructure/elasticsearch/jvm.options
+    file: /opt/opencrvs/dependencies/infrastructure/elasticsearch/jvm.options
   minio-mc-config.{{ts}}:
-    file: /opt/opencrvs/infrastructure/mc-config/config.json
+    file: /opt/opencrvs/dependencies/infrastructure/mc-config/config.json
   postgres-on-deploy.{{ts}}:
     file: /opts/opencrvs/infrastructure/postgres/on-deploy.sh
 

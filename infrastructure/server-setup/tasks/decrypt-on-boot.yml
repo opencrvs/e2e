@@ -18,7 +18,7 @@
       Description=Mount encrypted dir
 
       [Service]
-      ExecStart=bash /opt/opencrvs/infrastructure/cryptfs/decrypt.sh -key /root/disk-encryption-key.txt >> /var/log/cryptfs-reboot.log 2>&1
+      ExecStart=bash /opt/opencrvs/dependencies/infrastructure/cryptfs/decrypt.sh -key /root/disk-encryption-key.txt >> /var/log/cryptfs-reboot.log 2>&1
 
       [Install]
       WantedBy=multi-user.target

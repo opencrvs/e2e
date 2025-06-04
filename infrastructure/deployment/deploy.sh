@@ -365,6 +365,8 @@ echo
 
 
 if [ "$UPDATE_DEPENDENCIES" = true ]; then
+  configured_rsync -rlD $PROJECT_ROOT/infrastructure $SSH_USER@$SSH_HOST:/opt/opencrvs/dependencies --delete --no-perms --omit-dir-times --verbose
+
   echo 'Setting up elastalert indices'
 
   while true; do
