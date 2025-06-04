@@ -783,6 +783,7 @@ services:
       - POSTGRES_PORT=5432
       - EVENTS_APP_POSTGRES_PASSWORD=${EVENTS_APP_POSTGRES_PASSWORD}
       - EVENTS_MIGRATOR_POSTGRES_PASSWORD=${EVENTS_MIGRATOR_POSTGRES_PASSWORD}
+      - STACK=${STACK}
     networks:
       app_net:
       dependencies_monitoring_net_3:
