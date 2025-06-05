@@ -154,7 +154,7 @@ POSTGRES_DB="${STACK}__events"
 EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
 EVENTS_APP_ROLE="${STACK}__events_app"
 
-echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
+echo "Resetting roles and owned data in '${POSTGRES_DB}'..."
 
 docker run --rm --network=dependencies_postgres_net \
   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
@@ -163,16 +163,17 @@ docker run --rm --network=dependencies_postgres_net \
   -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
   -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
   postgres:17 bash -c '
-# Drop schema from the target DB
+# Drop all objects and privileges owned by the roles
 psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
-DROP SCHEMA IF EXISTS app CASCADE;
+DROP OWNED BY "$EVENTS_MIGRATOR_ROLE" CASCADE;
+DROP OWNED BY "$EVENTS_APP_ROLE" CASCADE;
 EOF
 
-# Drop roles from the main admin DB
+# Drop the roles from the cluster
 psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
 DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
 DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
 EOF
 '
 
-echo "Schema 'app' and roles '${EVENTS_MIGRATOR_ROLE}', '${EVENTS_APP_ROLE}' dropped successfully from '${POSTGRES_DB}'."
+echo "Roles and their data dropped from '${POSTGRES_DB}'."
