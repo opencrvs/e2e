@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Configuration
 : "${POSTGRES_HOST:=postgres}"
@@ -9,37 +9,29 @@ set -e
 : "${EVENTS_MIGRATOR_POSTGRES_PASSWORD:?Must set EVENTS_MIGRATOR_POSTGRES_PASSWORD}"
 : "${EVENTS_APP_POSTGRES_PASSWORD:?Must set EVENTS_APP_POSTGRES_PASSWORD}"
 
-STACK_PREFIX="${STACK:+${STACK}__}" # adds __ to $STACK if it's non-empty
+STACK_PREFIX="${STACK:+${STACK}__}"
 TARGET_DB="${STACK_PREFIX}events"
 EVENTS_MIGRATOR_ROLE="${STACK_PREFIX}events_migrator"
 EVENTS_APP_ROLE="${STACK_PREFIX}events_app"
 
-# Install required tools
-apt-get update
-apt-get install -y curl
-
-# Wait for PostgreSQL to be ready
-until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do
-  echo "Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+echo "Waiting for PostgreSQL to be ready at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+  -U "$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do
   sleep 2
 done
 
-# Check if database exists
 echo "Checking if database '$TARGET_DB' exists..."
-DB_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB';")
-
-if [[ "$DB_EXISTS" == "1" ]]; then
+if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+  -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB';" | grep -q 1; then
   echo "Database '$TARGET_DB' already exists. Skipping init."
   exit 0
 fi
 
 echo "Database '$TARGET_DB' does not exist. Initializing..."
 
-###############################
-# Cluster-wide initialisation #
-###############################
-
-PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<EOF
+echo "[1/2] Cluster-wide setup..."
+PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+  -U "$POSTGRES_USER" -d postgres <<EOF || { echo "❌ Cluster-wide SQL failed"; exit 1; }
 CREATE DATABASE "$TARGET_DB";
 
 CREATE ROLE "$EVENTS_MIGRATOR_ROLE" WITH LOGIN PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';
@@ -48,11 +40,9 @@ CREATE ROLE "$EVENTS_APP_ROLE" WITH LOGIN PASSWORD '${EVENTS_APP_POSTGRES_PASSWO
 GRANT CONNECT ON DATABASE "$TARGET_DB" TO "$EVENTS_MIGRATOR_ROLE", "$EVENTS_APP_ROLE";
 EOF
 
-####################################
-# Database-specific initialisation #
-####################################
-
-PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$TARGET_DB" <<EOF
+echo "[2/2] Database-specific setup..."
+PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+  -U "$POSTGRES_USER" -d "$TARGET_DB" <<EOF || { echo "❌ DB-specific SQL failed"; exit 1; }
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM "$EVENTS_MIGRATOR_ROLE";
 
@@ -60,10 +50,10 @@ CREATE SCHEMA app AUTHORIZATION "$EVENTS_MIGRATOR_ROLE";
 GRANT USAGE ON SCHEMA app TO "$EVENTS_APP_ROLE";
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA app
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "$EVENTS_APP_ROLE";
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "$EVENTS_APP_ROLE";
 
 ALTER ROLE "$EVENTS_MIGRATOR_ROLE" SET search_path = app;
 ALTER ROLE "$EVENTS_APP_ROLE" SET search_path = app;
 EOF
 
-echo "Database '$TARGET_DB' initialized successfully."
+echo "✅ Database '$TARGET_DB' initialized successfully."
