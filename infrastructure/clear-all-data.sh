@@ -165,14 +165,8 @@ docker run --rm --network=dependencies_postgres_net \
   postgres:17 bash -c '
 # Drop all objects and privileges owned by the roles
 psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
-DROP OWNED BY "$EVENTS_MIGRATOR_ROLE" CASCADE;
-DROP OWNED BY "$EVENTS_APP_ROLE" CASCADE;
-EOF
-
-# Drop the roles from the cluster
-psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
-DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
-DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
+  DROP OWNED BY "$EVENTS_MIGRATOR_ROLE" CASCADE;
+  DROP OWNED BY "$EVENTS_APP_ROLE" CASCADE;
 EOF
 '
 
