@@ -707,7 +707,7 @@ services:
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
-      - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200
+      - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200,postgres:5432
     deploy:
       labels:
         - 'traefik.enable=false'
