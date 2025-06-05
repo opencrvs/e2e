@@ -152,6 +152,7 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
 
 POSTGRES_DB="${STACK}__events"
 EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
+EVENTS_APP_ROLE="${STACK}__events_app"
 
 echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
 
@@ -160,11 +161,18 @@ docker run --rm --network=dependencies_postgres_net \
   -e POSTGRES_USER="${POSTGRES_USER}" \
   -e POSTGRES_DB="${POSTGRES_DB}" \
   -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
+  -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
   postgres:17 bash -c '
+# Drop schema from the target DB
 psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
 DROP SCHEMA IF EXISTS app CASCADE;
-CREATE SCHEMA app AUTHORIZATION "$EVENTS_MIGRATOR_ROLE";
+EOF
+
+# Drop roles from the main admin DB
+psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
+DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
+DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
 EOF
 '
 
-echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
+echo "Schema 'app' and roles '${EVENTS_MIGRATOR_ROLE}', '${EVENTS_APP_ROLE}' dropped successfully from '${POSTGRES_DB}'."
