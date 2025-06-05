@@ -21,9 +21,20 @@ until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_POR
 done
 
 echo "Checking if database '$TARGET_DB' exists..."
-if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
-  -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB';" | grep -q 1; then
-  echo "Database '$TARGET_DB' already exists. Skipping init."
+DB_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -qtAX -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+  -U "$POSTGRES_USER" -d postgres \
+  -c "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB';")
+
+if [[ "$DB_EXISTS" == "1" ]]; then
+  echo "Database '$TARGET_DB' already exists. Updating passwords."
+
+  PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+    -U "$POSTGRES_USER" -d postgres <<EOF
+ALTER ROLE "$EVENTS_MIGRATOR_ROLE" WITH PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';
+ALTER ROLE "$EVENTS_APP_ROLE" WITH PASSWORD '${EVENTS_APP_POSTGRES_PASSWORD}';
+EOF
+
+  echo "Passwords updated. Skipping initialization."
   exit 0
 fi
 
