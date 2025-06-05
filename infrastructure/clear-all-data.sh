@@ -165,8 +165,12 @@ docker run --rm --network=dependencies_postgres_net \
   postgres:17 bash -c '
 # Drop all objects and privileges owned by the roles
 psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
+  -- prevents the schema itself from being dropped 
+  ALTER SCHEMA app OWNER TO "$POSTGRES_USER"; 
+
   DROP OWNED BY "$EVENTS_MIGRATOR_ROLE" CASCADE;
   DROP OWNED BY "$EVENTS_APP_ROLE" CASCADE;
+  ALTER SCHEMA app OWNER TO "$EVENTS_MIGRATOR_ROLE";
 EOF
 '
 
