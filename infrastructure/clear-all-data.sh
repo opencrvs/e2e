@@ -18,6 +18,9 @@ print_usage_and_exit () {
     echo ""
     echo "If your Elasticsearch is password protected, an admin user's credentials can be given as environment variables:"
     echo "ELASTICSEARCH_ADMIN_USER=your_user ELASTICSEARCH_ADMIN_PASSWORD=your_pass"
+    echo ""
+    echo "Postgres admin user credentials must be given as environment variables:"
+    echo "POSTGRES_USER=your_user POSTGRES_PASSWORD=your_pass"
     exit 1
 }
 
@@ -28,6 +31,16 @@ fi
 
 if [ -z "$2" ] ; then
     echo 'Error: Argument STACK is required in position 2.'
+    print_usage_and_exit
+fi
+
+if [ -z "${POSTGRES_USER:-}" ]; then
+    echo 'Error: POSTGRES_USER environment variable must be set.'
+    print_usage_and_exit
+fi
+
+if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+    echo 'Error: POSTGRES_PASSWORD environment variable must be set.'
     print_usage_and_exit
 fi
 
@@ -138,16 +151,20 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
 #-------------------------------
 
 POSTGRES_DB="${STACK}__events"
+EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
 
 echo "Resetting schema 'app' in database '${POSTGRES_DB}'..."
 
 docker run --rm --network=dependencies_postgres_net \
   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
-  postgres:17 bash -c "
-psql -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -v ON_ERROR_STOP=1 <<EOF
+  -e POSTGRES_USER="${POSTGRES_USER}" \
+  -e POSTGRES_DB="${POSTGRES_DB}" \
+  -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
+  postgres:17 bash -c '
+psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
 DROP SCHEMA IF EXISTS app CASCADE;
-CREATE SCHEMA app AUTHORIZATION events_migrator;
+CREATE SCHEMA app AUTHORIZATION "$EVENTS_MIGRATOR_ROLE";
 EOF
-"
+'
 
 echo "Schema 'app' dropped and recreated in database '${POSTGRES_DB}'."
