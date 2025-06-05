@@ -154,7 +154,7 @@ POSTGRES_DB="${STACK}__events"
 EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
 EVENTS_APP_ROLE="${STACK}__events_app"
 
-echo "Resetting roles and owned data in '${POSTGRES_DB}'..."
+echo "🔁 Dropping database '${POSTGRES_DB}' and roles..."
 
 docker run --rm --network=dependencies_postgres_net \
   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
@@ -163,15 +163,20 @@ docker run --rm --network=dependencies_postgres_net \
   -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
   -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
   postgres:17 bash -c '
-# Drop all objects and privileges owned by the roles
-psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<EOF
-  -- prevents the schema itself from being dropped 
-  ALTER SCHEMA app OWNER TO "$POSTGRES_USER"; 
+psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
 
-  DROP OWNED BY "$EVENTS_MIGRATOR_ROLE" CASCADE;
-  DROP OWNED BY "$EVENTS_APP_ROLE" CASCADE;
-  ALTER SCHEMA app OWNER TO "$EVENTS_MIGRATOR_ROLE";
+DROP DATABASE IF EXISTS "$POSTGRES_DB";
+
+DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
+DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
 EOF
 '
+echo "✅ Database and roles dropped."
+echo "🚀 Reinitializing with on-deploy.sh..."
 
-echo "Roles and their data dropped from '${POSTGRES_DB}'."
+sleep 30s
+
+docker service update --force --update-parallelism 1 "${STACK}_postgres-on-update"
