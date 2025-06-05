@@ -30,10 +30,16 @@ DB_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGR
 
 if [[ "$DB_EXISTS" == "1" ]]; then
   echo "Database '$TARGET_DB' already exists. Skipping init."
-else
-  echo "Database '$TARGET_DB' does not exist. Initializing..."
+  exit 0
+fi
 
-  PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<EOF
+echo "Database '$TARGET_DB' does not exist. Initializing..."
+
+###############################
+# Cluster-wide initialisation #
+###############################
+
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres <<EOF
 CREATE DATABASE "$TARGET_DB";
 
 CREATE ROLE "$EVENTS_MIGRATOR_ROLE" WITH LOGIN PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';
@@ -42,15 +48,22 @@ CREATE ROLE "$EVENTS_APP_ROLE" WITH LOGIN PASSWORD '${EVENTS_APP_POSTGRES_PASSWO
 GRANT CONNECT ON DATABASE "$TARGET_DB" TO "$EVENTS_MIGRATOR_ROLE", "$EVENTS_APP_ROLE";
 EOF
 
-  PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$TARGET_DB" <<EOF
+####################################
+# Database-specific initialisation #
+####################################
+
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$TARGET_DB" <<EOF
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE CREATE ON SCHEMA public FROM "$EVENTS_MIGRATOR_ROLE";
 
 CREATE SCHEMA app AUTHORIZATION "$EVENTS_MIGRATOR_ROLE";
+GRANT USAGE ON SCHEMA app TO "$EVENTS_APP_ROLE";
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA app
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "$EVENTS_APP_ROLE";
 
 ALTER ROLE "$EVENTS_MIGRATOR_ROLE" SET search_path = app;
 ALTER ROLE "$EVENTS_APP_ROLE" SET search_path = app;
 EOF
 
-  echo "Database '$TARGET_DB' initialized successfully."
-fi
+echo "Database '$TARGET_DB' initialized successfully."
