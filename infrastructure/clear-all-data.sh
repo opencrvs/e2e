@@ -150,33 +150,31 @@ docker run --rm --network=dependencies_minio_net --entrypoint=/bin/sh minio/mc -
 # Delete all data from PostgreSQL
 #-------------------------------
 
-# POSTGRES_DB="${STACK}__events"
-# EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
-# EVENTS_APP_ROLE="${STACK}__events_app"
+POSTGRES_DB="${STACK}__events"
+EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
+EVENTS_APP_ROLE="${STACK}__events_app"
 
-# echo "🔁 Dropping database '${POSTGRES_DB}' and roles..."
+echo "🔁 Dropping database '${POSTGRES_DB}' and roles..."
 
-# docker run --rm --network=dependencies_postgres_net \
-#   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
-#   -e POSTGRES_USER="${POSTGRES_USER}" \
-#   -e POSTGRES_DB="${POSTGRES_DB}" \
-#   -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
-#   -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
-#   postgres:17 bash -c '
-# psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
-# SELECT pg_terminate_backend(pid)
-# FROM pg_stat_activity
-# WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
+docker run --rm --network=dependencies_postgres_net \
+  -e PGPASSWORD="${POSTGRES_PASSWORD}" \
+  -e POSTGRES_USER="${POSTGRES_USER}" \
+  -e POSTGRES_DB="${POSTGRES_DB}" \
+  -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
+  -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
+  postgres:17 bash -c '
+psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
 
-# DROP DATABASE IF EXISTS "$POSTGRES_DB";
+DROP DATABASE IF EXISTS "$POSTGRES_DB";
 
-# DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
-# DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
-# EOF
-# '
-# echo "✅ Database and roles dropped."
-# echo "🚀 Reinitializing with on-deploy.sh..."
+DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
+DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
+EOF
+'
+echo "✅ Database and roles dropped."
+echo "🚀 Reinitializing with on-deploy.sh..."
 
-# sleep 30s
-
-# docker service update --force --update-parallelism 1 "${STACK}_postgres-on-update"
+docker service update --force --update-parallelism 1 "${STACK}_postgres-on-update"
