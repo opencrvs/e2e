@@ -175,6 +175,6 @@ DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
 EOF
 '
 echo "✅ Database and roles dropped."
-echo "🚀 Reinitializing with on-deploy.sh..."
+echo "🚀 Reinitializing Postgres with on-deploy.sh..."
 
-docker service update --force --update-parallelism 1 "${STACK}_postgres-on-update"
+docker service update --force "${STACK}_postgres-on-update"
