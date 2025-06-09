@@ -154,7 +154,7 @@ POSTGRES_DB="${STACK}__events"
 EVENTS_MIGRATOR_ROLE="${STACK}__events_migrator"
 EVENTS_APP_ROLE="${STACK}__events_app"
 
-echo "🔁 Dropping database '${POSTGRES_DB}' and roles..."
+echo "🔁 Dropping database '${POSTGRES_DB}'..."
 
 docker run --rm --network=dependencies_postgres_net \
   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
@@ -169,12 +169,9 @@ FROM pg_stat_activity
 WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
 
 DROP DATABASE IF EXISTS "$POSTGRES_DB";
-
-DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
-DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
 EOF
 '
-echo "✅ Database and roles dropped."
+echo "✅ Database dropped."
 echo "🚀 Reinitializing Postgres with on-deploy.sh..."
 
 docker service update --force "${STACK}_postgres-on-update"
