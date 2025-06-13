@@ -140,6 +140,9 @@ services:
       - MOSIP_API_USERINFO_URL=https://mosip-api.${STACK}.{{hostname}}/esignet/get-oidp-user-info
       - OPENID_PROVIDER_CLAIMS=name,family_name,given_name,middle_name,birthdate,address
       - OPENID_PROVIDER_CLIENT_ID=mock-client_id
+      # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
+      # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
+      - E2E_MINIO_BUCKET=${STACK}--ocrvs
     networks:
       app_net:
       dependencies_monitoring_net:
@@ -383,7 +386,7 @@ services:
 
   setup-elasticsearch-users:
     image: ubuntu:bionic
-    entrypoint: [ 'bash', '/usr/app/setup.sh' ]
+    entrypoint: ['bash', '/usr/app/setup.sh']
     restart: on-failure
     environment:
       - ELASTICSEARCH_HOST=elasticsearch
