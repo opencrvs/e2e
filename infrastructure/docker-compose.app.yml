@@ -143,6 +143,8 @@ services:
       # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
       # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
       - E2E_MINIO_BUCKET=${STACK}--ocrvs
+      # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
+      - E2E_MINIO_BASE_URL=https://minio.{{hostname}}
     networks:
       app_net:
       dependencies_monitoring_net:
