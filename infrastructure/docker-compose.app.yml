@@ -166,7 +166,7 @@ services:
       labels:
         - 'traefik.enable=true'
         - 'traefik.http.routers.${STACK}__login.rule=Host(`login.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__login.loadbalancer.server.port=80'
+        - 'traefik.http.services.${STACK}__login.loadbalancer.server.port=3020'
         - 'traefik.http.routers.${STACK}__login.tls=true'
         - 'traefik.http.routers.${STACK}__login.tls.certresolver=certResolver'
         - 'traefik.http.routers.${STACK}__login.tls.domains[0].main=${STACK}.{{hostname}}'
@@ -204,7 +204,7 @@ services:
         - 'traefik.enable=true'
         - 'traefik.http.routers.${STACK}__client.rule=Host(`register.${STACK}.{{hostname}}`,`${STACK}.{{hostname}}`)'
         - 'traefik.http.routers.${STACK}__client.middlewares=${STACK}__test-replacepathregex,gzip-compression'
-        - 'traefik.http.services.${STACK}__client.loadbalancer.server.port=80'
+        - 'traefik.http.services.${STACK}__client.loadbalancer.server.port=3000'
         - 'traefik.http.routers.${STACK}__client.tls=true'
         - 'traefik.http.routers.${STACK}__client.tls.certresolver=certResolver'
         - 'traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}'
