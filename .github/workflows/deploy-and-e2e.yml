@@ -22,7 +22,7 @@ on:
         required: true
         default: true
         type: boolean
-      e2e_branch:
+      branch:
         description: e2e branch
         required: false
         default: 'develop'
@@ -45,7 +45,7 @@ jobs:
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
       stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
       dependencies: false
-      e2e_branch: ${{ github.event.client_payload.e2e_branch || github.event.inputs.e2e_branch }}
+      e2e_branch: ${{ github.event.client_payload.branch || github.event.inputs.branch }}
       reset: 'true'
     secrets: inherit
 
