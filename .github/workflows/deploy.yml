@@ -16,6 +16,11 @@ on:
         type: string
         description: Stack name
         required: true
+      e2e_branch:
+        type: string
+        description: e2e branch
+        default: develop
+        required: false
       dependencies:
         type: string
         description: Redeploy dependencies
@@ -40,6 +45,11 @@ on:
         type: string
         description: Stack name
         required: true
+      e2e_branch:
+        type: string
+        description: e2e branch
+        default: develop
+        required: false
       dependencies:
         type: boolean
         description: Redeploy dependencies
@@ -71,13 +81,12 @@ jobs:
           path: './${{ github.event.repository.name }}'
 
       - name: Checkout country branch
-        run: |
-          cd ${{ github.event.repository.name }}
-          cd ../
+        working-directory: ${{ github.event.repository.name }}
+        run: git checkout ${{ inputs.e2e_branch }}
 
       - name: Read known hosts
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
           sed -i -e '$a\' ./infrastructure/known-hosts
           cat ./infrastructure/known-hosts >> $GITHUB_ENV
@@ -113,9 +122,8 @@ jobs:
           done
 
       - name: Export all secrets and environment variables
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ./${{ github.event.repository.name }}
-
           SECRETS_JSON_WITH_NEWLINES=$(cat<<EOF
             ${{ toJSON(secrets) }}
           EOF)
@@ -158,8 +166,8 @@ jobs:
           node-version-file: ./e2e/.nvmrc
 
       - name: Download images for ${{ inputs.stack }}
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ./${{ github.event.repository.name }}
           bash infrastructure/deployment/download-images.sh \
           --clear_data=no \
           --environment=${{ inputs.stack }} \
@@ -213,18 +221,16 @@ jobs:
           path: './${{ github.event.repository.name }}'
 
       - name: Checkout country branch
-        run: |
-          cd ${{ github.event.repository.name }}
-          cd ../
+        working-directory: ${{ github.event.repository.name }}
+        run: git checkout ${{ inputs.e2e_branch }}
 
       - name: Checkout core branch
-        run: |
-          cd opencrvs-core
-          git checkout ${{ inputs.core-image-tag }}
+        working-directory: opencrvs-core
+        run: git checkout ${{ inputs.core-image-tag }}
 
       - name: Read known hosts
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
           sed -i -e '$a\' ./infrastructure/known-hosts
           cat ./infrastructure/known-hosts >> $GITHUB_ENV
@@ -247,9 +253,8 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Export all secrets and environment variables
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ./${{ github.event.repository.name }}
-
           SECRETS_JSON_WITH_NEWLINES=$(cat<<EOF
             ${{ toJSON(secrets) }}
           EOF)
@@ -293,8 +298,8 @@ jobs:
 
       - name: Deploy to ${{ inputs.stack }}
         id: deploy
+        working-directory: ${{ github.event.repository.name }}
         run: |
-          cd ./${{ github.event.repository.name }}
           yarn install
           yarn deploy \
           --clear_data=no \
