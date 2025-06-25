@@ -8,11 +8,11 @@ on:
       core-image-tag:
         description: Core DockerHub image tag
         required: true
-        default: 'v1.4.1'
+        default: 'v1.8.0'
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
-        default: 'v1.4.1'
+        default: 'v1.8.0'
       stack:
         type: string
         description: Stack name
@@ -22,6 +22,10 @@ on:
         required: true
         default: true
         type: boolean
+      e2e_branch:
+        description: e2e branch
+        required: false
+        default: 'develop'
 concurrency:
   group: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
   cancel-in-progress: true
@@ -41,6 +45,7 @@ jobs:
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
       stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
       dependencies: false
+      e2e_branch: ${{ github.event.client_payload.e2e_branch || github.event.inputs.e2e_branch }}
       reset: 'true'
     secrets: inherit
 
