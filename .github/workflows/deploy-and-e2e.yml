@@ -201,7 +201,7 @@ jobs:
   cleanup-stack:
     needs: [test]
     runs-on: ubuntu-24.04
-    if: github.event.client_payload.keep-e2e == 'false' || github.event.inputs.keep-e2e == 'false'
+    if: always() && (github.event.client_payload.keep-e2e == 'false' || github.event.inputs.keep-e2e == 'false')
     env:
       stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
       keep_e2e: ${{ github.event.client_payload.keep-e2e || github.event.inputs.keep-e2e }}
