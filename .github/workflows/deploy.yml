@@ -80,7 +80,7 @@ jobs:
           fetch-depth: 0
           path: './${{ github.event.repository.name }}'
 
-      - name: Checkout country branch
+      - name: Checkout country branch ${{ inputs.e2e_branch }}
         working-directory: ${{ github.event.repository.name }}
         run: git checkout ${{ inputs.e2e_branch }}
 
@@ -217,14 +217,14 @@ jobs:
       - name: Clone country config resource package
         uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           path: './${{ github.event.repository.name }}'
 
-      - name: Checkout country branch
+      - name: Checkout country branch ${{ inputs.e2e_branch }}
         working-directory: ${{ github.event.repository.name }}
         run: git checkout ${{ inputs.e2e_branch }}
 
-      - name: Checkout core branch
+      - name: Checkout core branch ${{ inputs.core-image-tag }}
         working-directory: opencrvs-core
         run: git checkout ${{ inputs.core-image-tag }}
 
