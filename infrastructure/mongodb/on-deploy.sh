@@ -299,7 +299,7 @@ else
 EOF
 fi
 
-EVENTS_USER=$(echo $(checkIfUserExists "${DATABASE_PREFIX}__events"))
+EVENTS_USER=$(echo $(checkIfUserExists "${DATABASE_PREFIX}__events" "${DATABASE_PREFIX}__events"))
 if [[ $EVENTS_USER != "FOUND" ]]; then
   echo "events user not found --> creating"
   mongo $(mongo_credentials) --host $HOST <<EOF
