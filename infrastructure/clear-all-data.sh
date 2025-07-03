@@ -126,9 +126,18 @@ for alias in "${aliases[@]}"; do
     curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys []')
 
   for index in $indices; do
-    echo "Removing index: $index"
+echo "Checking if index '$index' exists..."
+
+  exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+    curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/$index")
+
+  if [ "$exists" -eq 200 ]; then
+    echo "Deleting index: $index"
     docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
       curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+  else
+    echo "Index '$index' does not exist (status $exists), skipping."
+  fi
   done
 done
 
