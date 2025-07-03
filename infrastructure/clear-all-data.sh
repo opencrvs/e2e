@@ -119,21 +119,22 @@ for alias in "${aliases[@]}"; do
     echo "Alias $alias does not exist, skipping."
     continue
   fi
+    echo "Alias $alias exists, removing indices."
 
-  echo "Alias $alias exists, clearing indices."
-
-  # Find all indices attached to the alias and clear them
+  # Find all indices attached to the alias and remove them
   indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-    curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys | join(",")')
+    curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys []')
 
-  echo "Clearing indices $indices"
-  if [ -n "$indices" ]; then
+  for index in $indices; do
+    echo "Removing index: $index"
     docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-      curl -XPOST "http://$(elasticsearch_host)/$indices/_delete_by_query" -H "Content-Type: application/json" \
-      -d '{"query": {"match_all": {}}}'
-  fi
+      curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+  done
 done
 
+# Restart event service to ensure index is created
+docker service scale ${STACK}__events=0
+docker service scale ${STACK}__events=1
 
 # Delete all data from metrics
 #-----------------------------
