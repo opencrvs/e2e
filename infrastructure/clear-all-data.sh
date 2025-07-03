@@ -128,7 +128,7 @@ for alias in "${aliases[@]}"; do
 
   echo "Removing indices $indices"
   if [ -n "$indices" ]; then
-    docker run --rm --network=$NETWORK appropriate/curl curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+    docker run --rm --network=dependencies_elasticsearch_net appropriate/curl curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
   fi
 done
 
