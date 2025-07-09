@@ -1,16 +1,6 @@
 name: Deploy (k8s)
 run-name: "Deploy OpenCRVS on k8s (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
 on:
-    workflow_call:
-      inputs:
-        core-image-tag:
-          type: string
-        countryconfig-image-tag:
-          type: string
-        environment:
-          type: string
-        reset:
-          type: boolean
     workflow_dispatch:
       inputs:
         core-image-tag:
@@ -31,7 +21,16 @@ on:
           required: false
           default: false
           type: boolean
-
+    workflow_call:
+      inputs:
+        core-image-tag:
+          type: string
+        countryconfig-image-tag:
+          type: string
+        environment:
+          type: string
+        reset:
+          type: boolean
 jobs:
   deploy:
     env:
