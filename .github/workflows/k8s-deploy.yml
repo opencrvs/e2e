@@ -1,0 +1,99 @@
+name: Deploy (k8s)
+run-name: "Deploy OpenCRVS on k8s (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
+on:
+    workflow_dispatch:
+      inputs:
+        core-image-tag:
+          description: "Tag of the core image"
+          required: true
+          default: "develop"
+        countryconfig-image-tag:
+          description: "Tag of the countryconfig image"
+          required: true
+          default: "develop"
+        environment:
+          description: "Target environment"
+          required: true
+          default: "demo"
+          type: string
+        reset:
+          description: "Reset environment after deploy"
+          required: false
+          default: false
+          type: boolean
+    workflow_call:
+      inputs:
+        core-image-tag:
+          type: string
+        countryconfig-image-tag:
+          type: string
+        environment:
+          type: string
+        reset:
+          type: boolean
+jobs:
+  deploy:
+    env:
+      ENV: ${{ inputs.environment }}
+      CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
+      COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
+    runs-on: [self-hosted]
+    # runs-on: ubuntu-latest
+
+    steps:
+      # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Print deployment parameters
+        run: |
+          echo "Environment: $ENV"
+          echo "Core Image: $CORE_IMAGE_TAG"
+          echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
+      - name: Deploy OpenCRVS MOSIP API
+        run: |
+          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
+          --namespace "opencrvs-${ENV}" \
+          -f k8s-env/mosip-api/values.yaml \
+          --set hostname=$ENV.k8s-e2e.opencrvs.dev \
+          --create-namespace
+      - name: Copy secrets from dependencies into application namespace
+        run: |
+          secrets=(
+            "elasticsearch-admin-user"
+            "redis-opencrvs-users"
+            "minio-opencrvs-users"
+            "mongodb-admin-user"
+            "postgres-admin-user"
+          )
+          for secret in "${secrets[@]}"; do
+            kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
+            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
+            | grep -vE 'resourceVersion|uid|creationTimestamp' \
+            | kubectl apply -n opencrvs-${ENV} -f - \
+            || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
+          done
+      - name: Update k8s-env/opencrvs/values.yaml
+        run: |
+          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+            --namespace "opencrvs-${ENV}" \
+            -f k8s-env/opencrvs/values.yaml \
+            --create-namespace \
+            --set image.tag="$CORE_IMAGE_TAG" \
+            --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
+            --set hostname=$ENV.k8s-e2e.opencrvs.dev \
+            --set environment="$ENV"
+
+  reset-data:
+    if: ${{ inputs.reset }}
+    # name: Reset environment (k8s)
+    # run-name: "Reset environment (core: ${{ inputs.core-image-tag }})
+    needs: deploy
+    uses: ./.github/workflows/k8s-reset-data.yml
+    with:
+      environment: ${{ inputs.environment }}
+      core-image-tag: ${{ inputs.core-image-tag }}
+    secrets: inherit
