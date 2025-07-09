@@ -1,0 +1,230 @@
+name: Deploy & run E2E on k8s
+run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }}. Images core: ${{ github.event.client_payload.core-image-tag || github.event.inputs.core-image-tag }} and farajaland: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}'
+on:
+  repository_dispatch:
+    # TODO: Do we need to call workflow that way?
+    types: [run_k8s_e2e]
+  workflow_dispatch:
+    inputs:
+      core-image-tag:
+        description: Core DockerHub image tag
+        required: true
+        default: 'v1.8.0'
+      countryconfig-image-tag:
+        description: Your Country Config DockerHub image tag
+        required: true
+        default: 'v1.8.0'
+      stack:
+        type: string
+        description: Stack name
+        required: true
+      keep-e2e:
+        description: Keep environment after run
+        required: true
+        default: true
+        type: boolean
+      branch:
+        description: e2e branch
+        required: false
+        default: 'develop'
+concurrency:
+  group: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
+  cancel-in-progress: true
+
+jobs:
+  debug:
+    name: Debug output
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Print Entire Event Payload
+        run: |
+          echo "${{ toJson(github.event) }}"
+  deploy:
+    uses: opencrvs/infrastructure/.github/workflows/deploy-on-kubernetes.yml
+    with:
+      core-image-tag: ${{ github.event.client_payload.core-image-tag || github.event.inputs.core-image-tag }}
+      countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+      environment: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
+      reset: 'true'
+    secrets: inherit
+
+  # discover-tests:
+  #   name: Discover test directories
+  #   runs-on: ubuntu-24.04
+  #   outputs:
+  #     test_matrix: ${{ steps.list-tests.outputs.test_matrix }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         repository: 'opencrvs/opencrvs-farajaland'
+  #         fetch-depth: 0
+
+  #     - name: Checkout country branch
+  #       run: |
+  #         git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
+
+  #     - name: Set up Node.js from country .nvmrc
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version-file: .nvmrc
+
+  #     - name: List Test Directories
+  #       id: list-tests
+  #       run: |
+  #         tests_suites=$(cd e2e/testcases; find * -type f -name "*.spec.ts" | jq -R -s -c 'split("\n")[:-1]')
+  #         echo "Test suites: $tests_suites"
+  #         echo "test_matrix=$tests_suites" >> $GITHUB_OUTPUT
+  #         echo "test_matrix=$tests_suites"
+  #     - name: Cache Node.js dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           node_modules
+  #           ~/.cache/yarn/v6
+  #           ~/.cache/ms-playwright
+  #         key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-node-
+
+  #     - name: Install Dependencies
+  #       run: yarn
+  #     - uses: nick-fields/retry@v3
+  #       with:
+  #         timeout_minutes: 10
+  #         max_attempts: 3
+  #         command: npx playwright install --with-deps
+  #     - name: Cache Node.js dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           node_modules
+  #           ~/.cache/yarn/v6
+  #           ~/.cache/ms-playwright
+  #         key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-node-
+  # test:
+  #   needs: [deploy, discover-tests]
+  #   runs-on: ubuntu-22.04
+  #   environment: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       test_file: ${{ fromJson(needs.discover-tests.outputs.test_matrix) }}
+  #   name: ${{ matrix.test_file }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         repository: 'opencrvs/opencrvs-farajaland'
+  #         fetch-depth: 0
+
+  #     - name: Checkout country branch
+  #       run: |
+  #         git checkout ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+  #     - name: Set up Node.js from country .nvmrc
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version-file: .nvmrc
+
+  #     - name: Cache Node.js dependencies
+  #       uses: actions/cache@v4
+  #       id: cache
+  #       with:
+  #         path: |
+  #           node_modules
+  #           ~/.cache/yarn/v6
+  #           ~/.cache/ms-playwright
+  #         key: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-node-
+
+  #     - name: Install Dependencies
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       run: yarn
+  #     - uses: nick-fields/retry@v3
+  #       if: steps.cache.outputs.cache-hit != 'true'
+  #       with:
+  #         timeout_minutes: 10
+  #         max_attempts: 3
+  #         command: npx playwright install --with-deps
+  #     - name: Run Playwright Tests
+  #       run: npx playwright test ./e2e/testcases/${{ matrix.test_file }}
+  #       env:
+  #         DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}'
+  #     - id: ctrf_check
+  #       if: always()
+  #       run: |
+  #         [ -d ctrf ] && \
+  #          echo "ctrf=true" >> $GITHUB_OUTPUT || \
+  #          echo "ctrf=false" >> $GITHUB_OUTPUT
+  #     - name: Publish Test Summary Results
+  #       run: npx github-actions-ctrf ctrf/ctrf-report.json
+  #       if: always() && steps.ctrf_check.outputs.ctrf == 'true'
+
+  #     - name: Form the artifact name from test_file
+  #       if: always()
+  #       id: artifact
+  #       run: echo "artifact=$(echo '${{ matrix.test_file }}' | sed 's/\//__/g')" >> $GITHUB_OUTPUT
+
+  #     - uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: playwright-report-${{ github.event.client_payload.stack || github.event.inputs.stack }}-${{ steps.artifact.outputs.artifact }}-${{ github.run_id }}-${{ github.run_attempt }}
+  #         path: playwright-report/
+  #         retention-days: 30
+
+  # get-previous-run:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     previous_run_result: ${{ steps.set-output.outputs.result }}
+
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Get Previous Run Conclusion
+  #       id: get-previous-conclusion
+  #       run: |
+  #         previous_conclusion=$(gh run list --limit 1 --status=completed --workflow="Deploy & run E2E" --json conclusion -q '.[0].conclusion')
+  #         echo "PREVIOUS_CONCLUSION=$previous_conclusion" >> $GITHUB_ENV
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  #     - name: Set Output Based on Conclusion
+  #       id: set-output
+  #       run: |
+  #         echo "result=$PREVIOUS_CONCLUSION" >> $GITHUB_OUTPUT
+
+  # cleanup-stack:
+  #   needs: [test]
+  #   runs-on: ubuntu-24.04
+  #   if: github.event.client_payload.keep-e2e == 'false' || github.event.inputs.keep-e2e == 'false'
+  #   env:
+  #     stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
+  #     keep_e2e: ${{ github.event.client_payload.keep-e2e || github.event.inputs.keep-e2e }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Read known hosts
+  #       run: |
+  #         echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
+  #         sed -i -e '$a\' ./infrastructure/known-hosts
+  #         cat ./infrastructure/known-hosts >> $GITHUB_ENV
+  #         echo "EOF" >> $GITHUB_ENV
+  #     - name: Install SSH Key
+  #       uses: shimataro/ssh-key-action@v2
+  #       with:
+  #         key: ${{ secrets.SSH_KEY }}
+  #         known_hosts: ${{ env.KNOWN_HOSTS }}
+
+  #     - name: Unset KNOWN_HOSTS variable
+  #       run: |
+  #         echo "KNOWN_HOSTS=" >> $GITHUB_ENV
+  #     - name: Cleanup e2e stack
+  #       run: |
+  #         bash infrastructure/deployment/cleanup-e2e-stack.sh \
+  #         --stack=${stack} \
+  #         --ssh_host=${{ vars.SSH_HOST || secrets.SSH_HOST }} \
+  #         --ssh_port=${{ vars.SSH_PORT || secrets.SSH_PORT }} \
+  #         --ssh_user=${{ secrets.SSH_USER }}
