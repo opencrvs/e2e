@@ -344,7 +344,7 @@ services:
         - 'traefik.enable=false'
       replicas: 1
   apm-server:
-    image: docker.elastic.co/apm/apm-server:7.17.22
+    image: docker.elastic.co/apm/apm-server:7.17.29
     networks:
       - elasticsearch_net
       - monitoring_net
