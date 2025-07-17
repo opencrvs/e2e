@@ -110,6 +110,7 @@ jobs:
     environment: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
     strategy:
       fail-fast: false
+      max-parallel: 30
       matrix:
         test_file: ${{ fromJson(needs.discover-tests.outputs.test_matrix) }}
     name: ${{ matrix.test_file }}
