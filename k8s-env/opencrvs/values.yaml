@@ -1,0 +1,159 @@
+chart_dev_mode: false
+
+ingress:
+  tls_resolver: letsencrypt
+
+hostname: k8s-e2e.opencrvs.dev
+influxdb:
+  host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local
+elasticsearch:
+  auth_mode: auto
+  port: 9200
+  host: elasticsearch.opencrvs-deps-e2e.svc.cluster.local
+  auth_users:
+    - SEARCH:{{STACK}}_elastic
+    - KIBANA_USER:{{STACK}}_kibana
+    - KIBANA_SYSTEM:{{STACK}}_kibana_system
+    - METRICBEAT:{{STACK}}_beats_system
+    - APM:{{STACK}}_apm_system
+
+minio:
+  auth_mode: use_secret
+  host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
+  external_hostname: minio.k8s-e2e.opencrvs.dev
+
+mongodb:
+  auth_mode: auto
+  host: mongodb-0.mongodb.opencrvs-deps-e2e.svc.cluster.local
+  databases:
+    - prefix: USER_MGNT
+      db: {{STACK}}--user-mgnt
+      user: {{STACK}}--user-mgnt
+    - prefix: HEARTH
+      db: {{STACK}}--hearth-dev
+      user: {{STACK}}--hearth
+      roles: "[{ role: 'readWrite', db: '{{STACK}}--hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: '{{STACK}}--hearth-dev' }]"
+    - prefix: CONFIG
+      db: {{STACK}}--application-config
+      user: {{STACK}}--config
+    - prefix: PERFORMANCE
+      db: {{STACK}}--performance
+      user: {{STACK}}--performance
+    - prefix: METRICS
+      db: {{STACK}}--metrics
+      user: {{STACK}}--metrics
+    - prefix: OPENHIM
+      db: {{STACK}}--openhim-dev
+      user: {{STACK}}--openhim
+      roles: "[{ role: 'readWrite', db: '{{STACK}}--openhim' }, { role: 'readWrite', db: '{{STACK}}--openhim-dev' }]"
+    - prefix: WEBHOOKS
+      db: {{STACK}}--webhooks
+      user: {{STACK}}--webhooks
+    - prefix: NOTIFICATION
+      db: {{STACK}}--notification
+      user: {{STACK}}--notification
+    - prefix: EVENTS
+      db: {{STACK}}--events
+      user: {{STACK}}--events
+      roles: "[{ role: 'readWrite', db: '{{STACK}}--events' }, {role: 'read', db: '{{STACK}}--user-mgnt'}]"
+redis:
+  auth_mode: use_secret
+  host: redis-0.redis.opencrvs-deps-e2e.svc.cluster.local
+
+
+postgres:
+  auth_mode: auto
+  host: postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local
+  events_db: {{STACK}}__events
+  events_migrator: {{STACK}}_migrator
+  events_app: {{STACK}}_app
+
+resources:
+  memoryRequest: "256Mi"
+  cpuRequest: "200m"
+  memoryLimit: "2Gi"
+  cpuLimit: "1"
+
+image:
+  tag: develop
+
+dashboards:
+  use_default_credentials: false
+
+gateway:
+  resources:
+    memoryRequest: "512Mi"
+    cpuRequest: "200m"
+    memoryLimit: "2Gi"
+    cpuLimit: "1"
+
+config:
+  resources:
+    memoryRequest: "512Mi"
+    cpuRequest: "200m"
+    memoryLimit: "2Gi"
+    cpuLimit: "1"
+
+client:
+  env:
+   CONTENT_SECURITY_POLICY_WILDCARD: "*.k8s-e2e.opencrvs.dev"
+countryconfig:
+  image:
+    # Replace countryconfig with farajaland to test data
+    name: opencrvs/ocrvs-farajaland
+    # name: opencrvs/ocrvs-countryconfig
+    # tag: develop
+    # tag: ec53c12
+    tag: develop
+  env:
+    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
+    OPENID_PROVIDER_CLIENT_ID: mock-client_id
+    V2_EVENTS: "true"
+    # FIXME: In general these values should be passed externally using `--set key=value`
+    ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.k8s-e2e.opencrvs.dev/authorize
+    MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.k8s-e2e.opencrvs.dev/esignet/get-oidp-user-info
+    # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
+    # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
+    E2E_MINIO_BUCKET: {{STACK}}--ocrvs
+    # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
+    E2E_MINIO_BASE_URL: https://minio.k8s-e2e.opencrvs.dev
+
+gateway:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
+events:
+  env:
+    ES_INDEX_PREFIX: events_{{STACK}}
+
+search:
+  env:
+    OPENCRVS_INDEX_NAME: ocrvs--{{STACK}}
+metrics:
+  env:
+    INFLUX_DB: {{STACK}}_ocrvs
+user_mgmt:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
+documents:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
+
+data_migration:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
+    INFLUX_DB: {{STACK}}_ocrvs
+    ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
+
+postgres_on_deploy:
+  env:
+    TARGET_DB: {{STACK}}__events
+
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"
+data_cleanup:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
+    ES_INDEX_PREFIX: events_{{STACK}}
+    ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}

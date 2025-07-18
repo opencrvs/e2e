@@ -1,0 +1,2 @@
+ingress:
+  ssl_enabled: true
