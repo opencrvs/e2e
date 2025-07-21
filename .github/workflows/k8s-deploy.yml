@@ -43,7 +43,12 @@ jobs:
       # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      - name: Generate summary
+        run: |
+          echo "Deploying environment to https://${{ inputs.environment }}.k8s-e2e.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Reset environment: ${{ inputs.reset }}" >> $GITHUB_STEP_SUMMARY
       - name: Print deployment parameters
         run: |
           echo "Environment: $ENV"
