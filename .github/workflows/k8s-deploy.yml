@@ -60,7 +60,8 @@ jobs:
           --namespace "opencrvs-${ENV}" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.k8s-e2e.opencrvs.dev \
-          --create-namespace
+          --create-namespace \
+          --atomic
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -87,6 +88,7 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
             --create-namespace \
+            --atomic \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.k8s-e2e.opencrvs.dev \
