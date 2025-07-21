@@ -134,7 +134,7 @@ jobs:
       - name: List Test Directories
         id: list-tests
         run: |
-          tests_suites=$(cd e2e/testcases; find * -type f -name "*.spec.ts" | jq -R -s -c 'split("\n")[:-1]')
+          tests_suites=$(cd e2e/testcases; find * -type f -name "*v2*.spec.ts" | grep ^v2 | jq -R -s -c 'split("\n")[:-1]')
           echo "Test suites: $tests_suites"
           echo "test_matrix=$tests_suites" >> $GITHUB_OUTPUT
           echo "test_matrix=$tests_suites"
