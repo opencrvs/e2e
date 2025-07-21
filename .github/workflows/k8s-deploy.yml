@@ -93,6 +93,11 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.k8s-e2e.opencrvs.dev \
             --set environment="$ENV"
+      - name: Cleanup Helm Locks
+        if: failure() || cancelled()
+        run: |
+          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm,status=pending-install \
+            -o name | xargs kubectl -n "opencrvs-${ENV}" delete
 
   reset-data:
     if: ${{ inputs.reset }}
