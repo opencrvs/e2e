@@ -97,7 +97,8 @@ jobs:
         if: failure() || cancelled()
         run: |
           kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm,status=pending-install \
-            -o name | xargs kubectl -n "opencrvs-${ENV}" delete
+            -o name | xargs kubectl -n "opencrvs-${ENV}" delete || \
+          echo "No helm locks found, all is good"
 
   reset-data:
     if: ${{ inputs.reset }}
