@@ -1,0 +1,23 @@
+name: Force Cancel E2E Workflow Run
+run-name: Force Cancel E2E Workflow ${{ inputs.run_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "The workflow run ID to force-cancel"
+        required: true
+        type: string
+
+jobs:
+  force-cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force cancel E2E workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Force-cancelling run: ${{ inputs.run_id }}"
+          gh api \
+            --method POST \
+            /repos/opencrvs/e2e/actions/runs/${{ inputs.run_id }}/force-cancel
+          echo "Workflow cancelled: https://github.com/opencrvs/e2e/actions/runs/${{ inputs.run_id }}"
