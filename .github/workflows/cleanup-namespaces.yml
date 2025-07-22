@@ -1,0 +1,53 @@
+name: "Cleanup Old E2E Namespaces"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"  # every hour; adjust as needed
+
+jobs:
+  discover_cleanup:
+    runs-on: self-hosted
+    outputs:
+      namespaces: ${{ steps.discover_ns.outputs.namespaces }}
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Cleanup old namespaces except keep_namespace=true
+        id: discover_ns
+        env:
+          # Set how old namespaces must be to be purged (in seconds)
+          AGE_THRESHOLD: 10800  # Default 3 hours
+        run: |
+          set -e
+          THRESHOLD=${AGE_THRESHOLD}
+          NOW=$(date +%s)
+          echo "Deleting namespaces older than $((THRESHOLD/3600)) hours unless keep_namespace=true"
+          NAMESPACES=$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace != "true") | .metadata.name' | grep opencrvs | grep -v "opencrvs-deps-e2e")
+          NAMESPACES_TO_CLEANUP=''
+          for ns in $NAMESPACES; do
+            CREATED_AT=$(kubectl get ns "$ns" -o jsonpath='{.metadata.creationTimestamp}')
+            NS_SEC=$(date -d "$CREATED_AT" +%s)
+            AGE=$((NOW - NS_SEC))
+            if [ "$AGE" -ge "$THRESHOLD" ]; then
+              echo "Adding namespace $ns to cleanup list"
+              NAMESPACES_TO_CLEANUP="${NAMESPACES_TO_CLEANUP}$ns\n"
+            else
+              echo "Skipping namespace $ns (not old enough: $((AGE/3600))h $(( (AGE%3600)/60 ))m)"
+            fi
+          done
+          echo "namespaces=$NAMESPACES_TO_CLEANUP" >> $GITHUB_OUTPUT
+  cleanup:
+    needs: discover_cleanup
+    runs-on: self-hosted
+    strategy:
+      max-parallel: 10
+      fail-fast: false
+      matrix:
+        namespace: ${{ fromJson(needs.discover_cleanup.outputs.namespaces) }}
+    name: Cleanup namespace ${{ matrix.namespace }}
+    steps:
+      - name: Cleanup environment
+        run: |
+          echo ${{ matrix.namespace }}

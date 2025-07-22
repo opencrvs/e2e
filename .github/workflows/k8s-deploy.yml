@@ -11,6 +11,8 @@ on:
           type: string
         reset:
           type: boolean
+        add_keep_env_label:
+          type: boolean
     workflow_dispatch:
       inputs:
         core-image-tag:
@@ -31,7 +33,11 @@ on:
           required: false
           default: false
           type: boolean
-
+        add_keep_env_label:
+          description: "Add keep_namespace label"
+          required: false
+          type: boolean
+          default: false
 jobs:
   deploy:
     env:
@@ -93,6 +99,9 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.k8s-e2e.opencrvs.dev \
             --set environment="$ENV"
+      - name: Add keep namespace label
+        if: inputs.add_keep_env_label
+        run: kubectl label namespace opencrvs-${ENV} keep_namespace=true
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
