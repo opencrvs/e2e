@@ -19,8 +19,8 @@ on:
         required: true
       keep-e2e:
         description: Keep environment after run
-        required: true
-        default: true
+        required: false
+        default: false
         type: boolean
       branch:
         description: e2e branch
