@@ -11,7 +11,7 @@ on:
           type: string
         reset:
           type: boolean
-        add_keep_env_label:
+        keep-e2e:
           type: boolean
           default: false
     workflow_dispatch:
@@ -34,7 +34,7 @@ on:
           required: false
           default: false
           type: boolean
-        add_keep_env_label:
+        keep-e2e:
           description: "Add keep_namespace label"
           required: false
           type: boolean
@@ -103,7 +103,7 @@ jobs:
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
       - name: Add keep namespace label opencrvs-${ENV}
-        if: inputs.add_keep_env_label
+        if: inputs.keep-e2e
         run: kubectl label namespace opencrvs-${ENV} keep_namespace='true'
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
