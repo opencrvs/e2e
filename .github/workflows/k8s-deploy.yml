@@ -99,9 +99,11 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.k8s-e2e.opencrvs.dev \
             --set environment="$ENV"
-      - name: Add keep namespace label
+      - name: Add updated_at timestamp label to namespace
+        run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
+      - name: Add keep namespace label opencrvs-${ENV}
         if: inputs.add_keep_env_label
-        run: kubectl label namespace opencrvs-${ENV} keep_namespace=true
+        run: kubectl label namespace opencrvs-${ENV} keep_namespace='true'
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
