@@ -55,12 +55,21 @@ jobs:
     steps:
         - name: Checkout repo
           uses: actions/checkout@v4
+        - name: Create env variables
+          id: env_vars
+          run: |
+            echo "ENV=$(echo ${{ matrix.namespace }} | sed 's/opencrvs-//')" >> $GITHUB_OUTPUT
+            echo "CORE_IMAGE_TAG=$(helm get values opencrvs -ojson | jq .image.tag)" >> $GITHUB_OUTPUT
         - name: Update k8s-env/opencrvs/values.yaml
-          run: |
-            sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          env:
+            ENV: ${{ steps.env_vars.outputs.ENV }}
+          run: sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
         - name: Cleanup environment
+          env:
+            ENV: ${{ steps.env_vars.outputs.ENV }}
+            CORE_IMAGE_TAG: ${{ steps.env_vars.outputs.CORE_IMAGE_TAG }}
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
+            kubectl delete job -n ${{ matrix.namespace }} --ignore-not-found=true data-cleanup
             helm template -f k8s-env/opencrvs/values.yaml \
                 --set data_cleanup.enabled=true \
                 --set image.tag="$CORE_IMAGE_TAG" \
