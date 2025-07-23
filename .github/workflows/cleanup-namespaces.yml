@@ -7,6 +7,7 @@ on:
 
 jobs:
   discover_cleanup:
+    name: List namespaces to cleanup
     runs-on: self-hosted
     outputs:
       namespaces: ${{ steps.discover_ns.outputs.namespaces }}
@@ -27,27 +28,49 @@ jobs:
           NAMESPACES=$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace != "true") | .metadata.name' | grep opencrvs | grep -v "opencrvs-deps-e2e")
           NAMESPACES_TO_CLEANUP=''
           for ns in $NAMESPACES; do
-            CREATED_AT=$(kubectl get ns "$ns" -o jsonpath='{.metadata.creationTimestamp}')
-            NS_SEC=$(date -d "$CREATED_AT" +%s)
-            AGE=$((NOW - NS_SEC))
-            if [ "$AGE" -ge "$THRESHOLD" ]; then
+            UPDATED_AT=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.updated_at}')
+            AGE=$((NOW - UPDATED_AT))
+            if [ -z "$UPDATED_AT" ]; then
+              echo "Skipping namespace $ns, no update_at label"
+            elif [ "$AGE" -ge "$THRESHOLD" ]; then
               echo "Adding namespace $ns to cleanup list"
               NAMESPACES_TO_CLEANUP="${NAMESPACES_TO_CLEANUP}$ns\n"
             else
               echo "Skipping namespace $ns (not old enough: $((AGE/3600))h $(( (AGE%3600)/60 ))m)"
             fi
           done
-          echo "namespaces=$NAMESPACES_TO_CLEANUP" >> $GITHUB_OUTPUT
+          namespaces=$(echo -e $NAMESPACES_TO_CLEANUP | jq -R -s -c 'split("\n")[:-1]')
+          echo "namespaces=$namespaces" >> $GITHUB_OUTPUT
+          echo "namespaces=$namespaces"
   cleanup:
     needs: discover_cleanup
     runs-on: self-hosted
+    if: ${{ needs.discover_cleanup.outputs.namespaces != '[""]' && needs.discover_cleanup.outputs.namespaces != '[]' && needs.discover_cleanup.outputs.namespaces != '' }}
     strategy:
       max-parallel: 10
       fail-fast: false
       matrix:
         namespace: ${{ fromJson(needs.discover_cleanup.outputs.namespaces) }}
-    name: Cleanup namespace ${{ matrix.namespace }}
+    name: Remove ${{ matrix.namespace }}
     steps:
-      - name: Cleanup environment
-        run: |
-          echo ${{ matrix.namespace }}
+        - name: Checkout repo
+          uses: actions/checkout@v4
+        - name: Update k8s-env/opencrvs/values.yaml
+          run: |
+            sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+        - name: Cleanup environment
+          run: |
+            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
+            helm template -f k8s-env/opencrvs/values.yaml \
+                --set data_cleanup.enabled=true \
+                --set image.tag="$CORE_IMAGE_TAG" \
+                --namespace opencrvs-${ENV} \
+                -s templates/data-cleanup-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+            sleep 30;
+            kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
+            kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
+        - name: Uninstall helm release
+          run: helm uninstall opencrvs || echo "Helm release is not installed"
+        - name: Delete namespace ${{ matrix.namespace }}
+          run: kubectl delete ns ${{ matrix.namespace }}
