@@ -12,9 +12,6 @@ jobs:
     outputs:
       namespaces: ${{ steps.discover_ns.outputs.namespaces }}
     steps:
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
       - name: Cleanup old namespaces except keep_namespace=true
         id: discover_ns
         env:
@@ -24,24 +21,29 @@ jobs:
           set -e
           THRESHOLD=${AGE_THRESHOLD}
           NOW=$(date +%s)
-          echo "Deleting namespaces older than $((THRESHOLD/3600)) hours unless keep_namespace=true"
+          echo "⚠️ Deleting namespaces older than $((THRESHOLD/3600)) hours unless keep_namespace=true:"
           NAMESPACES=$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace != "true") | .metadata.name' | grep opencrvs | grep -v "opencrvs-deps-e2e")
-          NAMESPACES_TO_CLEANUP=''
+          KEEP_NAMESPACES=$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace == "true") | .metadata.name')
+
+          NAMESPACES_TO_CLEANUP=()
           for ns in $NAMESPACES; do
             UPDATED_AT=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.updated_at}')
             AGE=$((NOW - UPDATED_AT))
             if [ -z "$UPDATED_AT" ]; then
-              echo "Skipping namespace $ns, no update_at label"
+              echo " - ℹ️ Skipping namespace $ns, no update_at label"
             elif [ "$AGE" -ge "$THRESHOLD" ]; then
-              echo "Adding namespace $ns to cleanup list"
-              NAMESPACES_TO_CLEANUP="${NAMESPACES_TO_CLEANUP}$ns\n"
+              echo " - 🧹 Adding namespace $ns to cleanup list"
+              NAMESPACES_TO_CLEANUP+=("$ns")
             else
-              echo "Skipping namespace $ns (not old enough: $((AGE/3600))h $(( (AGE%3600)/60 ))m)"
+              echo " - 🕒 Skipping namespace $ns (not old enough: $((AGE/3600))h $(( (AGE%3600)/60 ))m)"
             fi
           done
-          namespaces=$(echo -e $NAMESPACES_TO_CLEANUP | jq -R -s -c 'split("\n")[:-1]')
-          echo "namespaces=$namespaces" >> $GITHUB_OUTPUT
-          echo "namespaces=$namespaces"
+          namespaces_json=$(printf '%s\n' "${NAMESPACES_TO_CLEANUP[@]}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "namespaces=$namespaces_json" >> $GITHUB_OUTPUT
+          echo "🔒 Following namespaces will be skipped, label keep_namespace=true:"
+          printf '\t- %s\n' $KEEP_NAMESPACES
+          echo "🗑️ Following namespaces will be removed:"
+          printf '\t- %s\n' "${NAMESPACES_TO_CLEANUP[@]}"
   cleanup:
     needs: discover_cleanup
     runs-on: self-hosted
@@ -59,7 +61,7 @@ jobs:
           id: env_vars
           run: |
             echo "ENV=$(echo ${{ matrix.namespace }} | sed 's/opencrvs-//')" >> $GITHUB_OUTPUT
-            echo "CORE_IMAGE_TAG=$(helm get values opencrvs -ojson | jq .image.tag)" >> $GITHUB_OUTPUT
+            echo "CORE_IMAGE_TAG=$(helm get values opencrvs -n ${{ matrix.namespace }} -ojson | jq .image.tag)" >> $GITHUB_OUTPUT
         - name: Update k8s-env/opencrvs/values.yaml
           env:
             ENV: ${{ steps.env_vars.outputs.ENV }}
@@ -72,7 +74,6 @@ jobs:
             kubectl delete job -n ${{ matrix.namespace }} --ignore-not-found=true data-cleanup
             helm template -f k8s-env/opencrvs/values.yaml \
                 --set data_cleanup.enabled=true \
-                --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
                 -s templates/data-cleanup-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
@@ -80,6 +81,6 @@ jobs:
             kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
             kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
         - name: Uninstall helm release
-          run: helm uninstall opencrvs || echo "Helm release is not installed"
+          run: helm uninstall opencrvs -n ${{ matrix.namespace }} || echo "Helm release is not installed"
         - name: Delete namespace ${{ matrix.namespace }}
           run: kubectl delete ns ${{ matrix.namespace }}
