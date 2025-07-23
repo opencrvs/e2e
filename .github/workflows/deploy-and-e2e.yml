@@ -118,7 +118,6 @@ jobs:
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       reset: ${{ github.event.client_payload.reset || inputs.reset || true }}
-      add_keep_env_label: ${{ github.event.client_payload.keep-e2e || inputs.keep-e2e || false }}
     secrets: inherit
 
   discover-tests:

@@ -13,6 +13,7 @@ on:
           type: boolean
         add_keep_env_label:
           type: boolean
+          default: false
     workflow_dispatch:
       inputs:
         core-image-tag:
