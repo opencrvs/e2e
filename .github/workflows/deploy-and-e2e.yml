@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.event.client_payload.stack || inputs.stack }}
     strategy:
-      max-parallel: 10
+      max-parallel: 15
       fail-fast: false
       matrix:
         test_file: ${{ fromJson(needs.discover-tests.outputs.test_matrix) }}
