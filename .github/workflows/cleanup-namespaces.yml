@@ -74,6 +74,7 @@ jobs:
             kubectl delete job -n ${{ matrix.namespace }} --ignore-not-found=true data-cleanup
             helm template -f k8s-env/opencrvs/values.yaml \
                 --set data_cleanup.enabled=true \
+                --set data_cleanup.env.make_bucket=false \
                 --namespace opencrvs-${ENV} \
                 -s templates/data-cleanup-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
