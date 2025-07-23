@@ -235,18 +235,14 @@ jobs:
         with:
           timeout_minutes: 10
           max_attempts: 2
-          # FIXME: Cleanup debug from here after more careful testing
           command: |
-            curl -v -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem;
             curl -s -o playwright.config.ts https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/k8s-integration/playwright.config.ts;
-            cat $NODE_EXTRA_CA_CERTS || true
-            ls -l /tmp;
+            export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
+            curl -v -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem;
             npx playwright test ./e2e/testcases/${{ matrix.test_file }}
         env:
           DOMAIN: '${{ needs.debug.outputs.domain }}'
-          # Allow e2e playwright API call for Lets encrypt staging SSL Certificate
-          NODE_EXTRA_CA_CERTS: /tmp/letsencrypt-stg-root-x1.pem
-          # Allow e2e Browser for Lets encrypt staging SSL Certificate
+          # TODO: remove this variable on Jul 30 2025, check Farajaland latest fix
           IGNORE_CA: '1'
       - id: ctrf_check
         if: always()
