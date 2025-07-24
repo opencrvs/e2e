@@ -165,16 +165,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: npx playwright install --with-deps
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn/v6
-            ~/.cache/ms-playwright
-          key: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+
   test:
     needs: [debug, deploy-docker, deploy-k8s, discover-tests]
     # Continue if at least one dependency succeeded (docker OR k8s ran)
