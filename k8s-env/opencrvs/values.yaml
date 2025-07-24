@@ -89,10 +89,15 @@ gateway:
 
 config:
   resources:
-    memoryRequest: "512Mi"
+    memoryRequest: "1Gi"
     cpuRequest: "200m"
     memoryLimit: "2Gi"
     cpuLimit: "1"
+
+events:
+  resources:
+    memoryRequest: "1Gi"
+    cpuRequest: "500m"
 
 client:
   env:
