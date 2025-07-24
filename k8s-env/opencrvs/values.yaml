@@ -72,10 +72,10 @@ postgres:
   events_app: {{STACK}}_app
 
 resources:
-  memoryRequest: "256Mi"
-  cpuRequest: "200m"
+  memoryRequest: "128Mi"
+  cpuRequest: "150m"
   memoryLimit: "2Gi"
-  cpuLimit: "1"
+  cpuLimit: "4"
 
 image:
   tag: develop
@@ -132,6 +132,10 @@ gateway:
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
+  resources:
+    memoryRequest: "1Gi"
+    cpuRequest: "1"
+    memoryLimit: "2Gi"
 
 search:
   env:
