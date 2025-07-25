@@ -18,7 +18,7 @@ jobs:
           # Set how old namespaces must be to be purged (in seconds)
           AGE_THRESHOLD: 10800  # Default 3 hours
         run: |
-          set -e
+          set -x
           THRESHOLD=${AGE_THRESHOLD}
           NOW=$(date +%s)
           echo "⚠️ Deleting namespaces older than $((THRESHOLD/3600)) hours unless keep_namespace=true:"
