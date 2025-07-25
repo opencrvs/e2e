@@ -22,7 +22,7 @@ jobs:
           THRESHOLD=${AGE_THRESHOLD}
           NOW=$(date +%s)
           echo "⚠️ Deleting namespaces older than $((THRESHOLD/3600)) hours unless keep_namespace=true:"
-          NAMESPACES="$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace != "true") | .metadata.name' | grep opencrvs | grep -v 'opencrvs-deps-e2e')"
+          NAMESPACES="$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace != "true") | .metadata.name' | grep opencrvs | grep -v 'opencrvs-deps-e2e')" || NAMESPACES=""
           KEEP_NAMESPACES=$(kubectl get ns -o json | jq -r '.items[] | select(.metadata.labels.keep_namespace == "true") | .metadata.name')
 
           NAMESPACES_TO_CLEANUP=()
