@@ -108,8 +108,9 @@ jobs:
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
-          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm,status=pending-install \
-            -o name | xargs kubectl -n "opencrvs-${ENV}" delete || \
+          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
+          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade") | .metadata.name' | \
+          xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
 
   reset-data:
