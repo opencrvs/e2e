@@ -66,9 +66,9 @@ jobs:
       - name: Select docker swarm or k8s
         # Environment is selected based on stack hash with is always constant
         # Only first 8 symbols are used from hash and stack_id number is generated
-        # - Odd numbers are deployed to k8s
-        # - Even numbers are deployed to docker swarm
-        # E/g ocrvs-9595 has stack id 2766917431, which means docker
+        # - Odd numbers are deployed to docker swarm
+        # - Even numbers are deployed to k8s
+        # E/g ocrvs-9595 has stack id 2766917431, stack_id % 2 equals 1, which means docker
         id: runtime
         env:
           run_id: ${{ github.run_id }}
