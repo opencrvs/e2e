@@ -61,12 +61,12 @@ jobs:
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-          echo ""
+          echo "base_ref: ${{ github.base_ref }}"
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
-          -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/${{ github.base_ref }}/k8s-env/mosip-api/values.yaml \
+          -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/develop/k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.k8s-e2e.opencrvs.dev \
           --create-namespace \
           --atomic
@@ -88,7 +88,7 @@ jobs:
           done
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
-          curl -o e2e.yaml https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/${{ github.base_ref }}/k8s-env/opencrvs/values.yaml
+          curl -o e2e.yaml https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/develop/k8s-env/opencrvs/values.yaml
           sed -i -e "s#{{STACK}}#${ENV}#g" e2e.yaml
       - name: Deploy with Helm
         run: |
