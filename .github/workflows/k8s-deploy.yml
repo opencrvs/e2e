@@ -48,8 +48,8 @@ jobs:
     runs-on: [self-hosted]
     steps:
       # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      # - name: Checkout repo
+      #   uses: actions/checkout@v4
       - name: Generate summary
         run: |
           echo "Deploying environment to https://${{ inputs.environment }}.k8s-e2e.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
@@ -61,11 +61,12 @@ jobs:
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
+          echo ""
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
-          -f k8s-env/mosip-api/values.yaml \
+          -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/${{ github.base_ref }}/k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.k8s-e2e.opencrvs.dev \
           --create-namespace \
           --atomic
@@ -87,13 +88,14 @@ jobs:
           done
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
-          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          curl -o e2e.yaml https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/${{ github.base_ref }}/k8s-env/opencrvs/values.yaml
+          sed -i -e "s#{{STACK}}#${ENV}#g" e2e.yaml
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            -f k8s-env/opencrvs/values.yaml \
+            -f e2e.yaml \
             --create-namespace \
             --atomic \
             --set image.tag="$CORE_IMAGE_TAG" \
@@ -120,6 +122,5 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
-      environment: ${{ inputs.environment }}
-      core-image-tag: ${{ inputs.core-image-tag }}
+      namespace: "opencrvs-${{ inputs.environment }}"
     secrets: inherit
