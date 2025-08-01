@@ -1,0 +1,16 @@
+name: Deploy Dependencies on k8s
+on:
+    workflow_dispatch:
+jobs:
+  deploy:
+    env:
+      ENV: e2e
+    runs-on: [self-hosted]
+    steps:
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
+            --namespace "opencrvs-deps-e2e" \
+            -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/develop/k8s-env/dependencies/values.yaml \
+            --create-namespace \
+            --atomic

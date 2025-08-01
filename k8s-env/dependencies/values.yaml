@@ -1,0 +1,27 @@
+chart_dev_mode: false
+hostname: k8s-e2e.opencrvs.dev
+
+ingress:
+  tls_resolver: letsencrypt
+
+redis:
+  # TODO: auth mode values doesn't match with opencrvs-services chart
+  auth_mode: acl
+
+minio:
+  use_default_credentials: false
+
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
+
+postgres:
+  use_default_credentials: false
+
+node_selector:
+ role: data1
+
+monitoring:
+  enabled: true
