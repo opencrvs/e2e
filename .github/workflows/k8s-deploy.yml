@@ -43,6 +43,7 @@ jobs:
   deploy:
     env:
       ENV: ${{ inputs.environment }}
+      BRANCH: ${{ github.ref_name }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
     runs-on: [self-hosted]
@@ -62,6 +63,7 @@ jobs:
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
           echo "base_ref: ${{ github.base_ref }}"
+          echo "branch: ${BRANCH}"
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
