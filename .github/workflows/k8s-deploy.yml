@@ -115,11 +115,9 @@ jobs:
 
   reset-data:
     if: ${{ inputs.reset }}
-    # name: Reset environment (k8s)
-    # run-name: "Reset environment (core: ${{ inputs.core-image-tag }})
     needs: deploy
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
+      namespace: "opencrvs-${{ inputs.environment }}"
       environment: ${{ inputs.environment }}
-      core-image-tag: ${{ inputs.core-image-tag }}
     secrets: inherit
