@@ -1,13 +1,8 @@
 name: Seed data (k8s)
-run-name: Seed data to ${{ inputs.environment }} core=${{ inputs.core-image-tag }}
+run-name: Seed data to ${{ inputs.environment }}
 on:
     workflow_dispatch:
-      inputs:
-        core-image-tag:
-          description: "Core image tag"
-          required: true
-          default: "develop"
-          type: string        
+      inputs:   
         environment:
           description: "Target environment"
           required: true
@@ -18,9 +13,7 @@ on:
         environment:
           required: true
           type: string
-        core-image-tag:
-          required: true
-          type: string
+
 jobs:
   seed:
     env:

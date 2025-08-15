@@ -1,101 +1,90 @@
-name: Reset environment (k8s)
-run-name: "Reset environment (core: ${{ inputs.core-image-tag }})"
+name: Reset environment
+run-name: "Reset ${{ inputs.environment }} environment (namespace: ${{ inputs.namespace }})"
 # FIXME:
 # - replace sleep 30 with kubectl wait for job completion
+# - only environment variable is required, namespace could be build as "opencrvs-<environment>"
+#   but namespace is more natural way for kubernetes
 on:
     workflow_dispatch:
       inputs:
-        core-image-tag:
-          description: "Core image tag"
+        namespace:
+          description: "Target namespace"
           required: true
-          default: "develop"
-          type: string        
+          type: string
         environment:
           description: "Target environment"
           required: true
-          default: "demo"
-          type: choice
-          options:
-            - dev
-            - demo
+          type: string
     workflow_call:
       inputs:
-        core-image-tag:
+        namespace:
           type: string
         environment:
           type: string
 jobs:
   reset:
+    environment: ${{ inputs.environment }}
     env:
-      ENV: ${{ inputs.environment }}
-      CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
-    runs-on: [self-hosted]
+      namespace: ${{ inputs.namespace }}
+    runs-on:
+      - self-hosted
     steps:
-        # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
-        - name: Checkout repo
-          uses: actions/checkout@v4
-        - name: Update k8s-env/opencrvs/values.yaml
-          run: |
-            sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+        - name: Get helm release values
+          run: helm get values opencrvs -n ${namespace} > ${namespace}.yaml
         - name: Cleanup environment
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
-            helm template -f k8s-env/opencrvs/values.yaml \
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
+            helm template -f ${namespace}.yaml \
                 --set data_cleanup.enabled=true \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
+                --namespace ${namespace} \
                 -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
             sleep 30;
-            kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
-            kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
-            kubectl delete pod -n opencrvs-${ENV} -lapp=events;
-            kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
+            kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
+            kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
+            kubectl delete pod -n ${namespace} -lapp=events;
+            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events;
         - name: Re-run postgres on-deploy
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true postgres-on-deploy;
-            helm template -f k8s-env/opencrvs/values.yaml \
+            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
+            helm template -f ${namespace}.yaml \
                 -s templates/postgres-on-update.yaml \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -;
+                --namespace ${namespace} \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             sleep 30;
-            kubectl logs job/postgres-on-deploy -f --all-containers=true -n opencrvs-${ENV};
-            kubectl wait --for=condition=complete job/postgres-on-deploy -n opencrvs-${ENV} --timeout=600s;
+            kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
+            kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Migration
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-migration
-            helm template -f k8s-env/opencrvs/values.yaml \
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-migration
+            helm template -f ${namespace}.yaml \
                 -s templates/data-migration-job.yaml \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+                --namespace ${namespace} \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
             sleep 30;
-            kubectl logs job/data-migration -f -n opencrvs-${ENV} || true
-            kubectl wait --for=condition=complete job/data-migration -n opencrvs-${ENV} --timeout=600s;
+            kubectl logs job/data-migration -f -n ${namespace} || true
+            kubectl wait --for=condition=complete job/data-migration -n ${namespace} --timeout=600s;
         - name: Re-run postgres on-deploy
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true postgres-on-deploy;
-            helm template -f k8s-env/opencrvs/values.yaml \
+            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
+            helm template -f ${namespace}.yaml \
                 -s templates/postgres-on-update.yaml \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -;
+                --namespace ${namespace} \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             sleep 30;
-            kubectl logs job/postgres-on-deploy -f --all-containers=true -n opencrvs-${ENV};
-            kubectl wait --for=condition=complete job/postgres-on-deploy -n opencrvs-${ENV} --timeout=600s;
+            kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
+            kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Seeding data
           run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-seed
-            kubectl delete pod -n opencrvs-${ENV} -lapp=events;
-            kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
-            helm template  -f k8s-env/opencrvs/values.yaml \
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
+            kubectl delete pod -n ${namespace} -lapp=events;
+            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events;
+            helm template  -f ${namespace}.yaml \
                 --set data_seed.enabled=true \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
+                --namespace ${namespace} \
                 -s templates/data-seed-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait -f -
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait -f -
             sleep 30;
-            kubectl logs job/data-seed -f -n opencrvs-${ENV} || true
-            kubectl wait --for=condition=complete job/data-seed -n opencrvs-${ENV} --timeout=600s;
-            kubectl delete pod -n opencrvs-${ENV} -lapp=events;
+            kubectl logs job/data-seed -f -n ${namespace} || true
+            kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s;
+            kubectl delete pod -n ${namespace} -lapp=events;
