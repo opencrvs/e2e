@@ -104,7 +104,7 @@ jobs:
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
       - name: Add keep namespace label opencrvs-${ENV}
         if: inputs.keep-e2e
-        run: kubectl label namespace opencrvs-${ENV} keep_namespace='true'
+        run: kubectl label namespace opencrvs-${ENV} keep_namespace='true' --overwrite
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
