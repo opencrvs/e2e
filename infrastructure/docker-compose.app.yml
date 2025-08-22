@@ -473,7 +473,7 @@ services:
       - CERT_PRIVATE_KEY_PATH=/run/secrets/jwt-private-key.{{STACK}}.{{ts}}
       - CERT_PUBLIC_KEY_PATH=/run/secrets/jwt-public-key.{{STACK}}.{{ts}}
       - LOGIN_URL=https://login.${STACK}.{{hostname}}
-      - COUNTRY_CONFIG_URL=https://countryconfig.${STACK}.{{hostname}}
+      - COUNTRY_CONFIG_URL_EXTERNAL=https://countryconfig.${STACK}.{{hostname}}
       - COUNTRY_CONFIG_URL_INTERNAL=http://countryconfig.{{STACK}}_app_net:3040/
       - CLIENT_APP_URL=https://register.${STACK}.{{hostname}}
       - DOMAIN=${STACK}.{{hostname}}
