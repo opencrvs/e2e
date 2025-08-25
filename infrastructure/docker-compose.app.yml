@@ -770,7 +770,7 @@ services:
         aliases: []
 
   postgres-on-update:
-    image: postgres:17
+    image: postgres:17.6
     command: bash /on-deploy.sh
     configs:
       - source: postgres-on-deploy.{{ts}}
