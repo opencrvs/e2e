@@ -77,7 +77,6 @@ jobs:
         run: |
           stack_hash=$(echo -n "$stack" | sha256sum | head -c 8)
           stack_id=$((16#$stack_hash))
-          runtime=docker
           if [[ -n "$runtime" && "$runtime" != "none" ]]; then
             runtime="$runtime"
           elif [[ ! -f infrastructure/.kube ]]; then
