@@ -229,10 +229,14 @@ jobs:
           [ -d ctrf ] && \
            echo "ctrf=true" >> $GITHUB_OUTPUT || \
            echo "ctrf=false" >> $GITHUB_OUTPUT
-      - name: Publish Test Summary Results
-        run: npx github-actions-ctrf ctrf/ctrf-report.json
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: './ctrf/*.json'
+          github-report: true
+          summary-report: true
+          test-report: true
         if: always() && steps.ctrf_check.outputs.ctrf == 'true'
-
       - name: Form the artifact name from test_file
         if: always()
         id: artifact
