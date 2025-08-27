@@ -276,7 +276,7 @@ jobs:
   cleanup-stack-docker:
     needs: [test, debug]
     runs-on: ubuntu-24.04
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'docker' && needs.test.result == 'success'
+    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'docker'
     env:
       stack: ${{ github.event.client_payload.stack || inputs.stack }}
       keep_e2e: ${{ github.event.client_payload.keep-e2e || inputs.keep-e2e }}
@@ -310,7 +310,7 @@ jobs:
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s' && needs.test.result == 'success'
+    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s'
     steps:
         - name: Checkout repo
           uses: actions/checkout@v4
