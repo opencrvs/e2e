@@ -196,7 +196,7 @@ jobs:
         run: |
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
-          npx playwright test --shard=${{ matrix.shard }}/10
+          npx playwright test --shard=${{ matrix.shard }}/20
         env:
           DOMAIN: '${{ needs.debug.outputs.domain }}'
       - id: ctrf_check
@@ -284,23 +284,23 @@ jobs:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
     if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s' && needs.test.result == 'success'
     steps:
-        - name: Checkout repo
-          uses: actions/checkout@v4
-        - name: Update k8s-env/opencrvs/values.yaml
-          run: |
-            sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
-        - name: Cleanup environment
-          run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
-            helm template -f k8s-env/opencrvs/values.yaml \
-                --set data_cleanup.enabled=true \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
-                -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
-            sleep 30;
-            kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
-            kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
-        - name: Delete helm release and namespace
-          run: |
-            kubectl delete namespace opencrvs-${ENV}
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Update k8s-env/opencrvs/values.yaml
+        run: |
+          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+      - name: Cleanup environment
+        run: |
+          kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
+          helm template -f k8s-env/opencrvs/values.yaml \
+              --set data_cleanup.enabled=true \
+              --set image.tag="$CORE_IMAGE_TAG" \
+              --namespace opencrvs-${ENV} \
+              -s templates/data-cleanup-job.yaml \
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+          sleep 30;
+          kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
+          kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
+      - name: Delete helm release and namespace
+        run: |
+          kubectl delete namespace opencrvs-${ENV}
