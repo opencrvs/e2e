@@ -29,12 +29,29 @@ jobs:
     runs-on:
       - self-hosted
     steps:
-        - name: Get helm release values
-          run: helm get values opencrvs -n ${namespace} > ${namespace}.yaml
+        - name: Get helm release values and Quote specific fields that are commonly numeric
+          run: |
+            helm get values opencrvs -n ${namespace} -ojson | \
+              jq '
+                # Quote image tags
+                if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
+                  .image.tag = (.image.tag | tostring)
+                else . end |
+                
+                # Quote version numbers
+                if has("version") and (.version | type == "number") then
+                  .version = (.version | tostring)
+                else . end |
+                
+                # Quote port numbers if needed (optional)
+                if has("service") and (.service | has("port")) and (.service.port | type == "number") then
+                  .service.port = (.service.port | tostring)
+                else . end
+              ' > ${namespace}.json
         - name: Cleanup environment
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
-            helm template -f ${namespace}.yaml \
+            helm template -f ${namespace}.json \
                 --set data_cleanup.enabled=true \
                 --namespace ${namespace} \
                 -s templates/data-cleanup-job.yaml \
@@ -47,7 +64,7 @@ jobs:
         - name: Re-run postgres on-deploy
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
-            helm template -f ${namespace}.yaml \
+            helm template -f ${namespace}.json \
                 -s templates/postgres-on-update.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
@@ -57,7 +74,7 @@ jobs:
         - name: Migration
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-migration
-            helm template -f ${namespace}.yaml \
+            helm template -f ${namespace}.json \
                 -s templates/data-migration-job.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
@@ -67,7 +84,7 @@ jobs:
         - name: Re-run postgres on-deploy
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
-            helm template -f ${namespace}.yaml \
+            helm template -f ${namespace}.json \
                 -s templates/postgres-on-update.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
@@ -79,7 +96,7 @@ jobs:
             kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
             kubectl delete pod -n ${namespace} -lapp=events;
             kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events;
-            helm template  -f ${namespace}.yaml \
+            helm template  -f ${namespace}.json \
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
                 -s templates/data-seed-job.yaml \
