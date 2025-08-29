@@ -69,6 +69,8 @@ jobs:
           --set hostname=$ENV.k8s-e2e.opencrvs.dev \
           --create-namespace \
           --atomic
+      - name: Add updated_at timestamp label to namespace
+        run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -100,8 +102,6 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.k8s-e2e.opencrvs.dev \
             --set environment="$ENV"
-      - name: Add updated_at timestamp label to namespace
-        run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
       - name: Add keep namespace label opencrvs-${ENV}
         if: inputs.keep-e2e
         run: kubectl label namespace opencrvs-${ENV} keep_namespace='true' --overwrite
