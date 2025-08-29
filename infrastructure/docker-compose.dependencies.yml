@@ -397,7 +397,7 @@ services:
         target: /etc/influxdb/influxdb.conf
 
   postgres:
-    image: postgres:17
+    image: postgres:17.6
     networks:
       - postgres_net
     restart: unless-stopped

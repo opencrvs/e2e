@@ -172,7 +172,7 @@ docker run --rm --network=dependencies_postgres_net \
   -e POSTGRES_DB="${POSTGRES_DB}" \
   -e EVENTS_MIGRATOR_ROLE="${EVENTS_MIGRATOR_ROLE}" \
   -e EVENTS_APP_ROLE="${EVENTS_APP_ROLE}" \
-  postgres:17 bash -c '
+  postgres:17.6 bash -c '
 psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
 SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
