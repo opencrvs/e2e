@@ -61,7 +61,7 @@ jobs:
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-        # Create namespace separately from deployments. With two separate deployments (mosip & e2e), if other fails, we still want to be able to clean it based on updated_at)
+        # Create namespace separately from deployments. With two separate deployments (mosip & e2e), if other fails, we still want to be able to clean it based on updated_at.
       - name: Ensure namespace exists with updated_at label
         run: |
           if ! kubectl get namespace "opencrvs-${ENV}" >/dev/null 2>&1; then
