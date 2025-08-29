@@ -56,9 +56,9 @@ jobs:
                 --namespace ${namespace} \
                 -s templates/data-cleanup-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
-            sleep 30;
-            kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
+            sleep 10;
             kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
+            kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
             kubectl delete pod -n ${namespace} -lapp=events;
             kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
         - name: Re-run postgres on-deploy
@@ -68,7 +68,7 @@ jobs:
                 -s templates/postgres-on-update.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
+            sleep 10;
             kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
             kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Migration
@@ -78,7 +78,7 @@ jobs:
                 -s templates/data-migration-job.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
-            sleep 30;
+            sleep 10;
             kubectl logs job/data-migration -f -n ${namespace} || true
             kubectl wait --for=condition=complete job/data-migration -n ${namespace} --timeout=600s;
         - name: Re-run postgres on-deploy
@@ -88,7 +88,7 @@ jobs:
                 -s templates/postgres-on-update.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
+            sleep 10;
             kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
             kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Seeding data
@@ -101,7 +101,7 @@ jobs:
                 --namespace ${namespace} \
                 -s templates/data-seed-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait -f -
-            sleep 30;
-            kubectl logs job/data-seed -f -n ${namespace} || true
+            sleep 10;
             kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s;
+            kubectl logs job/data-seed -f -n ${namespace} || true
             kubectl delete pod -n ${namespace} -lapp=events;
