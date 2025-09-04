@@ -186,12 +186,9 @@ jobs:
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: yarn
-      - uses: nick-fields/retry@v3
+      - name: Install Playwright
         if: steps.cache.outputs.cache-hit != 'true'
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: npx playwright install --with-deps
+        run: npx playwright install --with-deps
       - name: Run Playwright Tests
         run: |
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
