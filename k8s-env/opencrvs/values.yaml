@@ -155,6 +155,7 @@ data_migration:
     MINIO_BUCKET: {{STACK}}--ocrvs
     INFLUX_DB: {{STACK}}_ocrvs
     ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
+    EVENTS_DB_USER: {{STACK}}_app
 
 postgres_on_deploy:
   env:
