@@ -66,9 +66,7 @@ jobs:
       - name: Select docker swarm or k8s
         # Environment is selected based on stack hash with is always constant
         # Only first 8 symbols are used from hash and stack_id number is generated
-        # - Odd numbers are deployed to docker swarm
-        # - Even numbers are deployed to k8s
-        # E/g ocrvs-9595 has stack id 2766917431, stack_id % 2 equals 1, which means docker
+        # Environment is decided based on the modulo. e.g. elif (( stack_id % 10 < 7 )); then --> 7/10 deployments goes to the environment
         id: runtime
         env:
           run_id: ${{ github.run_id }}
@@ -82,7 +80,7 @@ jobs:
           elif [[ ! -f infrastructure/.kube ]]; then
             echo "Repository is not compatible with kubernetes"
             runtime="docker"
-          elif (( stack_id % 2 == 0 )); then
+          elif (( stack_id % 10 < 7 )); then
             runtime="k8s"
           else
             runtime="docker"
