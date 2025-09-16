@@ -96,6 +96,9 @@ jobs:
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+      - name: "FIXME: temporary remove data-migration job due to issues"
+        run: |
+          kubectl delete job -n ${namespace} --ignore-not-found=true data-migration || true
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
@@ -114,7 +117,7 @@ jobs:
         if: failure() || cancelled()
         run: |
           kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
-          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade") | .metadata.name' | \
+          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
 

@@ -73,14 +73,15 @@ jobs:
             kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Migration
           run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true data-migration
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-migration-on-reset
             helm template -f ${namespace}.json \
+                --set data_migration.job_name=data-migration-on-reset \
                 -s templates/data-migration-job.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
             sleep 10;
-            kubectl logs job/data-migration -f -n ${namespace} || true
-            kubectl wait --for=condition=complete job/data-migration -n ${namespace} --timeout=600s;
+            kubectl logs job/data-migration-on-reset -f -n ${namespace} || true
+            kubectl wait --for=condition=complete job/data-migration-on-reset -n ${namespace} --timeout=600s;
         - name: Re-run postgres on-deploy
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
@@ -95,7 +96,7 @@ jobs:
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
             kubectl delete pod -n ${namespace} -lapp=events;
-            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events;
+            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
             helm template  -f ${namespace}.json \
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
