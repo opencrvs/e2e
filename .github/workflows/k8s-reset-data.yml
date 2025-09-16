@@ -96,7 +96,7 @@ jobs:
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
             kubectl delete pod -n ${namespace} -lapp=events;
-            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events;
+            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
             helm template  -f ${namespace}.json \
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
