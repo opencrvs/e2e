@@ -20,15 +20,32 @@ jobs:
       ENV: ${{ inputs.environment }}
     runs-on: [self-hosted]
     steps:
-        - name: Get values from deployed release
-          run: helm get values opencrvs --namespace opencrvs-${ENV} > values-${ENV}.yaml
+        - name: Get helm release values and Quote specific fields that are commonly numeric
+          run: |
+            helm get values opencrvs -n ${namespace} -ojson | \
+              jq '
+                # Quote image tags
+                if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
+                  .image.tag = (.image.tag | tostring)
+                else . end |
+                
+                # Quote version numbers
+                if has("version") and (.version | type == "number") then
+                  .version = (.version | tostring)
+                else . end |
+                
+                # Quote port numbers if needed (optional)
+                if has("service") and (.service | has("port")) and (.service.port | type == "number") then
+                  .service.port = (.service.port | tostring)
+                else . end
+              ' > ${namespace}.json
         - name: Seeding data
           run: |
             kubectl delete job -n opencrvs-${ENV} data-seed || true
             kubectl delete pod -n opencrvs-${ENV} -lapp=events;
             sleep 30;
             kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
-            helm template -f values-${ENV}.yaml \
+            helm template -f ${namespace}.json \
                 --set data_seed.enabled=true \
                 --namespace opencrvs-${ENV} \
                 -s templates/data-seed-job.yaml \

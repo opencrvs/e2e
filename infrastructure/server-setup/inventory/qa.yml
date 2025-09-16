@@ -71,6 +71,11 @@ all:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRSRTqm3vOfjyTutISEtbVp7ZddoWa9NZDZLeWZGzLy dsi@dsi-Inspiron-15-3511
         state: present
         sudoer: true
+      - name: pankaj
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL23KrPmFT6tZxR5d7dsTybtDf5j9DWzJcoR/Y7iJfL6 github
+        state: present
+        sudoer: true
     enable_backups: false
 docker-manager-first:
   hosts:

@@ -66,9 +66,7 @@ jobs:
       - name: Select docker swarm or k8s
         # Environment is selected based on stack hash with is always constant
         # Only first 8 symbols are used from hash and stack_id number is generated
-        # - Odd numbers are deployed to docker swarm
-        # - Even numbers are deployed to k8s
-        # E/g ocrvs-9595 has stack id 2766917431, stack_id % 2 equals 1, which means docker
+        # Environment is decided based on the modulo. e.g. elif (( stack_id % 10 < 7 )); then --> 7/10 deployments goes to the environment
         id: runtime
         env:
           run_id: ${{ github.run_id }}
@@ -77,13 +75,12 @@ jobs:
         run: |
           stack_hash=$(echo -n "$stack" | sha256sum | head -c 8)
           stack_id=$((16#$stack_hash))
-          runtime=docker
           if [[ -n "$runtime" && "$runtime" != "none" ]]; then
             runtime="$runtime"
           elif [[ ! -f infrastructure/.kube ]]; then
             echo "Repository is not compatible with kubernetes"
             runtime="docker"
-          elif (( stack_id % 2 == 0 )); then
+          elif (( stack_id % 10 < 7 )); then
             runtime="k8s"
           else
             runtime="docker"
@@ -120,54 +117,8 @@ jobs:
       reset: ${{ github.event.client_payload.reset || inputs.reset || true }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
-  discover-tests:
-    name: Discover test directories
-    runs-on: ubuntu-24.04
-    outputs:
-      test_matrix: ${{ steps.list-tests.outputs.test_matrix }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: 'opencrvs/opencrvs-farajaland'
-          fetch-depth: 0
-
-      - name: Checkout country branch
-        run: |
-          git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-
-      - name: Set up Node.js from country .nvmrc
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-
-      - name: List Test Directories
-        id: list-tests
-        run: |
-          tests_suites=$(cd e2e/testcases; find * -type f -name "*.spec.ts" | jq -R -s -c 'split("\n")[:-1]')
-          echo "Test suites: $tests_suites"
-          echo "test_matrix=$tests_suites" >> $GITHUB_OUTPUT
-          echo "test_matrix=$tests_suites"
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn/v6
-            ~/.cache/ms-playwright
-          key: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install Dependencies
-        run: yarn
-      - uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: npx playwright install --with-deps
-
   test:
-    needs: [debug, deploy-docker, deploy-k8s, discover-tests]
+    needs: [debug, deploy-docker, deploy-k8s]
     # Continue if at least one dependency succeeded (docker OR k8s ran)
     if: |
       always() && (
@@ -180,8 +131,30 @@ jobs:
       max-parallel: 15
       fail-fast: false
       matrix:
-        test_file: ${{ fromJson(needs.discover-tests.outputs.test_matrix) }}
-    name: ${{ matrix.test_file }}
+        shard:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+    name: shard-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -218,14 +191,10 @@ jobs:
           max_attempts: 3
           command: npx playwright install --with-deps
       - name: Run Playwright Tests
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 2
-          command: |
-            export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
-            curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem;
-            npx playwright test ./e2e/testcases/${{ matrix.test_file }}
+        run: |
+          export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
+          curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
+          npx playwright test --shard=${{ matrix.shard }}/20
         env:
           DOMAIN: '${{ needs.debug.outputs.domain }}'
       - id: ctrf_check
@@ -234,19 +203,19 @@ jobs:
           [ -d ctrf ] && \
            echo "ctrf=true" >> $GITHUB_OUTPUT || \
            echo "ctrf=false" >> $GITHUB_OUTPUT
-      - name: Publish Test Summary Results
-        run: npx github-actions-ctrf ctrf/ctrf-report.json
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: './ctrf/*.json'
+          github-report: true
+          summary-report: true
+          test-report: true
         if: always() && steps.ctrf_check.outputs.ctrf == 'true'
-
-      - name: Form the artifact name from test_file
-        if: always()
-        id: artifact
-        run: echo "artifact=$(echo '${{ matrix.test_file }}' | sed 's/\//__/g')" >> $GITHUB_OUTPUT
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-${{ steps.artifact.outputs.artifact }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: playwright-report/
           retention-days: 30
 
@@ -277,7 +246,7 @@ jobs:
   cleanup-stack-docker:
     needs: [test, debug]
     runs-on: ubuntu-24.04
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'docker' && needs.test.result == 'success'
+    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'docker'
     env:
       stack: ${{ github.event.client_payload.stack || inputs.stack }}
       keep_e2e: ${{ github.event.client_payload.keep-e2e || inputs.keep-e2e }}
@@ -311,25 +280,25 @@ jobs:
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s' && needs.test.result == 'success'
+    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s'
     steps:
-        - name: Checkout repo
-          uses: actions/checkout@v4
-        - name: Update k8s-env/opencrvs/values.yaml
-          run: |
-            sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
-        - name: Cleanup environment
-          run: |
-            kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
-            helm template -f k8s-env/opencrvs/values.yaml \
-                --set data_cleanup.enabled=true \
-                --set image.tag="$CORE_IMAGE_TAG" \
-                --namespace opencrvs-${ENV} \
-                -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
-            sleep 30;
-            kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
-            kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
-        - name: Delete helm release and namespace
-          run: |
-            kubectl delete namespace opencrvs-${ENV}
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Update k8s-env/opencrvs/values.yaml
+        run: |
+          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+      - name: Cleanup environment
+        run: |
+          kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
+          helm template -f k8s-env/opencrvs/values.yaml \
+              --set data_cleanup.enabled=true \
+              --set image.tag="$CORE_IMAGE_TAG" \
+              --namespace opencrvs-${ENV} \
+              -s templates/data-cleanup-job.yaml \
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+          sleep 30;
+          kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
+          kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
+      - name: Delete helm release and namespace
+        run: |
+          kubectl delete namespace opencrvs-${ENV}
