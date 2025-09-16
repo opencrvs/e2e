@@ -75,6 +75,7 @@ jobs:
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-migration-on-reset
             helm template -f ${namespace}.json \
+                --set data_migration.job_name=data-migration-on-reset \
                 -s templates/data-migration-job.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
