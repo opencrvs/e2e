@@ -81,7 +81,7 @@ image:
   tag: develop
 
 dashboards:
-  use_default_credentials: false
+  enabled: false
 
 gateway:
   resources:
