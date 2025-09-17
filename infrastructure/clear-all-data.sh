@@ -126,28 +126,27 @@ remove_index_if_exists() {
 # Delete all data from elasticsearch
 #-----------------------------------
 
-aliases=("ocrvs--${STACK}" "events_${STACK}")
+v1index=("ocrvs--${STACK}") 
+remove_index_if_exists "$v1index" 
 
-for alias in "${aliases[@]}"; do
-  remove_index_if_exists "$alias" 
+alias=("events_${STACK}")
 
-  echo "Check if alias $alias exists"
-  exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-    curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/_alias/$alias")
+echo "Check if alias $alias exists"
+exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+  curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/_alias/$alias")
 
-  if [ "$exists" -ne 200 ]; then
-    echo "Alias $alias does not exist, skipping."
-    continue
-  fi
-    echo "Alias $alias exists, removing indices."
+if [ "$exists" -ne 200 ]; then
+  echo "Alias $alias does not exist, skipping."
+  continue
+fi
+  echo "Alias $alias exists, removing indices."
 
-  # Find all indices attached to the alias and remove them
-  indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-    curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys []')
+# Find all indices attached to the alias and remove them
+indices=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+  curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys []')
 
-  for index in $indices; do
-    remove_index_if_exists "$index"
-  done
+for index in $indices; do
+  remove_index_if_exists "$index"
 done
 
 # Restart event service to ensure index is created
