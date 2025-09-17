@@ -105,12 +105,32 @@ drop_database performance;
 
 drop_database events;
 
+remove_index_if_exists() {
+  local index="$1"
+
+  echo "Checking if index '$index' exists..."
+
+  exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+    curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/$index")
+
+  if [ "$exists" -eq 200 ]; then
+    echo "Deleting index: $index"
+    docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
+      curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+  else
+    echo "Index '$index' does not exist (status $exists), skipping."
+  fi
+}
+
+
 # Delete all data from elasticsearch
 #-----------------------------------
 
 aliases=("ocrvs--${STACK}" "events_${STACK}")
 
 for alias in "${aliases[@]}"; do
+  remove_index_if_exists "$alias" 
+
   echo "Check if alias $alias exists"
   exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
     curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/_alias/$alias")
@@ -126,18 +146,7 @@ for alias in "${aliases[@]}"; do
     curl -s -XGET "http://$(elasticsearch_host)/_alias/$alias" | jq -r 'keys []')
 
   for index in $indices; do
-    echo "Checking if index '$index' exists..."
-
-    exists=$(docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-      curl -s -o /dev/null -w "%{http_code}" "http://$(elasticsearch_host)/$index")
-
-    if [ "$exists" -eq 200 ]; then
-      echo "Deleting index: $index"
-      docker run --rm --network=dependencies_elasticsearch_net appropriate/curl \
-        curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
-    else
-      echo "Index '$index' does not exist (status $exists), skipping."
-    fi
+    remove_index_if_exists "$index"
   done
 done
 
