@@ -54,7 +54,7 @@ jobs:
       - name: Print Entire Event Payload
         run: |
           echo "${{ toJson(github.event) }}"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: 'opencrvs/opencrvs-farajaland'
           fetch-depth: 0
@@ -94,6 +94,50 @@ jobs:
           echo "runtime=$runtime" >> $GITHUB_OUTPUT
           echo "domain=$domain"
           echo "runtime=$runtime"
+  cache-node-js:
+    name: Cache Node.js dependencies
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: 'opencrvs/opencrvs-farajaland'
+          fetch-depth: 0
+
+      - name: Checkout country branch
+        run: |
+          git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
+      - name: Set up Node.js from country .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
+          key: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Dependencies
+        uses: nick-fields/retry@v3
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: yarn
+      - uses: nick-fields/retry@v3
+        name: Install Playwright Browsers
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: npx playwright install --with-deps
+
   deploy-docker:
     needs: debug
     if: needs.debug.outputs.runtime == 'docker'
@@ -118,7 +162,7 @@ jobs:
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
   test:
-    needs: [debug, deploy-docker, deploy-k8s]
+    needs: [debug, deploy-docker, deploy-k8s, cache-node-js]
     # Continue if at least one dependency succeeded (docker OR k8s ran)
     if: |
       always() && (
@@ -156,7 +200,7 @@ jobs:
           ]
     name: shard-${{ matrix.shard }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: 'opencrvs/opencrvs-farajaland'
           fetch-depth: 0
@@ -251,7 +295,7 @@ jobs:
       stack: ${{ github.event.client_payload.stack || inputs.stack }}
       keep_e2e: ${{ github.event.client_payload.keep-e2e || inputs.keep-e2e }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Read known hosts
         run: |
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
@@ -283,7 +327,7 @@ jobs:
     if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s'
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml

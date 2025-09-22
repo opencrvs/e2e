@@ -84,6 +84,8 @@ dashboards:
   enabled: false
 
 gateway:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
   resources:
     memoryRequest: "512Mi"
     cpuRequest: "200m"
@@ -96,11 +98,6 @@ config:
     cpuRequest: "200m"
     memoryLimit: "2Gi"
     cpuLimit: "1"
-
-events:
-  resources:
-    memoryRequest: "1Gi"
-    cpuRequest: "500m"
 
 client:
   env:
@@ -126,9 +123,8 @@ countryconfig:
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.k8s-e2e.opencrvs.dev
 
-gateway:
-  env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
+
+
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
@@ -179,3 +175,4 @@ data_cleanup:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-e2e.svc.cluster.local:8200"
+  APN_ENVIRONMENT: {{STACK}}
