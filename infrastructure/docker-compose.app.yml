@@ -711,6 +711,7 @@ services:
       - STACK=${STACK}
       - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
       - AUTH_URL=http://auth.{{STACK}}_app_net:4040/
+      - EVENTS_URL=http://events.{{STACK}}_app_net:5555/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
