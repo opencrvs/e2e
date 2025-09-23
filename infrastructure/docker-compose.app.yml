@@ -710,6 +710,7 @@ services:
       - SUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
       - STACK=${STACK}
       - SEARCH_URL=http://search.{{STACK}}_app_net:9090/
+      - AUTH_URL=http://auth.{{STACK}}_app_net:4040/
       - INFLUX_HOST=influxdb
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
