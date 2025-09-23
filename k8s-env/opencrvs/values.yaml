@@ -123,8 +123,6 @@ countryconfig:
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.k8s-e2e.opencrvs.dev
 
-
-
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
