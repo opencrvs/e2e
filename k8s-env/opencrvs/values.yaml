@@ -82,15 +82,8 @@ image:
 
 dashboards:
   enabled: false
-env:
-  APM_ENVIRONMENT: {{STACK}}
-auth:
-  env:
-    APN_SERVICE_NAME: {{STACK}}-auth
 
 gateway:
-  env:
-    APN_SERVICE_NAME: {{STACK}}-gateway
   resources:
     memoryRequest: "512Mi"
     cpuRequest: "200m"
@@ -131,10 +124,9 @@ countryconfig:
 gateway:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
-    APN_SERVICE_NAME: {{STACK}}-gateway
+
 events:
   env:
-    APN_SERVICE_NAME: {{STACK}}-events
     ES_INDEX_PREFIX: events_{{STACK}}
   resources:
     memoryRequest: "1Gi"
@@ -143,31 +135,16 @@ events:
 
 search:
   env:
-    APN_SERVICE_NAME: {{STACK}}-search
     OPENCRVS_INDEX_NAME: ocrvs--{{STACK}}
 metrics:
   env:
-    APN_SERVICE_NAME: {{STACK}}-metrics
     INFLUX_DB: {{STACK}}_ocrvs
 user_mgmt:
   env:
-    APN_SERVICE_NAME: {{STACK}}-user-mgmt
     MINIO_BUCKET: {{STACK}}--ocrvs
 documents:
   env:
-    APN_SERVICE_NAME: {{STACK}}-documents
     MINIO_BUCKET: {{STACK}}--ocrvs
-
-workflow:
-  env:
-    APN_SERVICE_NAME: {{STACK}}-workflow
-notification:
-  env:
-    APN_SERVICE_NAME: {{STACK}}-notification
-
-webhooks:
-  env:
-    APN_SERVICE_NAME: {{STACK}}-webhooks
 
 data_migration:
   # FIXME: Double check the way we run migrations script
@@ -198,3 +175,4 @@ data_cleanup:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-e2e.svc.cluster.local:8200"
+  APN_ENVIRONMENT: {{STACK}}
