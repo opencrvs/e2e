@@ -30,3 +30,9 @@ node_selector:
 
 monitoring:
   enabled: true
+
+filebeat:
+  image: ghcr.io/opencrvs/filebeat:8.16.4
+
+metricbeat:
+  image: ghcr.io/opencrvs/metricbeat:8.16.4
