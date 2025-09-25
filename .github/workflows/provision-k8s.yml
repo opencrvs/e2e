@@ -1,4 +1,4 @@
-name: Provision k8s Infrastructure
+name: Provision Infrastructure on k8s
 run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:
