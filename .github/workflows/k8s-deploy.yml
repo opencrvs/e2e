@@ -45,7 +45,7 @@ jobs:
       ENV: ${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, k8s, demo]
     steps:
       # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
       - name: Checkout repo
