@@ -72,3 +72,6 @@ deployment:
     - name: acme
       hostPath:
         path: /data/traefik
+
+nodeSelector:
+  traefik-role: ingress
