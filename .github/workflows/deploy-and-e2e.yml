@@ -321,7 +321,7 @@ jobs:
 
   cleanup-stack-k8s:
     needs: [test, debug]
-    runs-on: [self-hosted]
+    runs-on: ubuntu-24.04
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
     if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s'

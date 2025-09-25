@@ -5,7 +5,7 @@ jobs:
   deploy:
     env:
       ENV: e2e
-    runs-on: [self-hosted]
+    runs-on: ubuntu-24.04
     steps:
       - name: Deploy with Helm
         run: |
