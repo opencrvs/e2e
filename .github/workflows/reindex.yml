@@ -1,0 +1,47 @@
+name: Reindex search
+run-name: Reindex search in ${{ inputs.environment }} core=${{ inputs.core-image-tag }}
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      core-image-tag:
+        required: true
+        type: string
+      stack:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment where to reindex search
+        required: true
+        default: 'development'
+        options:
+          - development
+          - qa
+          - staging
+          - production
+      core-image-tag:
+        description: Core DockerHub image tag
+        required: true
+jobs:
+  reindex:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Run reindex script in docker container
+        run: |
+          ssh -p ${{ vars.SSH_PORT }} ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} ${{ vars.SSH_ARGS }} "
+            docker run --rm \
+              -v /opt/opencrvs/infrastructure/deployment:/workspace \
+              -w /workspace \
+              -e 'AUTH_URL=http://auth.${{ inputs.stack }}_app_net:4040/' \
+              -e 'EVENTS_URL=http://events.${{ inputs.stack }}_app_net:5555/' \
+              curlimages/curl:latest \
+              sh reindex.sh"
+
