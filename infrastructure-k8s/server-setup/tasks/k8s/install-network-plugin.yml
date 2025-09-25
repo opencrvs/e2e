@@ -1,0 +1,76 @@
+---
+- name: Install Tigera Operator
+  shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: tigera_result
+  failed_when: tigera_result.rc != 0 and "already exists" not in tigera_result.stderr
+
+- name: Create Calico custom resources configuration
+  copy:
+    content: |
+      apiVersion: operator.tigera.io/v1
+      kind: Installation
+      metadata:
+        name: default
+      spec:
+        calicoNetwork:
+          ipPools:
+          - blockSize: 26
+            cidr: {{ pod_network_cidr }}
+            encapsulation: VXLANCrossSubnet
+            natOutgoing: Enabled
+            nodeSelector: all()
+      ---
+      apiVersion: operator.tigera.io/v1
+      kind: APIServer
+      metadata:
+        name: default
+      spec: {}
+    dest: /tmp/custom-resources.yaml
+
+- name: Apply Calico custom resources
+  shell: kubectl create -f /tmp/custom-resources.yaml
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: calico_result
+  failed_when: calico_result.rc != 0 and "already exists" not in calico_result.stderr
+
+- name: Wait for all nodes to be ready
+  shell: kubectl get nodes --no-headers | grep -v Ready | wc -l
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: nodes_not_ready
+  until: nodes_not_ready.stdout == "0"
+  retries: 30
+  delay: 10
+
+- name: Display cluster info
+  shell: kubectl cluster-info
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: cluster_info
+
+- name: Show cluster information
+  debug:
+    msg: "{{ cluster_info.stdout_lines }}"
+
+- name: Display node status
+  shell: kubectl get nodes
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: node_status
+
+- name: Show node status
+  debug:
+    msg: "{{ node_status.stdout_lines }}"
+
+- name: Display system pods status
+  shell: kubectl get pods -n kube-system
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
+  register: system_pods
+
+- name: Show system pods
+  debug:
+    msg: "{{ system_pods.stdout_lines }}"

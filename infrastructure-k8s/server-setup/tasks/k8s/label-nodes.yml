@@ -1,0 +1,24 @@
+- name: Build list of labelable nodes
+  ansible.builtin.set_fact:
+    k8s_nodes_to_label: >-
+      {{
+        (
+          groups['master'] + (groups['workers'] | default([]))
+        ) | map('extract', hostvars) |
+        selectattr('labels', 'defined')
+      }}
+
+- name: Label each Kubernetes node with its inventory labels (idempotent, API-based)
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Node
+    name: "{{ item.inventory_hostname }}"
+    definition:
+      metadata:
+        labels: "{{ item.labels }}"
+    state: present
+    merge_type:
+      - strategic-merge
+      - merge
+  loop: "{{ k8s_nodes_to_label }}"
+  when: item.labels is defined

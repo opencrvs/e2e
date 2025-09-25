@@ -1,0 +1,19 @@
+storage_type: host_path
+
+ingress:
+  tls_resolver: letsencrypt
+
+minio:
+  use_default_credentials: false
+
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
+
+postgres:
+  use_default_credentials: false
+
+monitoring:
+  enabled: true

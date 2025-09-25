@@ -1,0 +1,106 @@
+# Add extra SANs to kube-apiserver certs
+- name: Dump kubeadm cluster config from configmap
+  ansible.builtin.command: >
+    kubectl -n kube-system get configmap kubeadm-config -o jsonpath='{.data.ClusterConfiguration}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: clusterconfig_raw
+
+- name: Parse kubeadm-config as YAML
+  ansible.builtin.set_fact:
+    kubeadm_config_parsed: "{{ clusterconfig_raw.stdout | from_yaml }}"
+
+# -- Get current SANs from the parsed config --
+- name: Extract current SANs from config
+  ansible.builtin.set_fact:
+    current_sans: "{{ kubeadm_config_parsed.apiServer.certSANs | default([]) }}"
+
+# -- Read SANs from /root/kubeadm-config.yaml --
+- name: Check if /root/kubeadm-config.yaml exists
+  stat:
+    path: /root/kubeadm-config.yaml
+  register: root_kubeadm_config_stat
+
+- name: Read kubeadm config from /root/kubeadm-config.yaml
+  slurp:
+    src: /root/kubeadm-config.yaml
+  register: root_kubeadm_config_raw
+  when: root_kubeadm_config_stat.stat.exists
+
+- name: Parse /root/kubeadm-config.yaml
+  ansible.builtin.set_fact:
+    root_kubeadm_config_parsed: "{{ root_kubeadm_config_raw.content | b64decode | from_yaml }}"
+  when: root_kubeadm_config_stat.stat.exists
+
+- name: Extract SANs from /root/kubeadm-config.yaml
+  ansible.builtin.set_fact:
+    root_config_sans: "{{ root_kubeadm_config_parsed.apiServer.certSANs | default([]) }}"
+  when: root_kubeadm_config_stat.stat.exists
+
+- name: Set empty SANs if file doesn't exist
+  ansible.builtin.set_fact:
+    root_config_sans: []
+  when: not root_kubeadm_config_stat.stat.exists
+
+# -- Build merged list of SANs from all sources --
+- name: Build new list of SANs
+  ansible.builtin.set_fact:
+    merged_sans: "{{ (current_sans + kube_api_sans + root_config_sans + [ansible_host]) | unique }}"
+
+- name: Decide if a SAN update is needed
+  ansible.builtin.set_fact:
+    sans_update_needed: "{{ (current_sans | sort) != (merged_sans | sort) }}"
+
+- name: Merge updated SANs into kubeadm-config
+  when: sans_update_needed
+  ansible.builtin.set_fact:
+    new_config: "{{ kubeadm_config_parsed | combine({'apiServer': kubeadm_config_parsed.apiServer | combine({'certSANs': merged_sans})}) }}"
+
+- name: Write updated kubeadm-config with new SANs
+  when: sans_update_needed
+  copy:
+    dest: /root/kubeadm-config.yaml
+    content: "{{ new_config | to_nice_yaml }}"
+
+- name: Backup existing apiserver cert and key
+  when: sans_update_needed
+  shell: |
+    mv "/etc/kubernetes/pki/apiserver.{{ item }}" "/etc/kubernetes/pki/apiserver.{{ item }}.bak"
+  loop:
+    - crt
+    - key
+- name: Generate new apiserver certificate with updated SANs
+  when: sans_update_needed
+  ansible.builtin.command: kubeadm init phase certs apiserver --config /root/kubeadm-config.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Delete kube-apiserver pods to restart with new certs
+  when: sans_update_needed
+  ansible.builtin.command: kubectl -n kube-system delete pod -l component=kube-apiserver --timeout=30s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Check api-server status
+  shell: |
+    kubectl wait --for=condition=ready pod -l component=kube-apiserver -n kube-system --timeout=30s
+  register: kubectl_result
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  retries: 5
+  delay: 10
+
+- name: Show result of restart
+  debug:
+    var: kubectl_result.stdout
+
+- name: Copy admin.conf to provision user's kube config
+  when: sans_update_needed
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/provision/.kube/config
+    owner: provision
+    group: provision
+    mode: '0600'
+    remote_src: yes
+    force: yes
