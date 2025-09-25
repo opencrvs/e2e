@@ -5,8 +5,16 @@ jobs:
   deploy:
     env:
       ENV: e2e
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, k8s, e2e]
     steps:
+      - name: Install traefik
+        run: |
+          kubectl scale deployment traefik --replicas=0 --namespace traefik || true
+          helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
+            --namespace traefik \
+            --create-namespace \
+            -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/develop/k8s-env/traefik/values.yaml
+          kubectl scale deployment traefik --replicas=1 --namespace traefik
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
