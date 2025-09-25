@@ -19,6 +19,7 @@ jobs:
         run: |
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-e2e" \
+            --timeout 15m \
             -f https://raw.githubusercontent.com/opencrvs/e2e/refs/heads/develop/k8s-env/dependencies/values.yaml \
             --create-namespace \
             --atomic

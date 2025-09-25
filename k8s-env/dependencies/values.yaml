@@ -1,11 +1,10 @@
 chart_dev_mode: false
 hostname: e2e-k8s.opencrvs.dev
 
+storage_type: host_path
+
 ingress:
   tls_resolver: letsencrypt
-
-redis:
-  auth_mode: acl
 
 minio:
   use_default_credentials: false
@@ -18,6 +17,13 @@ mongodb:
 
 postgres:
   use_default_credentials: false
+
+monitoring:
+  enabled: true
+
+redis:
+  auth_mode: acl
+
 
 node_selector:
  role: data1
