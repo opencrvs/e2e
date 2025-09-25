@@ -26,8 +26,7 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       namespace: ${{ inputs.namespace }}
-    runs-on:
-      - self-hosted
+    runs-on: ubuntu-24.04
     steps:
         - name: Get helm release values and Quote specific fields that are commonly numeric
           run: |
