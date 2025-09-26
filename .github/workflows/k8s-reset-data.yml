@@ -58,8 +58,6 @@ jobs:
             sleep 10;
             kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
             kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
-            kubectl delete pod -n ${namespace} -lapp=events;
-            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
         - name: Re-run postgres on-update-core
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-core;
