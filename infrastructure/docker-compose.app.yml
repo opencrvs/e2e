@@ -2,7 +2,8 @@ version: '3.8'
 services:
   # Configure redis
   redis:
-    image: docker.io/bitnami/redis:8.0
+    platform: linux/x86_64 # Required for MacOS
+    image: public.ecr.aws/bitnami/redis:8.2
     environment:
       - REDIS_PASSWORD=false
       - REDIS_ACLFILE=/run/secrets/redis-acl.{{STACK}}.{{ts}}
