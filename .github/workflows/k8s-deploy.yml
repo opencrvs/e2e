@@ -101,7 +101,7 @@ jobs:
           kubectl delete job -n "opencrvs-${ENV}" --ignore-not-found=true data-migration || true
       - name: Deploy with Helm
         run: |
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.10 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
