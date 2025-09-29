@@ -9,6 +9,7 @@ hpa:
 hostname: k8s-e2e.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local
+  db: {{STACK}}_ocrvs
 elasticsearch:
   auth_mode: auto
   port: 9200
@@ -135,9 +136,7 @@ events:
 search:
   env:
     OPENCRVS_INDEX_NAME: ocrvs--{{STACK}}
-metrics:
-  env:
-    INFLUX_DB: {{STACK}}_ocrvs
+
 user_mgmt:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
@@ -146,15 +145,8 @@ documents:
     MINIO_BUCKET: {{STACK}}--ocrvs
 
 data_migration:
-  # FIXME: Double check the way we run migrations script
-  #       - Should we call data migration after OpenCRVS installation?
-  #       - Should we call events service from migration job?
-  secrets:
-    postgres-opencrvs-users:
-      - EVENTS_APP_POSTGRES_USER:EVENTS_DB_USER
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
-    INFLUX_DB: {{STACK}}_ocrvs
     ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
 
 postgres_on_deploy:
