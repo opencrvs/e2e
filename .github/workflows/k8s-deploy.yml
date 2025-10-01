@@ -96,9 +96,6 @@ jobs:
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
-      - name: "FIXME: temporary remove data-migration job due to issues"
-        run: |
-          kubectl delete job -n "opencrvs-${ENV}" --ignore-not-found=true data-migration || true
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.10 \
