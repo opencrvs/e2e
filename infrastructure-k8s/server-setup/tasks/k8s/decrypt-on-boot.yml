@@ -14,6 +14,15 @@
     content: |
       DISK_ENCRYPTION_KEY={{ disk_encryption_key }}
 
+- name: Ensure destination directory exists
+  ansible.builtin.file:
+    path: /opt/opencrvs/scripts/cryptfs
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+    recurse: yes
+
 - name: Install k8s-help script
   copy:
     src: ../cryptfs/decrypt.sh
