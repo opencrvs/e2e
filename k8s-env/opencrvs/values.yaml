@@ -6,7 +6,7 @@ ingress:
 hpa:
   enabled: false
 
-hostname: k8s-e2e.opencrvs.dev
+hostname: e2e-k8s.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local
   db: {{STACK}}_ocrvs
@@ -24,7 +24,7 @@ elasticsearch:
 minio:
   auth_mode: use_secret
   host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  external_hostname: minio.k8s-e2e.opencrvs.dev
+  external_hostname: minio.e2e-k8s.opencrvs.dev
 
 mongodb:
   auth_mode: auto
@@ -103,7 +103,7 @@ config:
 
 client:
   env:
-   CONTENT_SECURITY_POLICY_WILDCARD: "*.k8s-e2e.opencrvs.dev"
+   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
@@ -117,13 +117,13 @@ countryconfig:
     OPENID_PROVIDER_CLIENT_ID: mock-client_id
     V2_EVENTS: "true"
     # FIXME: In general these values should be passed externally using `--set key=value`
-    ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.k8s-e2e.opencrvs.dev/authorize
-    MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.k8s-e2e.opencrvs.dev/esignet/get-oidp-user-info
+    ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.e2e-k8s.opencrvs.dev/authorize
+    MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.e2e-k8s.opencrvs.dev/esignet/get-oidp-user-info
     # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
     # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
     E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
-    E2E_MINIO_BASE_URL: https://minio.k8s-e2e.opencrvs.dev
+    E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
 
 events:
   env:

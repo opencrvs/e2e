@@ -90,7 +90,7 @@ jobs:
           if [[ "$runtime" == "docker" ]]; then
             domain=${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}
           else
-            domain=${{ github.event.client_payload.stack || inputs.stack }}.k8s-e2e.${{ vars.DOMAIN }}
+            domain=${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}
           fi
           echo "domain=$domain" >> $GITHUB_OUTPUT
           echo "runtime=$runtime" >> $GITHUB_OUTPUT

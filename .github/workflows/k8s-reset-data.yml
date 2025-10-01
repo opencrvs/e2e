@@ -26,7 +26,7 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       namespace: ${{ inputs.namespace }}
-    runs-on: [self-hosted, k8s, demo]
+    runs-on: [self-hosted, k8s, e2e]
     steps:
         - name: Get helm release values and Quote specific fields that are commonly numeric
           run: |
