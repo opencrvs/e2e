@@ -85,8 +85,6 @@ jobs:
           else
             runtime="docker"
           fi
-          # FIXME: temporary force all deployments to k8s
-          runtime="k8s"
           if [[ "$runtime" == "docker" ]]; then
             domain=${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}
           else

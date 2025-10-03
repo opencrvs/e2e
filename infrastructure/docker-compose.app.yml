@@ -2,16 +2,14 @@ version: '3.8'
 services:
   # Configure redis
   redis:
-    image: docker.io/bitnami/redis:8.0
-    environment:
-      - REDIS_PASSWORD=false
-      - REDIS_ACLFILE=/run/secrets/redis-acl.{{STACK}}.{{ts}}
-      - REDIS_OVERRIDES_FILE=/opt/bitnami/redis/mounted-etc/overrides.conf
+    image: redis:8.0
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     secrets:
-      - redis-acl.{{STACK}}.{{ts}}
+      - source: redis-acl.{{STACK}}.{{ts}}
+        target: /usr/local/etc/redis/users.acl
     configs:
-      - source: redis-overrides.{{ts}}
-        target: /opt/bitnami/redis/mounted-etc/overrides.conf
+      - source: redis-conf.{{ts}}
+        target: /usr/local/etc/redis/redis.conf
     networks:
       app_net:
       dependencies_monitoring_net:
@@ -932,8 +930,8 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/hearth-queryparam-extensions.json
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
-  redis-overrides.{{ts}}:
-    file: /opt/opencrvs/{{STACK}}/infrastructure/redis/overrides.conf
+  redis-conf.{{ts}}:
+    file: /opt/opencrvs/{{STACK}}/infrastructure/redis/redis.conf
   postgres-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/postgres/on-deploy.sh
 
