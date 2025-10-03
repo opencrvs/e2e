@@ -1,17 +1,16 @@
-version: '3.8'
+version: "3.8"
 services:
   # Configure redis
   redis:
-    image: docker.io/bitnami/redis:8.0
-    environment:
-      - REDIS_PASSWORD=false
-      - REDIS_ACLFILE=/run/secrets/redis-acl.{{STACK}}.{{ts}}
-      - REDIS_OVERRIDES_FILE=/opt/bitnami/redis/mounted-etc/overrides.conf
+    image: redis:8
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     secrets:
-      - redis-acl.{{STACK}}.{{ts}}
+      - source: redis-acl.{{STACK}}.{{ts}}
+        target: /usr/local/etc/redis/users.acl
     configs:
-      - source: redis-overrides.{{ts}}
-        target: /opt/bitnami/redis/mounted-etc/overrides.conf
+      - source: redis-conf.{{ts}}
+        target: /usr/local/etc/redis/redis.conf
+
     networks:
       app_net:
       dependencies_monitoring_net:
@@ -30,7 +29,7 @@ services:
       - logger__level=warn
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
@@ -64,7 +63,7 @@ services:
     deploy:
       replicas: 1
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
     networks:
       app_net:
       dependencies_monitoring_net:
@@ -79,31 +78,31 @@ services:
       - jwt-public-key.{{STACK}}.{{ts}}
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__countryconfig.rule=(Host(`countryconfig.${STACK}.{{hostname}}`) || Host(`registry.${STACK}.{{hostname}}`)) && !Path(`/email`) && !Path(`/notification`) && !Path(`/dashboards/queries.json`)'
-        - 'traefik.http.services.${STACK}__countryconfig.loadbalancer.server.port=3040'
-        - 'traefik.http.routers.${STACK}__countryconfig.tls=true'
-        - 'traefik.http.routers.${STACK}__countryconfig.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__countryconfig.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__countryconfig.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure'
-        - 'traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net_1'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__countryconfig.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__countryconfig.rule=(Host(`countryconfig.${STACK}.{{hostname}}`) || Host(`registry.${STACK}.{{hostname}}`)) && !Path(`/email`) && !Path(`/notification`) && !Path(`/dashboards/queries.json`)"
+        - "traefik.http.services.${STACK}__countryconfig.loadbalancer.server.port=3040"
+        - "traefik.http.routers.${STACK}__countryconfig.tls=true"
+        - "traefik.http.routers.${STACK}__countryconfig.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__countryconfig.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__countryconfig.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__countryconfig.entrypoints=web,websecure"
+        - "traefik.http.routers.${STACK}__countryconfig.middlewares=gzip-compression"
+        - "traefik.docker.network=dependencies_traefik_net_1"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__countryconfig.headers.stspreload=true"
         # This is an invalid IP range, effectively blocking all IPs from accessing below paths.
         # It's only meant to be accessed from the internal docker network.
-        - 'traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
-        - 'traefik.http.routers.${STACK}__block-email.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/email`)'
-        - 'traefik.http.routers.${STACK}__block-email.middlewares=${STACK}__block-internal-routes'
-        - 'traefik.http.routers.${STACK}__block-notification.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/notification`)'
-        - 'traefik.http.routers.${STACK}__block-notification.middlewares=${STACK}__block-internal-routes'
-        - 'traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboards/queries.json`)'
-        - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
+        - "traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255"
+        - "traefik.http.routers.${STACK}__block-email.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/email`)"
+        - "traefik.http.routers.${STACK}__block-email.middlewares=${STACK}__block-internal-routes"
+        - "traefik.http.routers.${STACK}__block-notification.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/notification`)"
+        - "traefik.http.routers.${STACK}__block-notification.middlewares=${STACK}__block-internal-routes"
+        - "traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboards/queries.json`)"
+        - "traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes"
       replicas: 1
     environment:
       - QA_ENV=true
@@ -164,22 +163,22 @@ services:
       - COUNTRY_CONFIG_URL_INTERNAL=http://countryconfig.{{STACK}}_app_net:3040
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__login.rule=Host(`login.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__login.loadbalancer.server.port=3020'
-        - 'traefik.http.routers.${STACK}__login.tls=true'
-        - 'traefik.http.routers.${STACK}__login.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__login.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__login.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__login.entrypoints=web,websecure'
-        - 'traefik.http.routers.${STACK}__login.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net_2'
-        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__login.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__login.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__login.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__login.rule=Host(`login.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__login.loadbalancer.server.port=3020"
+        - "traefik.http.routers.${STACK}__login.tls=true"
+        - "traefik.http.routers.${STACK}__login.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__login.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__login.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__login.entrypoints=web,websecure"
+        - "traefik.http.routers.${STACK}__login.middlewares=gzip-compression"
+        - "traefik.docker.network=dependencies_traefik_net_2"
+        - "traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__login.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__login.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__login.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__login.headers.stspreload=true"
       replicas: 1
     networks:
       app_net:
@@ -201,26 +200,26 @@ services:
       - GATEWAY_URL_INTERNAL=http://gateway.{{STACK}}_app_net:7070
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__client.rule=Host(`register.${STACK}.{{hostname}}`,`${STACK}.{{hostname}}`)'
-        - 'traefik.http.routers.${STACK}__client.middlewares=${STACK}__test-replacepathregex,gzip-compression'
-        - 'traefik.http.services.${STACK}__client.loadbalancer.server.port=3000'
-        - 'traefik.http.routers.${STACK}__client.tls=true'
-        - 'traefik.http.routers.${STACK}__client.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__client.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__client.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net_1'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__client.rule=Host(`register.${STACK}.{{hostname}}`,`${STACK}.{{hostname}}`)"
+        - "traefik.http.routers.${STACK}__client.middlewares=${STACK}__test-replacepathregex,gzip-compression"
+        - "traefik.http.services.${STACK}__client.loadbalancer.server.port=3000"
+        - "traefik.http.routers.${STACK}__client.tls=true"
+        - "traefik.http.routers.${STACK}__client.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__client.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__client.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__client.entrypoints=web,websecure"
+        - "traefik.docker.network=dependencies_traefik_net_1"
 
-        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true'
-        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)'
-        - 'traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.replacement=https://register.${STACK}.{{hostname}}/$${1}'
-        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__client.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__client.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__client.headers.stspreload=true'
+        - "traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.permanent=true"
+        - "traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.regex=^https?://${STACK}.{{hostname}}/(.*)"
+        - "traefik.http.middlewares.${STACK}__test-replacepathregex.redirectregex.replacement=https://register.${STACK}.{{hostname}}/$${1}"
+        - "traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__client.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__client.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__client.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__client.headers.stspreload=true"
       replicas: 1
     networks:
       app_net:
@@ -268,22 +267,22 @@ services:
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__gateway.rule=Host(`gateway.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__gateway.loadbalancer.server.port=7070'
-        - 'traefik.http.routers.${STACK}__gateway.tls=true'
-        - 'traefik.http.routers.${STACK}__gateway.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__gateway.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__gateway.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure'
-        - 'traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net_2'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__gateway.rule=Host(`gateway.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__gateway.loadbalancer.server.port=7070"
+        - "traefik.http.routers.${STACK}__gateway.tls=true"
+        - "traefik.http.routers.${STACK}__gateway.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__gateway.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__gateway.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__gateway.entrypoints=web,websecure"
+        - "traefik.http.routers.${STACK}__gateway.middlewares=gzip-compression"
+        - "traefik.docker.network=dependencies_traefik_net_2"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__gateway.headers.stspreload=true"
       replicas: 1
     networks:
       app_net:
@@ -350,7 +349,7 @@ services:
       - COUNTRY=${COUNTRY:-bgd}
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
     networks:
       app_net:
@@ -376,7 +375,7 @@ services:
       - APPLICATION_CONFIG_URL=http://config.{{STACK}}_app_net:2021/
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
     networks:
       app_net:
@@ -389,7 +388,7 @@ services:
 
   setup-elasticsearch-users:
     image: ubuntu:bionic
-    entrypoint: ['bash', '/usr/app/setup.sh']
+    entrypoint: ["bash", "/usr/app/setup.sh"]
     restart: on-failure
     environment:
       - ELASTICSEARCH_HOST=elasticsearch
@@ -402,7 +401,7 @@ services:
       - KIBANA_USERNAME=${KIBANA_USERNAME}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
     volumes:
-      - '/opt/opencrvs/{{STACK}}/infrastructure/elasticsearch:/usr/app'
+      - "/opt/opencrvs/{{STACK}}/infrastructure/elasticsearch:/usr/app"
     networks:
       app_net:
       dependencies_monitoring_net_2:
@@ -411,7 +410,7 @@ services:
         aliases: []
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
       placement:
         constraints:
@@ -447,7 +446,7 @@ services:
         constraints:
           - node.labels.data1 == true
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
     networks:
       app_net:
@@ -488,21 +487,21 @@ services:
       - METRICS_URL=http://metrics.{{STACK}}_app_net:1050
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__auth.rule=Host(`auth.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__auth.loadbalancer.server.port=4040'
-        - 'traefik.http.routers.${STACK}__auth.tls=true'
-        - 'traefik.http.routers.${STACK}__auth.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__auth.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__auth.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__auth.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net_1'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__auth.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__auth.rule=Host(`auth.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__auth.loadbalancer.server.port=4040"
+        - "traefik.http.routers.${STACK}__auth.tls=true"
+        - "traefik.http.routers.${STACK}__auth.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__auth.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__auth.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__auth.entrypoints=web,websecure"
+        - "traefik.docker.network=dependencies_traefik_net_1"
+        - "traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__auth.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__auth.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__auth.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__auth.headers.stspreload=true"
       replicas: 1
     networks:
       app_net:
@@ -533,7 +532,7 @@ services:
       - DOCUMENTS_URL=http://documents.{{STACK}}_app_net:9050
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
     networks:
       app_net:
@@ -564,21 +563,21 @@ services:
       - FHIR_URL=http://hearth.{{STACK}}_app_net:3447/fhir
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__webhooks.rule=Host(`webhooks.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__webhooks.loadbalancer.server.port=2525'
-        - 'traefik.http.routers.${STACK}__webhooks.tls=true'
-        - 'traefik.http.routers.${STACK}__webhooks.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__webhooks.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net_2'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__webhooks.rule=Host(`webhooks.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__webhooks.loadbalancer.server.port=2525"
+        - "traefik.http.routers.${STACK}__webhooks.tls=true"
+        - "traefik.http.routers.${STACK}__webhooks.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__webhooks.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__webhooks.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__webhooks.entrypoints=web,websecure"
+        - "traefik.docker.network=dependencies_traefik_net_2"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__webhooks.headers.stspreload=true"
       replicas: 1
     networks:
       app_net:
@@ -616,24 +615,24 @@ services:
       - HEARTH_MONGO_URL=mongodb://${STACK}__hearth:${HEARTH_MONGODB_PASSWORD}@mongo1/${STACK}__hearth-dev?replicaSet=rs0
     deploy:
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__config.rule=Host(`config.${STACK}.{{hostname}}`) && !Path(`/dashboardQueries`)'
-        - 'traefik.http.services.${STACK}__config.loadbalancer.server.port=2021'
-        - 'traefik.http.routers.${STACK}__config.tls=true'
-        - 'traefik.http.routers.${STACK}__config.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__config.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__config.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__config.entrypoints=web,websecure'
-        - 'traefik.docker.network=dependencies_traefik_net_1'
-        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__config.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__config.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__config.headers.stspreload=true'
-        - 'traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255'
-        - 'traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboardQueries`)'
-        - 'traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__config.rule=Host(`config.${STACK}.{{hostname}}`) && !Path(`/dashboardQueries`)"
+        - "traefik.http.services.${STACK}__config.loadbalancer.server.port=2021"
+        - "traefik.http.routers.${STACK}__config.tls=true"
+        - "traefik.http.routers.${STACK}__config.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__config.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__config.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__config.entrypoints=web,websecure"
+        - "traefik.docker.network=dependencies_traefik_net_1"
+        - "traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__config.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__config.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__config.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__config.headers.stspreload=true"
+        - "traefik.http.middlewares.${STACK}__block-internal-routes.ipwhitelist.sourcerange=255.255.255.255"
+        - "traefik.http.routers.${STACK}__block-dashboard-queries.rule=Host(`countryconfig.${STACK}.{{hostname}}`) && Path(`/dashboardQueries`)"
+        - "traefik.http.routers.${STACK}__block-dashboard-queries.middlewares=${STACK}__block-internal-routes"
       replicas: 1
     networks:
       app_net:
@@ -649,7 +648,7 @@ services:
     deploy:
       replicas: 1
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
     secrets:
       - jwt-public-key.{{STACK}}.{{ts}}
     environment:
@@ -681,7 +680,7 @@ services:
     deploy:
       replicas: 1
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
     networks:
       app_net:
       dependencies_monitoring_net_3:
@@ -718,7 +717,7 @@ services:
       - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200,postgres:5432
     deploy:
       labels:
-        - 'traefik.enable=false'
+        - "traefik.enable=false"
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -842,22 +841,22 @@ services:
     deploy:
       replicas: 1
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__mosip-api.rule=Host(`mosip-api.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__mosip-api.loadbalancer.server.port=2024'
-        - 'traefik.http.routers.${STACK}__mosip-api.tls=true'
-        - 'traefik.http.routers.${STACK}__mosip-api.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__mosip-api.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__mosip-api.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__mosip-api.entrypoints=web,websecure'
-        - 'traefik.http.routers.${STACK}__mosip-api.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net_2'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__mosip-api.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__mosip-api.rule=Host(`mosip-api.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__mosip-api.loadbalancer.server.port=2024"
+        - "traefik.http.routers.${STACK}__mosip-api.tls=true"
+        - "traefik.http.routers.${STACK}__mosip-api.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__mosip-api.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__mosip-api.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__mosip-api.entrypoints=web,websecure"
+        - "traefik.http.routers.${STACK}__mosip-api.middlewares=gzip-compression"
+        - "traefik.docker.network=dependencies_traefik_net_2"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__mosip-api.headers.stspreload=true"
     networks:
       app_net:
       dependencies_monitoring_net_3:
@@ -895,22 +894,22 @@ services:
     deploy:
       replicas: 1
       labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.routers.${STACK}__esignet-mock.rule=Host(`esignet-mock.${STACK}.{{hostname}}`)'
-        - 'traefik.http.services.${STACK}__esignet-mock.loadbalancer.server.port=20260'
-        - 'traefik.http.routers.${STACK}__esignet-mock.tls=true'
-        - 'traefik.http.routers.${STACK}__esignet-mock.tls.certresolver=certResolver'
-        - 'traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].main=${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].sans=*.${STACK}.{{hostname}}'
-        - 'traefik.http.routers.${STACK}__esignet-mock.entrypoints=web,websecure'
-        - 'traefik.http.routers.${STACK}__esignet-mock.middlewares=gzip-compression'
-        - 'traefik.docker.network=dependencies_traefik_net_2'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Pragma=no-cache'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Cache-control=no-store'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.X-Robots-Tag=none'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stsseconds=31536000'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stsincludesubdomains=true'
-        - 'traefik.http.middlewares.${STACK}__esignet-mock.headers.stspreload=true'
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STACK}__esignet-mock.rule=Host(`esignet-mock.${STACK}.{{hostname}}`)"
+        - "traefik.http.services.${STACK}__esignet-mock.loadbalancer.server.port=20260"
+        - "traefik.http.routers.${STACK}__esignet-mock.tls=true"
+        - "traefik.http.routers.${STACK}__esignet-mock.tls.certresolver=certResolver"
+        - "traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].main=${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__esignet-mock.tls.domains[0].sans=*.${STACK}.{{hostname}}"
+        - "traefik.http.routers.${STACK}__esignet-mock.entrypoints=web,websecure"
+        - "traefik.http.routers.${STACK}__esignet-mock.middlewares=gzip-compression"
+        - "traefik.docker.network=dependencies_traefik_net_2"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Pragma=no-cache"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.Cache-control=no-store"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.customresponseheaders.X-Robots-Tag=none"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.stsseconds=31536000"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.stsincludesubdomains=true"
+        - "traefik.http.middlewares.${STACK}__esignet-mock.headers.stspreload=true"
     networks:
       app_net:
       dependencies_monitoring_net_3:
@@ -932,10 +931,10 @@ configs:
     file: /opt/opencrvs/{{STACK}}/infrastructure/hearth-queryparam-extensions.json
   mongo-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/mongodb/on-deploy.sh
-  redis-overrides.{{ts}}:
-    file: /opt/opencrvs/{{STACK}}/infrastructure/redis/overrides.conf
   postgres-on-deploy.{{ts}}:
     file: /opt/opencrvs/{{STACK}}/infrastructure/postgres/on-deploy.sh
+  redis-conf.{{ts}}:
+    file: /opt/opencrvs/{{STACK}}/infrastructure/redis/redis.conf
 
 networks:
   dependencies_postgres_net:
