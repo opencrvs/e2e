@@ -26,7 +26,7 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       namespace: ${{ inputs.namespace }}
-    runs-on: [self-hosted, k8s, demo]
+    runs-on: [self-hosted, k8s, e2e]
     steps:
         - name: Get helm release values and Quote specific fields that are commonly numeric
           run: |
@@ -58,18 +58,36 @@ jobs:
             sleep 10;
             kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
             kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
-            kubectl delete pod -n ${namespace} -lapp=events;
-            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
-        - name: Re-run postgres on-deploy
+        - name: Re-run postgres on-update-core
           run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
+            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-core;
             helm template -f ${namespace}.json \
-                -s templates/postgres-on-update.yaml \
+                --namespace ${namespace} \
+                -s templates/postgres-on-update-core.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
+            sleep 30;
+            kubectl logs job/postgres-on-update-core -f --all-containers=true -n ${namespace};
+            kubectl wait --for=condition=complete job/postgres-on-update-core -n ${namespace} --timeout=600s;
+        - name: Re-run postgres-data-migration
+          run: |
+            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-data-migration;
+            helm template -f ${namespace}.json \
+                --namespace ${namespace} \
+                -s templates/postgres-migration-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
+            sleep 30;
+            kubectl logs job/postgres-data-migration -f --all-containers=true -n ${namespace};
+            kubectl wait --for=condition=complete job/postgres-data-migration -n ${namespace} --timeout=600s;
+        - name: Re-run postgres on-update-analytics
+          run: |
+            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-analytics;
+            helm template -f ${namespace}.json \
+                -s templates/postgres-on-update-analytics.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 10;
-            kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
+            sleep 30;
+            kubectl logs job/postgres-on-update-analytics -f --all-containers=true -n ${namespace};
+            kubectl wait --for=condition=complete job/postgres-on-update-analytics -n ${namespace} --timeout=600s;
         - name: Migration
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-migration-on-reset
@@ -81,16 +99,6 @@ jobs:
             sleep 10;
             kubectl logs job/data-migration-on-reset -f -n ${namespace} || true
             kubectl wait --for=condition=complete job/data-migration-on-reset -n ${namespace} --timeout=600s;
-        - name: Re-run postgres on-deploy
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
-            helm template -f ${namespace}.json \
-                -s templates/postgres-on-update.yaml \
-                --namespace ${namespace} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 10;
-            kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Seeding data
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-seed

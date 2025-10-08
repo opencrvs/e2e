@@ -14,6 +14,23 @@
     content: |
       DISK_ENCRYPTION_KEY={{ disk_encryption_key }}
 
+- name: Ensure destination directory exists
+  ansible.builtin.file:
+    path: /opt/opencrvs/scripts/cryptfs
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+    recurse: yes
+
+- name: Install k8s-help script
+  copy:
+    src: ../cryptfs/decrypt.sh
+    dest: "/opt/opencrvs/scripts/cryptfs/decrypt.sh"
+    owner: "{{ ansible_user }}"
+    group: 'application'
+    mode: '0755'
+
 - name: Copy reboot.service systemd file. Must decrypt disk on reboot
   ansible.builtin.copy:
     dest: /etc/systemd/system/reboot.service
@@ -25,7 +42,7 @@
       Description=Mount encrypted dir
 
       [Service]
-      ExecStart=bash /opt/opencrvs/infrastructure/cryptfs/decrypt.sh -key /root/disk-encryption-key.txt >> /var/log/cryptfs-reboot.log 2>&1
+      ExecStart=bash /opt/opencrvs/scripts/cryptfs/decrypt.sh -key /root/disk-encryption-key.txt >> /var/log/cryptfs-reboot.log 2>&1
 
       [Install]
       WantedBy=multi-user.target
