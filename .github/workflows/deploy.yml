@@ -322,3 +322,23 @@ jobs:
       core-image-tag: ${{ inputs.core-image-tag }}
       stack: ${{ inputs.stack }}
     secrets: inherit
+
+  reindex-after-seed:
+    needs: seed-data
+    if: ${{ inputs.reset == 'true' && needs.seed-data.result == 'success' }}
+    uses: ./.github/workflows/reindex.yml
+    with:
+      environment: ${{ inputs.environment }}
+      core-image-tag: ${{ inputs.core-image-tag }}
+      stack: ${{ inputs.stack }}
+    secrets: inherit
+
+  reindex-after-deploy:
+    needs: deploy
+    if: ${{ inputs.reset != 'true' && needs.deploy.result == 'success' }}
+    uses: ./.github/workflows/reindex.yml
+    with:
+      environment: ${{ inputs.environment }}
+      core-image-tag: ${{ inputs.core-image-tag }}
+      stack: ${{ inputs.stack }}
+    secrets: inherit
