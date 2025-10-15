@@ -1,0 +1,74 @@
+# Overwriting https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
+namespaceOverride: "traefik"
+logs:
+  general:
+    # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
+    level: "INFO"
+    # format: "common" # For local environment
+    format: "json" # For server environment
+  access:
+    # -- To enable access logs
+    enabled: true
+    format: "json"
+ingressRoute:
+  dashboard:
+    enabled: false
+
+# Be explicit that we only use CRDs, not ingress/gw support
+providers: 
+  kubernetesCRD:
+    enabled: true
+  kubernetesIngress:
+    enabled: true
+  kubernetesGateway:
+    enabled: false
+
+service:
+  enabled: true
+  single: false
+  type: NodePort
+
+ports:
+  web:
+    port: 8000
+    hostPort: 80
+    protocol: TCP
+    nodePort: 30080
+  websecure:
+    port: 8443
+    nodePort: 30443
+    hostPort: 443
+    protocol: TCP
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlsChallenge: false
+      httpChallenge:
+        entryPoint: web
+      email: vadym@opencrvs.org
+      # Storage for production certificates:
+      # storage: /data/acme.json
+      # Storage for staging certificates:
+      storage: /data/acme-staging.json
+      # Staging server
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # Production server
+      # caServer: https://acme-v02.api.letsencrypt.org/directory
+
+# Additional arguments
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
+  # Storage for staging certificates:
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
+  # Storage for staging certificates:
+  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+
+deployment:
+  hostNetwork: true
+  additionalVolumes:
+    - name: acme
+      hostPath:
+        path: /data/traefik

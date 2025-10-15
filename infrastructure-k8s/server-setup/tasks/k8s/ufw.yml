@@ -1,0 +1,49 @@
+- name: 'Install UFW'
+  apt:
+    name: ufw
+    state: present
+
+- name: "Allow Traefik (ports 80, 443) only on master"
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: [80, 443]
+  when: "'master' in group_names"
+
+# Kube and overlay ports for all nodes, adjust as needed
+- name: "Allow cluster communication ports"
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    # Remote access
+    - { port: 22, proto: "tcp" }
+    # Kubernetes API server (required by control plane & nodes)
+    - { port: 6443, proto: "tcp" }
+    # etcd API server (required by control plane only)
+    - { port: 2379, proto: "tcp" } # etcd client API
+    - { port: 2380, proto: "tcp" } # etcd peer communication
+    # Kubelet API (required for all nodes)
+    - { port: 10250, proto: "tcp" }
+    # kube-scheduler (control plane only)
+    - { port: 10251, proto: "tcp" }
+    # kube-controller-manager (control plane only)
+    - { port: 10252, proto: "tcp" }
+    # Overlay network (Calico/Weave/Flannel, if used—verify your CNI and usage)
+    - { port: 7946, proto: "tcp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 7946, proto: "udp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 8472, proto: "udp" }   # VXLAN (Flannel/Calico; verify if needed)
+    - { port: 4789, proto: "udp" }   # VXLAN (Calico; verify if needed)
+    # Expose traefik on node port
+    # Rules are required for internet facing load balancer (if exists)
+    - { port: 30080, proto: "tcp" }  # NodePort HTTP
+    - { port: 30443, proto: "tcp" }  # NodePort HTTPS
+  ignore_errors: yes
+
+- name: "Enable UFW with deny by default"
+  ufw:
+    state: disabled
+    default: deny
+    direction: incoming

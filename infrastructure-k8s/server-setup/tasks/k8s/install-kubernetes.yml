@@ -1,0 +1,26 @@
+- name: Create keyrings directory
+  shell: mkdir -p /etc/apt/keyrings
+
+- name: Download Kubernetes APT key
+  get_url:
+    url: "https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key"
+    dest: /tmp/kubernetes.key
+    mode: '0644'
+
+- name: Remove Kubernetes APT key if it exists
+  shell: rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  
+- name: Add Kubernetes APT key
+  shell: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes.key
+
+- name: Add Kubernetes APT repository
+  shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+
+- name: Update apt cache and install Kubernetes components
+  shell: apt-get update && apt-get install -y kubelet kubeadm kubectl
+
+- name: Hold Kubernetes packages
+  shell: apt-mark hold kubelet kubeadm kubectl
+
+- name: Enable kubelet service
+  shell: systemctl enable kubelet

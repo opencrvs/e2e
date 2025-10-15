@@ -1,0 +1,31 @@
+all:
+  vars:
+    single_node: false
+    kube_api_sans: {}
+    ansible_user: provision
+    users: {}
+  children:
+    master:
+      hosts:
+        # TODO: Add master primary node template
+        test-k8s-master:
+          ansible_host: 10.2.1.1
+          labels:
+            role: data0
+            traefik-role: ingress
+
+    workers:
+      hosts:
+        # TODO: Add worker node template
+        test-k8s-worker-0:
+          ansible_host: 10.2.1.2
+          labels:
+            role: data1
+            foo: bar
+        test-k8s-worker-1:
+          ansible_host: 10.2.1.3
+    backup:
+      hosts:
+        # TODO: Add backup server template
+        backup-01:
+          ansible_host: 10.2.1.4

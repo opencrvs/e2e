@@ -186,7 +186,7 @@ SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
 WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
 
-DROP DATABASE IF EXISTS "$POSTGRES_DB";
+DROP DATABASE IF EXISTS "$POSTGRES_DB" WITH (FORCE);
 
 -- Disabled for E2E server: drop the roles manually
 -- DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";

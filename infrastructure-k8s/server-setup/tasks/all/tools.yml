@@ -1,0 +1,21 @@
+- name: 'Install required apt packages'
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - curl
+    - gnupg2
+    - software-properties-common
+    - apt-transport-https
+    - ca-certificates
+    - python3-pip
+    - jq
+    - yq
+    - zip
+    - python3-pip
+    - python3-kubernetes
+
+- name: 'Ensure python-3pexpect is absent'
+  apt:
+    name: python-3pexpect
+    state: absent

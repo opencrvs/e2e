@@ -1,0 +1,73 @@
+name: Provision Infrastructure on k8s
+run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Infrastructure to provision'
+        required: true
+        default: 'e2e'
+        type: choice
+        options:
+          - e2e
+
+      tags:
+        description: 'Tags to apply to the provisioned resources'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - updates
+          - users
+          - backup
+          - application
+          - tools
+          - fail2ban
+          - decrypt-on-boot
+          - checks
+          - containerd-setup
+          - kubernetes-installation
+          - join-workers
+          - system-preparation
+jobs:
+  provision:
+    runs-on:
+      - self-hosted
+      - ${{ inputs.environment }}
+      - node
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Set variables for ansible
+        id: ansible-variables
+        run: |
+          JSON_WITH_NEWLINES=$(cat<<EOF
+            ${{ toJSON(env) }}
+          EOF)
+          JSON_WITHOUT_NEWLINES=$(echo $JSON_WITH_NEWLINES | jq -R -c .)
+          echo "EXTRA_VARS=$JSON_WITHOUT_NEWLINES" >> $GITHUB_OUTPUT
+        env:
+          encrypted_disk_size: ${{ vars.DISK_SPACE }}
+          disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
+          k8s_runner_token: ${{ secrets.GH_TOKEN }}
+          repository: ${{ github.repository }}
+          k8s_cluster_env: ${{ inputs.environment }}
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_TOKEN }}
+      - name: checkout repository
+        uses: actions/checkout@v5
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v4
+        env:
+          ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
+          ANSIBLE_SSH_TIMEOUT: 10
+          ANSIBLE_SSH_RETRIES: 5
+        with:
+          requirements: galaxy-requirements.yml
+          playbook: playbook.yml
+          directory: ./infrastructure-k8s/server-setup
+          # Add --verbose to get more output
+          options: |-
+            --inventory inventory/${{ inputs.environment }}.yml
+            ${{ inputs.tags != 'all' && format('--tags={0}', inputs.tags) || '' }}
+            --extra-vars ""${{ steps.ansible-variables.outputs.EXTRA_VARS }}""

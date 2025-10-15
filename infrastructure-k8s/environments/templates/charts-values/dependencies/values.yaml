@@ -1,6 +1,3 @@
-chart_dev_mode: false
-hostname: e2e-k8s.opencrvs.dev
-
 storage_type: host_path
 
 ingress:
@@ -20,19 +17,3 @@ postgres:
 
 monitoring:
   enabled: true
-
-redis:
-  auth_mode: acl
-
-
-node_selector:
- role: data1
-
-monitoring:
-  enabled: true
-
-filebeat:
-  image: ghcr.io/opencrvs/filebeat:8.16.4
-
-metricbeat:
-  image: ghcr.io/opencrvs/metricbeat:8.16.4

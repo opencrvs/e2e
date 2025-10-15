@@ -6,9 +6,10 @@ ingress:
 hpa:
   enabled: false
 
-hostname: k8s-e2e.opencrvs.dev
+hostname: e2e-k8s.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local
+  db: {{STACK}}_ocrvs
 elasticsearch:
   auth_mode: auto
   port: 9200
@@ -23,7 +24,7 @@ elasticsearch:
 minio:
   auth_mode: use_secret
   host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  external_hostname: minio.k8s-e2e.opencrvs.dev
+  external_hostname: minio.e2e-k8s.opencrvs.dev
 
 mongodb:
   auth_mode: auto
@@ -70,6 +71,7 @@ postgres:
   events_db: {{STACK}}__events
   events_migrator: {{STACK}}_migrator
   events_app: {{STACK}}_app
+  events_analytics: {{STACK}}_analytics
 
 resources:
   memoryRequest: "128Mi"
@@ -84,6 +86,8 @@ dashboards:
   enabled: false
 
 gateway:
+  env:
+    MINIO_BUCKET: {{STACK}}--ocrvs
   resources:
     memoryRequest: "512Mi"
     cpuRequest: "200m"
@@ -97,14 +101,9 @@ config:
     memoryLimit: "2Gi"
     cpuLimit: "1"
 
-events:
-  resources:
-    memoryRequest: "1Gi"
-    cpuRequest: "500m"
-
 client:
   env:
-   CONTENT_SECURITY_POLICY_WILDCARD: "*.k8s-e2e.opencrvs.dev"
+   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
@@ -118,17 +117,14 @@ countryconfig:
     OPENID_PROVIDER_CLIENT_ID: mock-client_id
     V2_EVENTS: "true"
     # FIXME: In general these values should be passed externally using `--set key=value`
-    ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.k8s-e2e.opencrvs.dev/authorize
-    MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.k8s-e2e.opencrvs.dev/esignet/get-oidp-user-info
+    ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.e2e-k8s.opencrvs.dev/authorize
+    MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.e2e-k8s.opencrvs.dev/esignet/get-oidp-user-info
     # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
     # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
     E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
-    E2E_MINIO_BASE_URL: https://minio.k8s-e2e.opencrvs.dev
+    E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
 
-gateway:
-  env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
@@ -140,9 +136,7 @@ events:
 search:
   env:
     OPENCRVS_INDEX_NAME: ocrvs--{{STACK}}
-metrics:
-  env:
-    INFLUX_DB: {{STACK}}_ocrvs
+
 user_mgmt:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
@@ -151,17 +145,9 @@ documents:
     MINIO_BUCKET: {{STACK}}--ocrvs
 
 data_migration:
-  # FIXME: Double check the way we run migrations script
-  #       - Should we call data migration after OpenCRVS installation?
-  #       - Should we call events service from migration job?
-  secrets:
-    postgres-opencrvs-users:
-      - EVENTS_APP_POSTGRES_USER:EVENTS_DB_USER
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
-    INFLUX_DB: {{STACK}}_ocrvs
     ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
-    EVENTS_DB_USER: {{STACK}}_app
 
 postgres_on_deploy:
   env:
@@ -179,3 +165,4 @@ data_cleanup:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-e2e.svc.cluster.local:8200"
+  APN_ENVIRONMENT: {{STACK}}

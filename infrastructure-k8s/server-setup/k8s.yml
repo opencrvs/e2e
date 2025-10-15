@@ -1,0 +1,95 @@
+---
+- name: Setup Kubernetes Cluster
+  hosts: master, workers
+  gather_facts: yes
+  become: yes
+  tasks:
+    - include_tasks:
+        file: tasks/k8s/application.yml
+        apply:
+          tags:
+            - application
+      tags:
+        - application
+
+    - include_tasks:
+        file: tasks/k8s/data-partition.yml
+        apply:
+          tags:
+            - data-partition
+      tags:
+        - data-partition
+
+    - include_tasks:
+        file: tasks/k8s/decrypt-on-boot.yml
+        apply:
+          tags:
+            - decrypt-on-boot
+      tags:
+        - decrypt-on-boot
+    - name: Include system preparation tasks
+      include_tasks: tasks/k8s/system-preparation.yml
+      tags:
+        - system-preparation
+      
+    - name: Include containerd installation tasks
+      include_tasks: tasks/k8s/install-containerd.yml
+      tags:
+        - containerd-setup
+
+    - name: Include Kubernetes installation tasks
+      include_tasks: tasks/k8s/install-kubernetes.yml
+      tags:
+        - kubernetes-installation
+
+- name: Initialize Kubernetes Master
+  hosts: master
+  tags: k8s
+  tasks:
+    - name: Include master initialization
+      include_tasks: tasks/k8s/init-master.yml
+    - name: Include network plugin installation
+      include_tasks: tasks/k8s/install-network-plugin.yml
+
+- name: Join Worker Nodes
+  hosts: workers
+  tags: 
+    - join-workers
+    - k8s
+  tasks:
+    - name: Include worker node join cluster
+      include_tasks: tasks/k8s/join-workers.yml
+      when: single_node == false
+
+- name: Configure k8s cluster components
+  hosts: master
+  tags: k8s
+  tasks:
+    - name: Labels nodes
+      include_tasks: tasks/k8s/label-nodes.yml
+    - name: Install metrics server on control plane
+      include_tasks: tasks/k8s/metrics-server.yml
+    - name: Install k8s self-hosted runner
+      include_tasks: tasks/k8s/self-hosted-runner.yml
+    - name: Create backup server secret
+      include_tasks: tasks/k8s/backup-secret.yml
+    - name: Add DockerHub credentials
+      include_tasks: tasks/k8s/dockerhub-secret.yml
+
+- name: Additional configuration
+  become: yes
+  hosts: master
+  tags: k8s
+  tasks:
+    # FIXME: It should be started under provision user
+    - name: Configure Extra SANs for Kube API server
+      include_tasks: tasks/k8s/kube-api-add-extra-sans.yml
+    - name: Distribute kubeconfig into users directory
+      include_tasks: tasks/k8s/user-kubeconfig.yml
+- name: Setup Kubernetes Cluster UFW
+  hosts: master, workers
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Run UFW
+      include_tasks: tasks/k8s/ufw.yml
