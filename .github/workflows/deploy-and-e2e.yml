@@ -54,36 +54,17 @@ jobs:
       - name: Print Entire Event Payload
         run: |
           echo "${{ toJson(github.event) }}"
-      - uses: actions/checkout@v5
-        with:
-          repository: 'opencrvs/opencrvs-farajaland'
-          fetch-depth: 0
-
-      - name: Checkout country branch
-        run: |
-          git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-
       - name: Select docker swarm or k8s
-        # Environment is selected based on stack hash with is always constant
-        # Only first 8 symbols are used from hash and stack_id number is generated
-        # Environment is decided based on the modulo. e.g. elif (( stack_id % 10 < 7 )); then --> 7/10 deployments goes to the environment
         id: runtime
         env:
           run_id: ${{ github.run_id }}
           runtime: ${{ github.event.client_payload.runtime || inputs.runtime }}
           stack: ${{ github.event.client_payload.stack || inputs.stack }}
         run: |
-          stack_hash=$(echo -n "$stack" | sha256sum | head -c 8)
-          stack_id=$((16#$stack_hash))
           if [[ -n "$runtime" && "$runtime" != "none" ]]; then
             runtime="$runtime"
-          elif [[ ! -f infrastructure/.kube ]]; then
-            echo "Repository is not compatible with kubernetes"
-            runtime="docker"
-          elif (( stack_id % 10 < 7 )); then
-            runtime="k8s"
           else
-            runtime="docker"
+            runtime="k8s"
           fi
           if [[ "$runtime" == "docker" ]]; then
             domain=${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}
