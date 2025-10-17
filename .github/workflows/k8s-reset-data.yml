@@ -63,7 +63,7 @@ jobs:
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-core;
             helm template -f ${namespace}.json \
                 --namespace ${namespace} \
-                -s templates/postgres-on-update-core.yaml \
+                -s templates/postgres-on-update-core-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             sleep 30;
             kubectl logs job/postgres-on-update-core -f --all-containers=true -n ${namespace};
@@ -73,7 +73,7 @@ jobs:
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-data-migration;
             helm template -f ${namespace}.json \
                 --namespace ${namespace} \
-                -s templates/postgres-migration-job.yaml \
+                -s templates/postgres-data-migration-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             sleep 30;
             kubectl logs job/postgres-data-migration -f --all-containers=true -n ${namespace};
@@ -82,7 +82,7 @@ jobs:
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-analytics;
             helm template -f ${namespace}.json \
-                -s templates/postgres-on-update-analytics.yaml \
+                -s templates/postgres-on-update-analytics-job.yaml \
                 --namespace ${namespace} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             sleep 30;
