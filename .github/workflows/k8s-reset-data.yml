@@ -1,9 +1,5 @@
 name: Reset environment
 run-name: "Reset ${{ inputs.environment }} environment"
-# FIXME:
-# - replace sleep 30 with kubectl wait for job completion
-# - only environment variable is required, namespace could be build as "opencrvs-<environment>"
-#   but namespace is more natural way for kubernetes
 on:
     workflow_dispatch:
       inputs:
