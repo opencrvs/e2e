@@ -74,6 +74,7 @@ jobs:
           --namespace "opencrvs-${ENV}" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
+          --debug \
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
@@ -103,6 +104,7 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
             --atomic \
+            --debug \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
