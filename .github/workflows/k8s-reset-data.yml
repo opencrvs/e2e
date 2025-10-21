@@ -1,115 +1,95 @@
 name: Reset environment
-run-name: "Reset ${{ inputs.environment }} environment (namespace: ${{ inputs.namespace }})"
-# FIXME:
-# - replace sleep 30 with kubectl wait for job completion
-# - only environment variable is required, namespace could be build as "opencrvs-<environment>"
-#   but namespace is more natural way for kubernetes
+run-name: "Reset ${{ inputs.environment }} environment"
 on:
     workflow_dispatch:
       inputs:
-        namespace:
-          description: "Target namespace"
-          required: true
-          type: string
         environment:
           description: "Target environment"
           required: true
           type: string
     workflow_call:
       inputs:
-        namespace:
-          type: string
         environment:
           type: string
 jobs:
-  reset:
-    environment: ${{ inputs.environment }}
+  prepare:
+    outputs:
+      values-file: ${{ steps.get-values.outputs.values-file }}
     env:
-      namespace: ${{ inputs.namespace }}
+      namespace: opencrvs-${{ inputs.environment }}
     runs-on: [self-hosted, k8s, e2e]
     steps:
-        - name: Get helm release values and Quote specific fields that are commonly numeric
+      - name: Get helm release values and Quote specific fields that are commonly numeric
+        id: get-values
+        run: |
+          helm get values opencrvs -n ${namespace} -ojson | \
+            jq '
+              # Quote image tags
+              if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
+                .image.tag = (.image.tag | tostring)
+              else . end |
+              
+              # Quote version numbers
+              if has("version") and (.version | type == "number") then
+                .version = (.version | tostring)
+              else . end |
+              
+              # Quote port numbers if needed (optional)
+              if has("service") and (.service | has("port")) and (.service.port | type == "number") then
+                .service.port = (.service.port | tostring)
+              else . end
+            ' > /tmp/${namespace}.json
+            echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
+      - name: Upload helm release values file /tmp/opencrvs-${{ inputs.environment }}.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencrvs-${{ inputs.environment }}-values-file
+          path: /tmp/opencrvs-${{ inputs.environment }}.json
+          retention-days: 1
+  reset:
+    name: ${{ matrix.job-name }}
+    needs: prepare
+    env:
+      namespace: opencrvs-${{ inputs.environment }}
+    runs-on: [self-hosted, k8s, e2e]
+    strategy:
+      max-parallel: 1  # Ensure jobs run one by one
+      fail-fast: true  # Stop on first failure
+      matrix:
+        job-name:
+          - data-cleanup
+          - postgres-on-update-core
+          - postgres-data-migration
+          - postgres-on-update-analytics
+          - data-migration
+          - data-seed
+          - elasticsearch-reindex
+    steps:
+        - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
+          uses: actions/download-artifact@v4
+          with:
+            name: opencrvs-${{ inputs.environment }}-values-file
+            path: /tmp
+        - name: Create job ${{ matrix.job-name }} from helm template and apply it
           run: |
-            helm get values opencrvs -n ${namespace} -ojson | \
-              jq '
-                # Quote image tags
-                if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
-                  .image.tag = (.image.tag | tostring)
-                else . end |
-                
-                # Quote version numbers
-                if has("version") and (.version | type == "number") then
-                  .version = (.version | tostring)
-                else . end |
-                
-                # Quote port numbers if needed (optional)
-                if has("service") and (.service | has("port")) and (.service.port | type == "number") then
-                  .service.port = (.service.port | tostring)
-                else . end
-              ' > ${namespace}.json
-        - name: Cleanup environment
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
-            helm template -f ${namespace}.json \
+            kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
+            helm template -f ${{ needs.prepare.outputs.values-file }} \
                 --set data_cleanup.enabled=true \
-                --namespace ${namespace} \
-                -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
-            sleep 10;
-            kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
-            kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
-        - name: Re-run postgres on-update-core
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-core;
-            helm template -f ${namespace}.json \
-                --namespace ${namespace} \
-                -s templates/postgres-on-update-core-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
-            kubectl logs job/postgres-on-update-core -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-on-update-core -n ${namespace} --timeout=600s;
-        - name: Re-run postgres-data-migration
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-data-migration;
-            helm template -f ${namespace}.json \
-                --namespace ${namespace} \
-                -s templates/postgres-data-migration-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
-            kubectl logs job/postgres-data-migration -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-data-migration -n ${namespace} --timeout=600s;
-        - name: Re-run postgres on-update-analytics
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-update-analytics;
-            helm template -f ${namespace}.json \
-                -s templates/postgres-on-update-analytics-job.yaml \
-                --namespace ${namespace} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
-            kubectl logs job/postgres-on-update-analytics -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-on-update-analytics -n ${namespace} --timeout=600s;
-        - name: Migration
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true data-migration-on-reset
-            helm template -f ${namespace}.json \
-                --set data_migration.job_name=data-migration-on-reset \
-                -s templates/data-migration-job.yaml \
-                --namespace ${namespace} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
-            sleep 10;
-            kubectl logs job/data-migration-on-reset -f -n ${namespace} || true
-            kubectl wait --for=condition=complete job/data-migration-on-reset -n ${namespace} --timeout=600s;
-        - name: Seeding data
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
-            kubectl delete pod -n ${namespace} -lapp=events;
-            kubectl wait --for=condition=ready pod -n ${namespace} -lapp=events --timeout=600s;
-            helm template  -f ${namespace}.json \
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
-                -s templates/data-seed-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait -f -
-            sleep 10;
-            kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s;
-            kubectl logs job/data-seed -f -n ${namespace} || true
-            kubectl delete pod -n ${namespace} -lapp=events;
+                -s templates/${{ matrix.job-name }}-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+        - name: Checking ${{ matrix.job-name }} job status
+          run: |
+            while true; do
+              kubectl wait --for=condition=ready pod -ljob-name=${{ matrix.job-name }} --timeout=300s -n ${namespace} && \
+              kubectl logs job/${{ matrix.job-name }} --all-containers -f -n ${namespace} && \
+              touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break; 
+              sleep 1; done &
+            echo "---------------------- Waiting for job completion ----------------------"
+            kubectl wait --for=condition=complete job/${{ matrix.job-name }} -n ${namespace} --timeout=600s; status=$? || true
+            [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
+            [ ! -f /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt ] && kubectl logs job/${{ matrix.job-name }} --all-containers -n ${namespace} || \
+              rm -vf /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt
+            kill %1 2>/dev/null && echo "Stopped log streaming" || true
+            exit $status
