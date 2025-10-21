@@ -103,10 +103,11 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
             --atomic \
+            --debug \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
-            --set environment="$ENV"
+            --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; exit ${PIPESTATUS[0]};
       - name: Add keep namespace label opencrvs-${ENV}
         if: inputs.keep-e2e
         run: kubectl label namespace opencrvs-${ENV} keep_namespace='true' --overwrite
