@@ -1,0 +1,30 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# OpenCRVS is also distributed under the terms of the Civil Registration
+# & Healthcare Disclaimer located at http://opencrvs.org/license.
+#
+# Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
+
+- hosts: all
+  become: yes
+  gather_facts: yes
+  ignore_unreachable: false
+  become_method: sudo
+  tasks:
+    - name: Check if Google Authenticator file exists
+      ansible.builtin.stat:
+        path: "/home/{{ user }}/.google_authenticator"
+      register: auth_file
+
+    - name: Show info if doesn't file exists
+      ansible.builtin.debug:
+        msg: "Google Authenticator file doesn't exist for user '{{ user }}'."
+      when: not auth_file.stat.exists
+
+    - name: Remove Google Authenticator file
+      ansible.builtin.file:
+        path: "/home/{{ user }}/.google_authenticator"
+        state: absent
+      when: auth_file.stat.exists

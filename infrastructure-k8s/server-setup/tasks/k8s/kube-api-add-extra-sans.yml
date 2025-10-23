@@ -45,7 +45,7 @@
 # -- Build merged list of SANs from all sources --
 - name: Build new list of SANs
   ansible.builtin.set_fact:
-    merged_sans: "{{ (current_sans + kube_api_sans + root_config_sans + [ansible_host]) | unique }}"
+    merged_sans: "{{ (current_sans + [kube_api_host] + root_config_sans + [ansible_host]) | unique }}"
 
 - name: Decide if a SAN update is needed
   ansible.builtin.set_fact:

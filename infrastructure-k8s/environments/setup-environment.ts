@@ -238,7 +238,7 @@ const githubQuestions = [
   {
     name: 'githubRepository',
     type: 'text' as const,
-    message: 'What is your Github repository?',
+    message: 'What is your Github infrastructure repository?',
     validate: notEmpty,
     initial: process.env.GITHUB_REPOSITORY,
     scope: 'REPOSITORY' as const
@@ -316,29 +316,6 @@ const countryQuestions = [
 
 const infrastructureQuestions = [
   {
-    name: 'numberOfServers',
-    type: 'number' as const,
-    message:
-      'What is the number of servers? Note: This should be 1 for development, qa and staging. For "production" environment server cluster should consists of 2, 3 or 5 servers.',
-    valueType: 'VARIABLE' as const,
-    validate: notEmpty,
-    valueLabel: 'NUMBER_OF_SERVERS',
-    initial: process.env.NUMBER_OF_SERVERS ? parseInt(process.env.NUMBER_OF_SERVERS, 10) : 1,
-    scope: 'ENVIRONMENT' as const
-  },
-  {
-    name: 'diskSpace',
-    type: 'text' as const,
-    message: `What is the amount of diskspace that should be dedicated to OpenCRVS data and will become the size of an encrypted cryptfs data directory.
-    \n${kleur.red('DO NOT USE ALL DISKSPACE FOR OPENCRVS!')}
-    \nLeave at least 50g available for OS use.`,
-    valueType: 'VARIABLE' as const,
-    validate: notEmpty,
-    valueLabel: 'DISK_SPACE',
-    initial: process.env.DISK_SPACE || '200g',
-    scope: 'ENVIRONMENT' as const
-  },
-  {
     name: 'domain',
     type: 'text' as const,
     message: 'What is the web domain applied after all subdomains in URLs?',
@@ -348,9 +325,54 @@ const infrastructureQuestions = [
     initial: process.env.DOMAIN,
     scope: 'ENVIRONMENT' as const
   },
+  {
+    name: 'kubeAPIHost',
+    type: 'text' as const,
+    message: 
+      `Please enter Kubernetes hosts/IP to expose API endpoint, (default: first ethernet IP address):`,
+    valueType: 'VARIABLE' as const,
+    // validate: notEmpty,
+    valueLabel: 'KUBE_API_HOST',
+    initial: process.env.KUBE_API_HOST || '',
+    scope: 'ENVIRONMENT' as const
+  },
+  {
+    name: 'workerNodes',
+    type: 'text' as const,
+    message: 
+      `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers):`,
+    valueType: 'VARIABLE' as const,
+    // validate: notEmpty,
+    valueLabel: 'WORKER_NODES',
+    initial: process.env.WORKER_NODES || '',
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
+    name: 'backupHost',
+    type: 'text' as const,
+    message: 
+      `Please enter backup server host/IP address, (default: no backup):`,
+    valueType: 'VARIABLE' as const,
+    // validate: ,
+    valueLabel: 'BACKUP_HOST',
+    initial: process.env.BACKUP_HOST || '',
+    scope: 'ENVIRONMENT' as const,
+  },
 ]
 
 const databaseAndMonitoringQuestions = [
+  {
+    name: 'diskSpace',
+    type: 'text' as const,
+    message: `What is the amount of diskspace that should be dedicated to OpenCRVS data and will become the size of an encrypted cryptfs data directory.
+    \n${kleur.red('DO NOT USE ALL DISKSPACE FOR OPENCRVS!')}
+    \nLeave at least 150g available for OS & Docker use.`,
+    valueType: 'VARIABLE' as const,
+    validate: notEmpty,
+    valueLabel: 'DISK_SPACE',
+    initial: process.env.DISK_SPACE || '200g',
+    scope: 'ENVIRONMENT' as const
+  },
   {
     name: 'kibanaUsername',
     type: 'text' as const,
@@ -512,17 +534,17 @@ const emailQuestions = [
   }
 ]
 
-const vpnHostQuestions = [
-  {
-    name: 'vpnAdminPassword',
-    type: 'text' as const,
-    message: `Admin password for Wireguard UI`,
-    initial: generateLongPassword(),
-    valueType: 'SECRET' as const,
-    valueLabel: 'VPN_ADMIN_PASSWORD',
-    scope: 'ENVIRONMENT' as const
-  }
-]
+// const vpnHostQuestions = [
+//   {
+//     name: 'vpnAdminPassword',
+//     type: 'text' as const,
+//     message: `Admin password for Wireguard UI`,
+//     initial: generateLongPassword(),
+//     valueType: 'SECRET' as const,
+//     valueLabel: 'VPN_ADMIN_PASSWORD',
+//     scope: 'ENVIRONMENT' as const
+//   }
+// ]
 
 const sentryQuestions = [
   {
@@ -697,7 +719,6 @@ const metabaseAdminQuestions = [
 
 ALL_QUESTIONS.push(
   ...githubTokenQuestion,
-  // Temporarily disable Docker Hub questions
   ...dockerhubQuestions,
   ...infrastructureQuestions,
   ...countryQuestions,
@@ -705,7 +726,8 @@ ALL_QUESTIONS.push(
   ...notificationTransportQuestions,
   ...smsQuestions,
   ...emailQuestions,
-  ...vpnHostQuestions,
+  // TODO: remove vpn questions
+  // ...vpnHostQuestions,
   ...sentryQuestions,
   ...derivedVariables,
   ...metabaseAdminQuestions
@@ -838,71 +860,78 @@ ALL_QUESTIONS.push(
 
   await promptAndStoreAnswer(environment, dockerhubQuestions, existingValues)
 
-    log('\n', kleur.bold().underline('Databases & monitoring'))
+    
+  log('\n', kleur.bold().underline('Kubernetes & Runtime'))
 
-    const infrastructure = await promptAndStoreAnswer(
-      environment,
-      infrastructureQuestions,
-      existingValues
-    )
-    const number_of_servers = parseInt(infrastructure.numberOfServers, 10);
-    generateInventory(environment, number_of_servers, {})
-    copyChartsValues(environment, { env: environment})
-    await promptAndStoreAnswer(
-      environment,
-      databaseAndMonitoringQuestions,
-      existingValues
-    )
-    log('\n', kleur.bold().underline('Sentry'))
-    const sentryDSNExists = findExistingValue(
-      'SENTRY_DSN',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
+  const infrastructure = await promptAndStoreAnswer(
+    environment,
+    infrastructureQuestions,
+    existingValues
+  )
+  // FIXME: Review
+  const workerNodes = infrastructure.workerNodes 
+    ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim())
+    : []
+  const backupHost = infrastructure.backupHost || ''
+  generateInventory(environment, {worker_nodes: workerNodes, backup_host: backupHost, kube_api_host: infrastructure.kubeAPIHost})
+  copyChartsValues(environment, { env: environment})
+
+  log('\n', kleur.bold().underline('Databases & monitoring'))
+  await promptAndStoreAnswer(
+    environment,
+    databaseAndMonitoringQuestions,
+    existingValues
+  )
+  log('\n', kleur.bold().underline('Sentry'))
+  const sentryDSNExists = findExistingValue(
+    'SENTRY_DSN',
+    'SECRET',
+    'ENVIRONMENT',
+    existingValues
+  )
+
+  if (sentryDSNExists) {
+    await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
+  } else {
+    const { useSentry } = await prompts(
+      [
+        {
+          name: 'useSentry',
+          type: 'confirm' as const,
+          message: 'Do you want to use Sentry?',
+          scope: 'ENVIRONMENT' as const,
+          initial: Boolean(process.env.SENTRY_DNS)
+        }
+      ].map(questionToPrompt)
     )
 
-    if (sentryDSNExists) {
+    if (useSentry) {
       await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
-    } else {
-      const { useSentry } = await prompts(
-        [
-          {
-            name: 'useSentry',
-            type: 'confirm' as const,
-            message: 'Do you want to use Sentry?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.SENTRY_DNS)
-          }
-        ].map(questionToPrompt)
-      )
-
-      if (useSentry) {
-        await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
-      }
     }
+  }
 
-    log('\n', kleur.bold().underline('METABASE ADMIN'))
-    await promptAndStoreAnswer(
-      environment,
-      metabaseAdminQuestions,
-      existingValues
-    )
+  log('\n', kleur.bold().underline('METABASE ADMIN'))
+  await promptAndStoreAnswer(
+    environment,
+    metabaseAdminQuestions,
+    existingValues
+  )
 
-    log('\n', kleur.bold().underline('SMTP'))
-    await promptAndStoreAnswer(environment, emailQuestions, existingValues)
+  log('\n', kleur.bold().underline('SMTP'))
+  await promptAndStoreAnswer(environment, emailQuestions, existingValues)
 
-    log('\n', kleur.bold().underline('Notification'))
+  log('\n', kleur.bold().underline('Notification'))
 
-    const { notificationTransport } = await promptAndStoreAnswer(
-      environment,
-      notificationTransportQuestions,
-      existingValues
-    )
+  const { notificationTransport } = await promptAndStoreAnswer(
+    environment,
+    notificationTransportQuestions,
+    existingValues
+  )
 
-    if (notificationTransport.includes('sms')) {
-      await promptAndStoreAnswer(environment, smsQuestions, existingValues)
-    }
-  
+  if (notificationTransport.includes('sms')) {
+    await promptAndStoreAnswer(environment, smsQuestions, existingValues)
+  }
+
 
   const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
     return { ...acc, ...answer }
@@ -1500,6 +1529,33 @@ ALL_QUESTIONS.push(
       `Successfully updated Github secrets and variables for environment ${environment}`
     )
   )
+
+  const worker_message = workerNodes.length > 0 ? 
+`
+-----------------------
+➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
+-----------------------
+➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
+
+  log(`
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+Follow the steps below to complete the setup of your environment:
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+➡️ ${kleur.bold().yellow('Run following command on Kubernetes master VM to bootstrap self-hosted runner:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
+            --repo ${githubRepository} \\
+            --env ${environment} \\
+            --token ${githubToken} \\
+            --enable-runner
+${worker_message}
+
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+    `)
   log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
   log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))
 })()

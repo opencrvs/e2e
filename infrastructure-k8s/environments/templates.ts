@@ -66,8 +66,9 @@ export function copyChartsValues(env: string, replacements: Record<string, strin
  * PORT: process.env.SSH_PORT || "22"
  * });
  */
-export function generateInventory(env: string, number_of_servers: number, values: Record<string, string>){
-  const env_type_template = number_of_servers > 1 ? "multi-node" : "single-node";
+export function generateInventory(env: string, values: Record<string, any>){
+  const worker_nodes: Array<string> = values['worker_nodes'] || [];
+  const env_type_template = worker_nodes.length > 0 ? "multi-node" : "single-node";
   const templatePath = path.join(__dirname, "templates", "inventory", `${env_type_template}.yml`);
   const outputPath = path.join(__dirname, "..", "server-setup", "inventory", `${env}.yml`);
   if (fs.existsSync(outputPath)) {
@@ -75,6 +76,42 @@ export function generateInventory(env: string, number_of_servers: number, values
     return;
   }
   let template = fs.readFileSync(templatePath, "utf-8");
+  // Generate workers block
+  let workersBlock = `
+    workers:
+      hosts:`;
+  if (worker_nodes && worker_nodes.length > 0) {
+    worker_nodes.forEach((host, index) => {
+      const isFirstWorker = index === 0;
+      workersBlock += `
+        worker${index}:
+          ansible_host: ${host}${isFirstWorker ? `
+          labels:
+            # By default all datastores are deployed to worker node with role data1
+            role: data1` : ''}
+`;
+    });
+  }
+  template = template.replace('{{WORKERS_BLOCK}}', workersBlock);
+
+  // Generate backup block if backup_host is provided
+  const backupHost = values['backup_host'] || '';
+  let backupBlock = '';
+  if (backupHost) {
+    backupBlock = `
+    backup:
+      hosts:
+        backup1:
+          ansible_host: ${backupHost}
+`;
+  }
+
+  template = template.replace('{{BACKUP_BLOCK}}', backupBlock);
+
+  // Generate kube_api_host line
+  let kubeApiHost = '    kube_api_host: ' + (values['kube_api_host'] || '');
+  template = template.replace('{{KUBE_API_HOST_BLOCK}}', kubeApiHost);
+
   const updated = replacePlaceholders(template, values);
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });

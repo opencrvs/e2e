@@ -1,0 +1,14 @@
+defaults
+auth           on
+tls            {{ 'on' if smtp_secure|bool else 'off' }}
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /root/.msmtp.log
+
+account        remote
+host           {{ smtp_host }}
+port           {{ smtp_port }}
+from           {{ smtp_from }}
+user           {{ smtp_user }}
+password       {{ smtp_password }}
+
+account default : remote

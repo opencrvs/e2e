@@ -17,3 +17,7 @@ postgres:
 
 monitoring:
   enabled: true
+
+elastalert:
+  env:
+    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-{{env}}.svc.cluster.local:3040

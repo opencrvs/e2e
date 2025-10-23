@@ -1,5 +1,11 @@
-chart_dev_mode: false
-
+########################################################################################
+# Initial configuration file for OpenCRVS installation
+########################################################################################
+# Some properties are not defined in this file and should be provided as key/value at
+# installation time:
+# - hostname: valid DNS name for opencrvs
+# - countryconfig.image.name: Countryconfig image repository
+# - countryconfig.image.tag: Countryconfig image tag
 ingress:
   tls_resolver: letsencrypt
 
@@ -9,12 +15,10 @@ hpa:
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-{{env}}.svc.cluster.local:8200"
 
-hostname: test-k8s.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-{{env}}.svc.cluster.local
 elasticsearch:
   auth_mode: auto
-  port: 9200
   host: elasticsearch.opencrvs-deps-{{env}}.svc.cluster.local
 
 
@@ -28,38 +32,23 @@ mongodb:
   host: mongodb-0.mongodb.opencrvs-deps-{{env}}.svc.cluster.local
 
 redis:
-  auth_mode: disabled
+  auth_mode: acl
   host: redis-0.redis.opencrvs-deps-{{env}}.svc.cluster.local
 
 postgres:
   auth_mode: auto
   host: postgres-0.postgres.opencrvs-deps-{{env}}.svc.cluster.local
 
-resources:
-  memoryRequest: "256Mi"
-  cpuRequest: "200m"
-  memoryLimit: "2Gi"
-  cpuLimit: "1"
-
 imagePullSecrets:
+  # Default value for credentials created while yarn environment:init
   - name: dockerhub-credentials
 
-dashboards:
-  use_default_credentials: false
-
 countryconfig:
-  image:
-    name: opencrvs/ocrvs-farajaland
-
-  env:
-    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
-    OPENID_PROVIDER_CLIENT_ID: mock-client_id
-    V2_EVENTS: "true"
-    FIXME: In general these values should be passed externally using `--set key=value`
-    ESIGNET_REDIRECT_URL: https://esignet-mock.test-k8s.opencrvs.dev/authorize
-    MOSIP_API_USERINFO_URL: https://mosip-api.test-k8s.opencrvs.dev/esignet/get-oidp-user-info
-
-data_seed:
-  env:
-    SUPER_USER_PASSWORD: "password"
-    ACTIVATE_USERS: "true"
+  smtp-config:
+    - ALERT_EMAIL
+    - SENDER_EMAIL_ADDRESS
+    - SMTP_HOST
+    - SMTP_PASSWORD
+    - SMTP_PORT
+    - SMTP_SECURE
+    - SMTP_USERNAME

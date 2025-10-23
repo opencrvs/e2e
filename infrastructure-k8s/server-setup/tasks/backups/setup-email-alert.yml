@@ -1,0 +1,24 @@
+- name: Install msmtp
+  apt:
+    name: [msmtp, msmtp-mta, auditd]
+    state: present
+    update_cache: yes
+
+- name: Deploy msmtprc configuration
+  template:
+    src: msmtprc.j2
+    dest: "/root/.msmtprc"
+    mode: '0600'
+
+- name: Create login-alert.sh script
+  template:
+    src: login-alert.sh.j2
+    dest: "/usr/local/bin/login-alert.sh"
+    mode: '0755'
+
+- name: Setup cronjob for login monitoring
+  cron:
+    name: "Login alert via msmtp"
+    user: root
+    minute: "*"
+    job: "/usr/local/bin/login-alert.sh"

@@ -13,7 +13,6 @@
   gather_facts: yes
   ignore_unreachable: false
   become_method: sudo
-  tags: backup
   tasks:
     - include_tasks:
         file: tasks/all/checks.yml
@@ -28,7 +27,8 @@
         apply:
           tags:
             - updates
-
+      tags:
+        - updates
     - include_tasks:
         file: tasks/all/users.yml
         apply:

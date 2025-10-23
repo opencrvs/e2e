@@ -1,0 +1,19 @@
+#!/bin/bash
+
+EMAIL_TO="{{ alert_email }}"
+LAST_CHECK="/tmp/last_login_check"
+HOSTNAME=$(hostname)
+
+if [ ! -f "$LAST_CHECK" ]; then
+    date +"%Y-%m-%d %H:%M:%S" > "$LAST_CHECK"
+    exit 0
+fi
+
+LAST_TIME=$(cat "$LAST_CHECK")
+NEW_LOGINS=$(ausearch -m USER_LOGIN -ts "$LAST_TIME" | grep 'success=yes')
+
+if [ ! -z "$NEW_LOGINS" ]; then
+    echo -e "Subject: [Alert] New Login Detected on $HOSTNAME\n\n$NEW_LOGINS" | msmtp "$EMAIL_TO"
+fi
+
+date +"%Y-%m-%d %H:%M:%S" > "$LAST_CHECK"
