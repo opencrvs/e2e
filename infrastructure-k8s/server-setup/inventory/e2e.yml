@@ -89,3 +89,7 @@ all:
             role: data1
         e2e-k8s-worker-02:
           ansible_host: 10.1.1.8
+        e2e-k8s-worker-03:
+          ansible_host: 10.1.1.1
+        e2e-k8s-worker-04:
+          ansible_host: 10.1.1.2
