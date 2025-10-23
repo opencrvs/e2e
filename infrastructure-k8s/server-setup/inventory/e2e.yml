@@ -1,8 +1,7 @@
 all:
   vars:
     single_node: false
-    kube_api_sans:
-    - e2e-k8s.opencrvs.dev
+    kube_api_host: e2e-k8s.opencrvs.dev
     ansible_user: provision
     users:
       - name: pyry
