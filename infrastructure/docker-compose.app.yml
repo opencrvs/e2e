@@ -715,6 +715,9 @@ services:
       - INFLUX_PORT=8086
       - INFLUX_DB=${STACK}_ocrvs
       - WAIT_HOSTS=mongo1:27017,influxdb:8086,minio:9000,elasticsearch:9200,postgres:5432
+      - MONGO_HOST=mongo1
+      - MONGO_PORT=27017
+      - MONGO_REPLICA_SET=rs0
     deploy:
       labels:
         - "traefik.enable=false"
