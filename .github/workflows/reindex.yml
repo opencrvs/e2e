@@ -45,8 +45,8 @@ jobs:
         run: |
           cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
+          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
+          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Install SSH Key
@@ -59,7 +59,7 @@ jobs:
         run: |
           ssh -p ${{ vars.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ vars.SSH_HOST }} ${{ vars.SSH_ARGS }} "
             docker run --rm \
-              -v /opt/opencrvs/infrastructure/deployment:/workspace \
+              -v /opt/opencrvs/infrastructure-swarm/deployment:/workspace \
               -w /workspace \
               -e 'AUTH_URL=http://auth.${{ inputs.stack }}_app_net:4040/' \
               -e 'EVENTS_URL=http://events.${{ inputs.stack }}_app_net:5555/' \

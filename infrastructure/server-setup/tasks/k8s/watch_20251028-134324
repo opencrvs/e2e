@@ -1,0 +1,25 @@
+Every 2.0s: k get po                                                                           NB01NSTL012: 13:43:24
+                                                                                                       in 0.090s (0)
+NAME                                 READY   STATUS              RESTARTS      AGE                                  
+auth-696477c76d-lk4qd                1/1     Running             0             4m1s                                 
+client-56fbbb76cb-8ptgh              0/1     Running             0             4m                                   
+config-cd6b8796-dskn2                1/1     Running             0             4m2s                                 
+countryconfig-7bdf6559b9-t8hcf       0/1     ContainerCreating   0             4m                                   
+data-seed-znf6h                      0/1     Completed           0             5d19h                                
+documents-6d6d89f4cd-h8zl5           1/1     Running             0             4m1s                                 
+events-549ccc8f7-8vlmx               0/1     CrashLoopBackOff    5 (48s ago)   4m2s                                 
+gateway-5ddb65885c-2wd45             1/1     Running             0             4m2s                                 
+hearth-5676c67d74-wd77h              1/1     Running             0             4m2s                                 
+login-7dddb8895f-l22j8               0/1     Running             3 (31s ago)   4m1s                                 
+metrics-5d7b9674f8-9d76f             1/1     Running             0             4m1s                                 
+notification-56f689f4d8-8dnx8        1/1     Running             0             4m1s                                 
+postgres-data-migration-cvtvv        0/1     Completed           0             4m48s                                
+postgres-on-update-analytics-wpcjd   0/1     Completed           0             4m5s                                 
+postgres-on-update-core-ffjv2        0/1     Completed           0             5m3s                                 
+scheduler-5bb5cd74b8-89l2l           1/1     Running             0             4m2s                                 
+search-575bfd944b-hpj29              1/1     Running             0             4m1s                                 
+user-mgnt-9cd67f8cf-62dvw            1/1     Running             0             4m1s                                 
+webhooks-54b44fff45-gtvmx            1/1     Running             0             4m1s                                 
+workflow-7c56c8f8f5-77xww            1/1     Running             0             4m2s                                 
+                                                                                                                    
+                                                                                                                    

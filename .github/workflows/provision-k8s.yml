@@ -1,4 +1,4 @@
-name: Provision Infrastructure on k8s
+name: Provision Infrastructure
 run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:
@@ -9,8 +9,7 @@ on:
         default: 'e2e'
         type: choice
         options:
-          - e2e
-
+          - "e2e"
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
@@ -24,14 +23,34 @@ on:
           - application
           - tools
           - fail2ban
+          - data-partition
           - decrypt-on-boot
           - checks
           - containerd-setup
-          - kubernetes-installation
-          - join-workers
+          - k8s
           - system-preparation
 jobs:
+  approve:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Waiting for manual approval
+        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.GH_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
+          issue-body: >
+            Please approve or deny ${{ inputs.environment }} environment provisioning
+            initiated from GitHub Actions by @${{ github.actor }}.
+
+          exclude-workflow-initiator-as-approver: false
+
   provision:
+    needs: approve
     runs-on:
       - self-hosted
       - ${{ inputs.environment }}
@@ -41,11 +60,9 @@ jobs:
       - name: Set variables for ansible
         id: ansible-variables
         run: |
-          JSON_WITH_NEWLINES=$(cat<<EOF
-            ${{ toJSON(env) }}
-          EOF)
-          JSON_WITHOUT_NEWLINES=$(echo $JSON_WITH_NEWLINES | jq -R -c .)
-          echo "EXTRA_VARS=$JSON_WITHOUT_NEWLINES" >> $GITHUB_OUTPUT
+          echo '${{ toJSON(env) }}' > tmp_vars.json
+          JSON_WITHOUT_EMPTY=$(jq -c 'with_entries(select(.value | type == "string" and length > 0))' tmp_vars.json | jq -R )
+          echo "EXTRA_VARS=$JSON_WITHOUT_EMPTY" >> $GITHUB_OUTPUT
         env:
           encrypted_disk_size: ${{ vars.DISK_SPACE }}
           disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
@@ -54,6 +71,14 @@ jobs:
           k8s_cluster_env: ${{ inputs.environment }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_TOKEN }}
+          smtp_host: ${{ secrets.SMTP_HOST }}
+          smtp_port: ${{ secrets.SMTP_PORT }}
+          smtp_user: ${{ secrets.SMTP_USERNAME }}
+          smtp_secure: ${{ secrets.SMTP_SECURE }}
+          # FIXME: Make this field configurable via secrets
+          smtp_from: "team@opencrvs.org"
+          smtp_password: ${{ secrets.SMTP_PASSWORD }}
+          alert_email: ${{ secrets.ALERT_EMAIL }}
       - name: checkout repository
         uses: actions/checkout@v5
       - name: Run Ansible Playbook
@@ -65,7 +90,7 @@ jobs:
         with:
           requirements: galaxy-requirements.yml
           playbook: playbook.yml
-          directory: ./infrastructure-k8s/server-setup
+          directory: ./infrastructure/server-setup
           # Add --verbose to get more output
           options: |-
             --inventory inventory/${{ inputs.environment }}.yml

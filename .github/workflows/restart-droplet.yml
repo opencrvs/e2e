@@ -41,8 +41,8 @@ jobs:
         run: |
           cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
+          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
+          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Install SSH Key
@@ -71,7 +71,7 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
           ssh $SSH_USER@$SSH_HOST $ "
-            sudo /opt/opencrvs/dependencies/infrastructure/cryptfs/mount.sh -p $ENCRYPTION_KEY"
+            sudo /opt/opencrvs/dependencies/infrastructure-swarm/cryptfs/mount.sh -p $ENCRYPTION_KEY"
 
           ssh $SSH_USER@$SSH_HOST $SSH_ARGS "
             sudo service docker restart"

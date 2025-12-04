@@ -280,8 +280,8 @@ jobs:
       - name: Read known hosts
         run: |
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
+          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
+          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
@@ -294,7 +294,7 @@ jobs:
           echo "KNOWN_HOSTS=" >> $GITHUB_ENV
       - name: Cleanup e2e stack
         run: |
-          bash infrastructure/deployment/cleanup-e2e-stack.sh \
+          bash infrastructure-swarm/deployment/cleanup-e2e-stack.sh \
           --stack=${stack} \
           --ssh_host=${{ vars.SSH_HOST || secrets.SSH_HOST }} \
           --ssh_port=${{ vars.SSH_PORT || secrets.SSH_PORT }} \

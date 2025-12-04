@@ -1,51 +1,62 @@
 name: Reset 2FA
-run-name: Reset 2FA from user ${{ github.event.inputs.user }} in ${{ github.event.inputs.environment }}
+run-name: Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }}
 on:
   workflow_dispatch:
     inputs:
       user:
         description: User to remove 2FA from
+        type: string
         required: true
       environment:
         type: choice
-        description: Machine to provision
-        default: qa
+        description: Infrastructure to provision
+        default: "e2e"
         required: true
         options:
-          - development
-          - staging
-          - qa
-          - production
-          - backup
+          - "e2e"
 
 jobs:
-  reset:
-    environment: ${{ github.event.inputs.environment }}
+  approve:
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-24.04
-    outputs:
-      outcome: ${{ steps.deploy.outcome }}
     timeout-minutes: 60
     steps:
-      - name: Clone country config resource package
-        uses: actions/checkout@v3
+      - name: Waiting for manual approval
+        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        uses: trstringer/manual-approval@v1
         with:
-          fetch-depth: 1
-          path: './${{ github.event.repository.name }}'
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.GH_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }}"
+          issue-body: >
+            Please approve or deny Reset 2FA from user ${{ inputs.user }} in 
+            ${{ inputs.environment }} initiated from GitHub Actions by @${{ github.actor }}.
 
-      - name: Read known hosts
-        run: |
-          cd ${{ github.event.repository.name }}
-          echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          exclude-workflow-initiator-as-approver: false
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
+  reset:
+    needs: approve
+    environment: ${{ inputs.environment }}
+    runs-on:
+      - self-hosted
+      - ${{ inputs.environment }}
+      - node
+    timeout-minutes: 60
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v5
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v4
+        env:
+          ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
+          ANSIBLE_SSH_TIMEOUT: 10
+          ANSIBLE_SSH_RETRIES: 5
         with:
-          key: ${{ secrets.SSH_KEY }}
-          known_hosts: ${{ env.KNOWN_HOSTS }}
-
-      - name: Remove 2FA
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ vars.SSH_HOST || secrets.SSH_HOST }} -p ${{ vars.SSH_PORT || secrets.SSH_PORT }} ${{ vars.SSH_ARGS }} "sudo rm /home/${{ github.event.inputs.user }}/.google_authenticator"
+          requirements: galaxy-requirements.yml
+          playbook: reset-2fa.yml
+          directory: ./infrastructure/server-setup
+          # Add --verbose to get more output
+          options: |-
+            --inventory inventory/${{ inputs.environment }}.yml
+            --extra-vars user=${{ inputs.user }}

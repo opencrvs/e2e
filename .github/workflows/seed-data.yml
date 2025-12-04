@@ -45,8 +45,8 @@ jobs:
         run: |
           cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
+          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
+          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Install SSH Key
@@ -86,12 +86,12 @@ jobs:
             MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
             POSTGRES_USER=$POSTGRES_USER \
             POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-            /opt/opencrvs/${{ inputs.stack }}/infrastructure/clear-all-data.sh $REPLICAS ${{ inputs.stack }}"
+            /opt/opencrvs/${{ inputs.stack }}/infrastructure-swarm/clear-all-data.sh $REPLICAS ${{ inputs.stack }}"
 
           echo "Running migrations..."
           echo
           ssh -p $SSH_PORT $SSH_USER@$SSH_HOST $SSH_ARGS "
-              /opt/opencrvs/${{ inputs.stack }}/infrastructure/run-migrations.sh ${{ inputs.stack }}"
+              /opt/opencrvs/${{ inputs.stack }}/infrastructure-swarm/run-migrations.sh ${{ inputs.stack }}"
 
       - name: Pull the seed-data image
         run: docker pull ghcr.io/opencrvs/ocrvs-data-seeder:${{ inputs.core-image-tag }}
