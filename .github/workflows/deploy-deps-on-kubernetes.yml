@@ -1,13 +1,31 @@
-name: Deploy Dependencies on k8s
+name: Deploy Dependencies
+run-name: Deploy Dependencies on ${{ inputs.environment }}
 on:
-    workflow_dispatch:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "e2e"
+        type: choice
+        options:
+          - "e2e"
 jobs:
   deploy:
+    environment: ${{ inputs.environment }}
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
     env:
-      ENV: e2e
-    runs-on: [self-hosted, k8s, e2e]
+      ENV: ${{ inputs.environment }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      SENDER_EMAIL_ADDRESS: ${{ secrets.SENDER_EMAIL_ADDRESS }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     steps:
-      - name: Install traefik
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Install Traefik
         run: |
           kubectl scale deployment traefik --replicas=0 --namespace traefik || true
           helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
@@ -15,11 +33,12 @@ jobs:
             --create-namespace \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/traefik/values.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik
-      - name: Deploy with Helm
+      - name: Install OpenCRVS dependencies
+        id: deploy
         run: |
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-e2e" \
-            --timeout 15m \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/dependencies/values.yaml \
             --create-namespace \
+            --timeout 15m \
             --atomic

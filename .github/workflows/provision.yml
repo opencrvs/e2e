@@ -126,8 +126,8 @@ jobs:
         run: |
           cd ${{ github.event.repository.name }}
           echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure/known-hosts
-          cat ./infrastructure/known-hosts >> $GITHUB_ENV
+          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
+          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Install SSH Key
@@ -153,7 +153,7 @@ jobs:
       - name: Check if backup environment if configured in inventory file
         if: needs.get-backup-ssh-key.outputs.environment_exists != 'true'
         run: |
-          FILE=./${{ github.event.repository.name }}/infrastructure/server-setup/inventory/${{ github.event.inputs.environment }}.yml
+          FILE=./${{ github.event.repository.name }}/infrastructure-swarm/server-setup/inventory/${{ github.event.inputs.environment }}.yml
           if grep -q '^[[:blank:]]*backups:[[:blank:]]*$' "$FILE"; then
             echo "Your inventory contains configuration for either a backup target or backup source."
             echo "If you are upgrading OpenCRVS, please start by running environment creator script for the backup server"
@@ -173,7 +173,7 @@ jobs:
           ANSIBLE_SSH_RETRIES: 5
         with:
           playbook: playbook.yml
-          directory: ${{ github.event.repository.name }}/infrastructure/server-setup
+          directory: ${{ github.event.repository.name }}/infrastructure-swarm/server-setup
           options: |
             --verbose
             --inventory inventory/${{ github.event.inputs.environment }}.yml

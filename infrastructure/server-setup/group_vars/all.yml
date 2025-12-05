@@ -8,9 +8,13 @@
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 ansible_python_interpreter: /usr/bin/python3
 encrypt_data: False
-swap_file_path: /swapfile
-swap_file_size_mb: 8000
+
 backup_server_user: 'backup'
 backup_server_user_home: '/home/backup'
 crontab_user: root
 provisioning_user: provision
+kubernetes_version: "v1.33"
+pod_network_cidr: "192.168.0.0/16"
+calico_version: "v3.26.1"
+backup_server_ssh_credentials_secret: "backup-server-ssh-credentials"
+backup_ssh_key_path: /home/backup/.ssh/id_ed25519
