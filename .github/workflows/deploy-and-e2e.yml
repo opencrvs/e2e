@@ -1,5 +1,5 @@
 name: Deploy & run E2E
-run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}, farajaland: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}) ${{ github.event.client_payload.runtime || inputs.runtime }}'
+run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}, farajaland: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }})'
 on:
   repository_dispatch:
     types: [run_e2e]
@@ -48,9 +48,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # cancel-in-progress-runs:
+  #   name: Cancel in-progress runs
+  #   runs-on: ubuntu-24.04
+  #   steps:
+  #     - name: Cancel in-progress runs
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #         STACK_NAME: ${{ github.event.client_payload.stack || inputs.stack }}
+  #         CURRENT_RUN_ID: ${{ github.run_id }}
+  #       run: |
+  #         # FIXME: Replace with ${{ github.workflow_id }}
+  #         gh api "/repos/${{ github.repository }}/actions/workflows/116693890/runs?status=in_progress&status=queued" \
+  #           --jq '.workflow_runs[] | select(.id != '$CURRENT_RUN_ID') | .id' > /tmp/run_ids.txt
+  #         cat /tmp/run_ids.txt
+  #         while read -r run_id; do
+  #           RUN_NAME=$(gh api "/repos/${{ github.repository }}/actions/runs/$run_id" --jq '.name')
+  #           [[ "$RUN_NAME" != *"to $STACK_NAME"* ]] && echo "Skip $RUN_NAME" && continue
+  #           echo "Cancelling run: $run_id"
+  #           gh api --method POST "/repos/${{ github.repository }}/actions/runs/$run_id/cancel"
+  #           gh api \
+  #             --method POST \
+  #             /repos/opencrvs/e2e/actions/runs/${run_id}/force-cancel
+  #           echo
+  #           echo "Workflow $RUN_NAME cancelled: https://github.com/opencrvs/e2e/actions/runs/${run_id}"
+  #         done < /tmp/run_ids.txt
   debug:
     name: Debug output
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       runtime: ${{ steps.runtime.outputs.runtime }}
       domain: ${{ steps.runtime.outputs.domain }}
@@ -124,7 +149,7 @@ jobs:
           command: npx playwright install --with-deps
 
   deploy-docker:
-    needs: debug
+    needs: [debug, cancel-in-progress-runs]
     if: needs.debug.outputs.runtime == 'docker'
     uses: ./.github/workflows/deploy.yml
     with:
@@ -225,6 +250,12 @@ jobs:
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
           npx playwright test --shard=${{ matrix.shard }}/20
+          PW_PID=$!
+          while kill -0 $PW_PID 2>/dev/null; do
+            sleep 10
+          done
+          
+          wait $PW_PID
         env:
           DOMAIN: '${{ needs.debug.outputs.domain }}'
       - id: ctrf_check
