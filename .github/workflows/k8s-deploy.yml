@@ -143,4 +143,5 @@ jobs:
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
       environment: ${{ inputs.environment }}
+      chart-branch: ${{ inputs.chart-branch }}
     secrets: inherit

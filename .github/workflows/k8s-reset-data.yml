@@ -1,16 +1,22 @@
 name: Reset environment
 run-name: "Reset ${{ inputs.environment }} environment"
 on:
-    workflow_dispatch:
-      inputs:
-        environment:
-          description: "Target environment"
-          required: true
-          type: string
-    workflow_call:
-      inputs:
-        environment:
-          type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: string
+      chart-branch:
+        description: 'Helm chart version to deploy'
+        required: false
+        default: 'develop'
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+      chart-branch:
+        type: string
 jobs:
   prepare:
     outputs:
@@ -64,6 +70,18 @@ jobs:
           - data-seed
           - elasticsearch-reindex
     steps:
+        - name: Checkout repo
+          uses: actions/checkout@v5
+        # FIXME: Update to charts repository once available
+        - name: Checkout infrastructure repository
+          uses: actions/checkout@v5
+          with:
+            repository: opencrvs/infrastructure
+            path: infrastructure
+            ref: ${{ inputs.chart-branch }}
+        - name: Verify branch status ${{ inputs.chart-branch }}
+          working-directory: infrastructure
+          run: git status
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v4
           with:
@@ -77,7 +95,7 @@ jobs:
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
                 -s templates/${{ matrix.job-name }}-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+                infrastructure/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
         - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
