@@ -1863,9 +1863,9 @@ buffer@^6.0.3:
     ieee754 "^1.2.1"
 
 buildcheck@~0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/buildcheck/-/buildcheck-0.0.6.tgz#89aa6e417cfd1e2196e3f8fe915eb709d2fe4238"
-  integrity sha512-8f9ZJCUXyT1M35Jx7MkBgmBMo3oHTTBIPLiY9xyL0pl3T5RwcPEY8cUHr5LBNfu/fk6c2T4DJZuVM/8ZZT2D2A==
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/buildcheck/-/buildcheck-0.0.7.tgz#07a5e76c10ead8fa67d9e4c587b68f49e8f29d61"
+  integrity sha512-lHblz4ahamxpTmnsk+MNTRWsjYKv965MwOrSJyeD588rR3Jcu7swE+0wN5F+PbL5cjgu/9ObkhfzEPuofEMwLA==
 
 cac@^6.7.14:
   version "6.7.14"
@@ -2153,7 +2153,7 @@ country-data@^0.0.31:
     currency-symbol-map "~2"
     underscore ">1.4.4"
 
-cpu-features@~0.0.9:
+cpu-features@~0.0.10:
   version "0.0.10"
   resolved "https://registry.yarnpkg.com/cpu-features/-/cpu-features-0.0.10.tgz#9aae536db2710c7254d7ed67cb3cbc7d29ad79c5"
   integrity sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA==
@@ -4155,10 +4155,10 @@ mz@^2.7.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-nan@^2.18.0, nan@^2.19.0:
-  version "2.19.0"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.19.0.tgz#bb58122ad55a6c5bc973303908d5b16cfdd5a8c0"
-  integrity sha512-nO1xXxfh/RWNxfd/XPfbIfFk5vgLsAxUR9y5O0cHMJu/AW9U95JLXqthYHjEp+8gQ5p96K9jUp8nbVOxCdRbtw==
+nan@^2.19.0, nan@^2.23.0:
+  version "2.24.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.24.0.tgz#a8919b36e692aa5b260831910e4f81419fc0a283"
+  integrity sha512-Vpf9qnVW1RaDkoNKFUvfxqAbtI8ncb8OJlqZ9wwpXzWPEsvsB1nvdUi6oYrHIkQ1Y/tMDnr1h4nczS0VB9Xykg==
 
 nanoid@^3.3.7:
   version "3.3.7"
@@ -4215,9 +4215,9 @@ node-fetch@^2.6.1, node-fetch@^2.6.7:
     whatwg-url "^5.0.0"
 
 node-ssh@^13.2.0:
-  version "13.2.0"
-  resolved "https://registry.yarnpkg.com/node-ssh/-/node-ssh-13.2.0.tgz#06823c4817a5d31249c125a47d821d473f61491d"
-  integrity sha512-7vsKR2Bbs66th6IWCy/7SN4MSwlVt+G6QrHB631BjRUM8/LmvDugtYhi0uAmgvHS/+PVurfNBOmELf30rm0MZg==
+  version "13.2.1"
+  resolved "https://registry.yarnpkg.com/node-ssh/-/node-ssh-13.2.1.tgz#8da14381d95b06bc08528a63b436f122dd608f47"
+  integrity sha512-rfl4GWMygQfzlExPkQ2LWyya5n2jOBm5vhEnup+4mdw7tQhNpJWbP5ldr09Jfj93k5SfY5lxcn8od5qrQ/6mBg==
   dependencies:
     is-stream "^2.0.0"
     make-dir "^3.1.0"
@@ -5045,14 +5045,14 @@ safe-stable-stringify@^2.1.0:
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
 sb-promise-queue@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/sb-promise-queue/-/sb-promise-queue-2.1.0.tgz#7e44bebef643f75d809a3db7f605b815d877a04d"
-  integrity sha512-zwq4YuP1FQFkGx2Q7GIkZYZ6PqWpV+bg0nIO1sJhWOyGyhqbj0MsTvK6lCFo5TQwX5pZr6SCQ75e8PCDCuNvkg==
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/sb-promise-queue/-/sb-promise-queue-2.1.1.tgz#f613402111f0da94256a8e73bd66de2e4b674630"
+  integrity sha512-qXfdcJQMxMljxmPprn4Q4hl3pJmoljSCzUvvEBa9Kscewnv56n0KqrO6yWSrGLOL9E021wcGdPa39CHGKA6G0w==
 
 sb-scandir@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/sb-scandir/-/sb-scandir-3.1.0.tgz#31c346abb5184b73c5a25b286858f4299aa8756c"
-  integrity sha512-70BVm2xz9jn94zSQdpvYrEG101/UV9TVGcfWr9T5iob3QhCK4lYXeculfBqPGFv3XTeKgx4dpWyYIDeZUqo4kg==
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/sb-scandir/-/sb-scandir-3.1.1.tgz#4792a74ef75e17c2e49c0466f738013fe8698eb8"
+  integrity sha512-Q5xiQMtoragW9z8YsVYTAZcew+cRzdVBefPbb9theaIKw6cBo34WonP9qOCTKgyAmn/Ch5gmtAxT/krUgMILpA==
   dependencies:
     sb-promise-queue "^2.1.0"
 
@@ -5316,15 +5316,15 @@ sprintf-js@~1.0.2:
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
 ssh2@^1.14.0:
-  version "1.15.0"
-  resolved "https://registry.yarnpkg.com/ssh2/-/ssh2-1.15.0.tgz#2f998455036a7f89e0df5847efb5421748d9871b"
-  integrity sha512-C0PHgX4h6lBxYx7hcXwu3QWdh4tg6tZZsTfXcdvc5caW/EMxaB4H9dWsl7qk+F7LAW762hp8VbXOX7x4xUYvEw==
+  version "1.17.0"
+  resolved "https://registry.yarnpkg.com/ssh2/-/ssh2-1.17.0.tgz#dc686e8e3abdbd4ad95d46fa139615903c12258c"
+  integrity sha512-wPldCk3asibAjQ/kziWQQt1Wh3PgDFpC0XpwclzKcdT1vql6KeYxf5LIt4nlFkUeR8WuphYMKqUA56X4rjbfgQ==
   dependencies:
     asn1 "^0.2.6"
     bcrypt-pbkdf "^1.0.2"
   optionalDependencies:
-    cpu-features "~0.0.9"
-    nan "^2.18.0"
+    cpu-features "~0.0.10"
+    nan "^2.23.0"
 
 stackback@0.0.2:
   version "0.0.2"
