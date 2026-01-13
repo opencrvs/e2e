@@ -58,7 +58,7 @@ services:
       - CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:8.14.3
+    image: docker.elastic.co/beats/filebeat:8.19.10
     networks:
       - elasticsearch_net
     user: root
