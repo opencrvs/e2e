@@ -317,7 +317,7 @@ services:
           - node.role == manager
 
   logstash:
-    image: logstash:8.14.3
+    image: logstash:8.19.10
     networks:
       - elasticsearch_net
       - monitoring_net
