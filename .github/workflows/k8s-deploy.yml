@@ -120,7 +120,6 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
             --atomic \
-            --debug \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
