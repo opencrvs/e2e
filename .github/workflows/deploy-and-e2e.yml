@@ -51,7 +51,7 @@ concurrency:
 jobs:
   debug:
     name: Debug output
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Print Entire Event Payload
         run: |
@@ -59,7 +59,7 @@ jobs:
 
   cache-node-js:
     name: Cache Node.js dependencies
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
         with:

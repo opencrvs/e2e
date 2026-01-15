@@ -14,7 +14,7 @@ on:
           - development
 jobs:
   restart-and-mount:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Clone country config resource package
