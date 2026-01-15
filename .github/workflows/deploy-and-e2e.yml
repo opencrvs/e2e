@@ -8,11 +8,11 @@ on:
       core-image-tag:
         description: Core image tag
         required: true
-        default: 'v1.8.0'
+        default: 'v1.9.5'
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
-        default: 'v1.8.0'
+        default: 'v1.9.5'
       stack:
         type: string
         description: Stack name
@@ -30,6 +30,12 @@ on:
         description: e2e branch
         required: false
         default: 'develop'
+      reset:
+        description: reset e2e
+        required: false
+        default: false
+        type: boolean
+      # TODO: remove runtime input from opencrvs-core and cleanup here after
       runtime:
         required: false
         default: 'none'
@@ -38,11 +44,6 @@ on:
           - none
           - docker
           - k8s
-      reset:
-        description: reset e2e
-        required: false
-        default: false
-        type: boolean
 concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
   cancel-in-progress: true
@@ -51,34 +52,11 @@ jobs:
   debug:
     name: Debug output
     runs-on: ubuntu-22.04
-    outputs:
-      runtime: ${{ steps.runtime.outputs.runtime }}
-      domain: ${{ steps.runtime.outputs.domain }}
     steps:
       - name: Print Entire Event Payload
         run: |
           echo "${{ toJson(github.event) }}"
-      - name: Select docker swarm or k8s
-        id: runtime
-        env:
-          run_id: ${{ github.run_id }}
-          runtime: ${{ github.event.client_payload.runtime || inputs.runtime }}
-          stack: ${{ github.event.client_payload.stack || inputs.stack }}
-        run: |
-          if [[ -n "$runtime" && "$runtime" != "none" ]]; then
-            runtime="$runtime"
-          else
-            runtime="k8s"
-          fi
-          if [[ "$runtime" == "docker" ]]; then
-            domain=${{ github.event.client_payload.stack || inputs.stack }}.${{ vars.DOMAIN }}
-          else
-            domain=${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}
-          fi
-          echo "domain=$domain" >> $GITHUB_OUTPUT
-          echo "runtime=$runtime" >> $GITHUB_OUTPUT
-          echo "domain=$domain"
-          echo "runtime=$runtime"
+
   cache-node-js:
     name: Cache Node.js dependencies
     runs-on: ubuntu-22.04
@@ -123,21 +101,7 @@ jobs:
           max_attempts: 3
           command: npx playwright install --with-deps
 
-  deploy-docker:
-    needs: debug
-    if: needs.debug.outputs.runtime == 'docker'
-    uses: ./.github/workflows/deploy.yml
-    with:
-      core-image-tag: ${{ github.event.client_payload.core-image-tag || github.event.inputs.core-image-tag }}
-      countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || github.event.inputs.countryconfig-image-tag }}
-      stack: ${{ github.event.client_payload.stack || github.event.inputs.stack }}
-      dependencies: false
-      e2e_branch: ${{ github.event.client_payload.branch || github.event.inputs.branch }}
-      reset: 'true'
-    secrets: inherit
-  deploy-k8s:
-    if: needs.debug.outputs.runtime == 'k8s'
-    needs: debug
+  deploy:
     uses: ./.github/workflows/k8s-deploy.yml
     with:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
@@ -147,14 +111,9 @@ jobs:
       chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
+
   test:
-    needs: [debug, deploy-docker, deploy-k8s, cache-node-js]
-    # Continue if at least one dependency succeeded (docker OR k8s ran)
-    if: |
-      always() && (
-        needs.deploy-docker.result == 'success' ||
-        needs.deploy-k8s.result == 'success'
-      )
+    needs: [debug, deploy, cache-node-js]
     runs-on: ubuntu-24.04
     environment: ${{ github.event.client_payload.stack || inputs.stack }}
     strategy:
@@ -226,7 +185,7 @@ jobs:
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
           npx playwright test --shard=${{ matrix.shard }}/20
         env:
-          DOMAIN: '${{ needs.debug.outputs.domain }}'
+          DOMAIN: "${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}"
       - id: ctrf_check
         if: always()
         run: |
@@ -273,44 +232,12 @@ jobs:
         run: |
           echo "result=$PREVIOUS_CONCLUSION" >> $GITHUB_OUTPUT
 
-  cleanup-stack-docker:
-    needs: [test, debug]
-    runs-on: ubuntu-24.04
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'docker'
-    env:
-      stack: ${{ github.event.client_payload.stack || inputs.stack }}
-      keep_e2e: ${{ github.event.client_payload.keep-e2e || inputs.keep-e2e }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Read known hosts
-        run: |
-          echo "KNOWN_HOSTS<<EOF" >> $GITHUB_ENV
-          sed -i -e '$a\' ./infrastructure-swarm/known-hosts
-          cat ./infrastructure-swarm/known-hosts >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_KEY }}
-          known_hosts: ${{ env.KNOWN_HOSTS }}
-
-      - name: Unset KNOWN_HOSTS variable
-        run: |
-          echo "KNOWN_HOSTS=" >> $GITHUB_ENV
-      - name: Cleanup e2e stack
-        run: |
-          bash infrastructure-swarm/deployment/cleanup-e2e-stack.sh \
-          --stack=${stack} \
-          --ssh_host=${{ vars.SSH_HOST || secrets.SSH_HOST }} \
-          --ssh_port=${{ vars.SSH_PORT || secrets.SSH_PORT }} \
-          --ssh_user=${{ secrets.SSH_USER }}
-
   cleanup-stack-k8s:
     needs: [test, debug]
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: always() && needs.debug.outputs.keep_e2e == 'false' && needs.debug.outputs.runtime == 'k8s'
+    if: needs.debug.outputs.keep_e2e == 'false'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5

@@ -56,7 +56,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
       # FIXME: Update to charts repository once available
-      - name: Checkout infrastructure repository
+      - name: Checkout infrastructure repository ${{ inputs.chart-branch }}
         uses: actions/checkout@v5
         with:
           repository: opencrvs/infrastructure
@@ -113,6 +113,8 @@ jobs:
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
+          kubectl get pods -n "opencrvs-${ENV}" -w &
+          WATCH_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
@@ -123,6 +125,7 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; exit ${PIPESTATUS[0]};
+            kill $WATCH_PID 2>/dev/null || true
       - name: Get notes from Helm release
         run: |
           helm get notes opencrvs -n "opencrvs-${ENV}" || echo "No notes found"
