@@ -237,7 +237,7 @@ jobs:
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: needs.debug.outputs.keep_e2e == 'false'
+    if: inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
