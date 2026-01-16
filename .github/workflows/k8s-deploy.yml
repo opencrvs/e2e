@@ -117,7 +117,7 @@ jobs:
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
-          stern -n "opencrvs-${ENV}" --since 1s --tail 0 . | grep -v '/ping' &
+          stern -n "opencrvs-${ENV}" --since 1s --tail 0 --exclude '/ping' . &
           STERN_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
             --timeout 15m \
