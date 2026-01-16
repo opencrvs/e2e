@@ -117,14 +117,12 @@ jobs:
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
-          export TERM=xterm-256color
-          export FORCE_COLOR=1
           stern -n "opencrvs-${ENV}" \
             --since 1s \
             --tail 0 \
             --exclude 'kube-probe' \
             --exclude '"level":(30|info)' \
-            --template '{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}{{"\n"}}' \
+            --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
