@@ -92,6 +92,10 @@ jobs:
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
+      - name: Install stern
+        run: |
+          curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
+          sudo mv stern /usr/local/bin/
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -113,8 +117,8 @@ jobs:
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
-          kubectl get pods -n "opencrvs-${ENV}" -w &
-          WATCH_PID=$!
+          stern -n "opencrvs-${ENV}" . &
+          STERN_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
@@ -123,8 +127,9 @@ jobs:
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
-            --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; exit ${PIPESTATUS[0]};
-            kill $WATCH_PID 2>/dev/null || true
+            --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
+            kill $STERN_PID 2>/dev/null || true
+            exit $STATUS
       - name: Get notes from Helm release
         run: |
           helm get notes opencrvs -n "opencrvs-${ENV}" || echo "No notes found"
