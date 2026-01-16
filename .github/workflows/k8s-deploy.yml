@@ -121,7 +121,8 @@ jobs:
             --since 1s \
             --tail 0 \
             --exclude 'kube-probe' \
-            --exclude '"level":30' \
+            --exclude '"level":(30|info)' \
+            --template '{{color .PodColor .PodName}} {{color .ContainerColor .ContainerName}} {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
