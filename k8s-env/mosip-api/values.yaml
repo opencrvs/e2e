@@ -1,2 +1,2 @@
 ingress:
-  ssl_enabled: true
+  tls_resolver: letsencrypt
