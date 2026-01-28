@@ -64,9 +64,9 @@ jobs:
       matrix:
         job-name:
           - data-cleanup
-          - postgres-on-update-core
-          - postgres-on-update-analytics
+          - postgres-on-deploy
           - data-migration
+          - data-migration-analytics
           - data-seed
           - elasticsearch-reindex
     steps:
