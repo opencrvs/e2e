@@ -124,8 +124,8 @@ countryconfig:
     E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
-    SYSTEM_CLIENT_ID: b41f4d37-fc93-4fa7-88de-cdc5e238c9e7
-    SYSTEM_CLIENT_SECRET: df6bb27e-a485-4023-bada-0c3129e1aafb
+    SYSTEM_CLIENT_ID: 4ca52fcc-4a78-494c-a7bd-02ca8e75ffcd
+    SYSTEM_CLIENT_SECRET: d2dccfec-c488-46ac-8957-daaff5300d5f
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
