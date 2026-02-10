@@ -85,7 +85,7 @@ jobs:
           kubectl label namespace --overwrite "opencrvs-${ENV}" updated_at=$(date +%s)
       - name: Deploy OpenCRVS MOSIP API
         run: |
-          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
+          helm upgrade --install mosip-api infrastructure/charts/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
