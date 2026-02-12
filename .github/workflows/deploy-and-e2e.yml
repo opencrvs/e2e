@@ -193,7 +193,7 @@ jobs:
           test-report: true
         if: always() && steps.ctrf_check.outputs.ctrf == 'true'
       - name: Upload report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
