@@ -30,17 +30,13 @@ jobs:
         run: |
           helm get values opencrvs -n ${namespace} -ojson | \
             jq '
-              # Quote image tags
+              # Quote OpenCRVS core image tags
               if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
                 .image.tag = (.image.tag | tostring)
               else . end |
-              # Quote image tags
+              # Quote Countryconfig image tags
               if has("countryconfig") and (.countryconfig | has("image")) and (.countryconfig.image.tag | type == "number") then
                 .countryconfig.image.tag = (.countryconfig.image.tag | tostring)
-              else . end |
-              # Quote version numbers
-              if has("version") and (.version | type == "number") then
-                .version = (.version | tostring)
               else . end
             ' > /tmp/${namespace}.json
             echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
