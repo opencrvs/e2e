@@ -66,11 +66,10 @@ jobs:
     steps:
         - name: Checkout repo
           uses: actions/checkout@v5
-        # FIXME: Update to charts repository once available
-        - name: Checkout infrastructure repository
+        - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
           uses: actions/checkout@v5
           with:
-            repository: opencrvs/infrastructure
+            repository: opencrvs/opencrvs-helm-charts
             path: infrastructure
             ref: ${{ inputs.chart-branch }}
         - name: Verify branch status ${{ inputs.chart-branch }}
