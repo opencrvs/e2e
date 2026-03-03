@@ -53,7 +53,7 @@ jobs:
     name: Cache Node.js dependencies
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: 'opencrvs/opencrvs-farajaland'
           fetch-depth: 0
@@ -137,7 +137,7 @@ jobs:
           ]
     name: shard-${{ matrix.shard }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: 'opencrvs/opencrvs-farajaland'
           fetch-depth: 0
@@ -207,7 +207,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -232,7 +232,7 @@ jobs:
     if: inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml

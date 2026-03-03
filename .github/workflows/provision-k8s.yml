@@ -80,7 +80,7 @@ jobs:
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
       - name: checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run Ansible Playbook
         uses: dawidd6/action-ansible-playbook@v4
         env:
