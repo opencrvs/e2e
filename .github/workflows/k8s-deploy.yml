@@ -91,10 +91,6 @@ jobs:
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
-      - name: Install stern
-        run: |
-          curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
-          sudo mv stern /usr/local/bin/
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
