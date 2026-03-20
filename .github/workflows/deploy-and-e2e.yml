@@ -79,13 +79,13 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           timeout_minutes: 10
           max_attempts: 3
           command: yarn
-      - uses: nick-fields/retry@v3
+      - uses: nick-fields/retry@v4
         name: Install Playwright Browsers
         if: steps.cache.outputs.cache-hit != 'true'
         with:
@@ -165,7 +165,7 @@ jobs:
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: yarn
-      - uses: nick-fields/retry@v3
+      - uses: nick-fields/retry@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           timeout_minutes: 10
