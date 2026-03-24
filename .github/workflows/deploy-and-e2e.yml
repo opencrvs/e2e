@@ -62,12 +62,12 @@ jobs:
         run: |
           git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       - name: Set up Node.js from country .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache
         with:
           path: |
@@ -146,12 +146,12 @@ jobs:
         run: |
           git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       - name: Set up Node.js from country .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache
         with:
           path: |
@@ -193,7 +193,7 @@ jobs:
           test-report: true
         if: always() && steps.ctrf_check.outputs.ctrf == 'true'
       - name: Upload report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
