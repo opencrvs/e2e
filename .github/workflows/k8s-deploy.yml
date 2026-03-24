@@ -54,9 +54,9 @@ jobs:
     runs-on: [self-hosted, k8s, e2e]
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: opencrvs/opencrvs-helm-charts
           path: infrastructure

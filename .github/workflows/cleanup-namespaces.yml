@@ -55,7 +55,7 @@ jobs:
     name: Remove ${{ matrix.namespace }}
     steps:
         - name: Checkout repo
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
         - name: Create env variables
           id: env_vars
           run: |
