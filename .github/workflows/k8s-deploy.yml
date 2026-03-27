@@ -11,8 +11,6 @@ on:
         type: string
       environment:
         type: string
-      reset:
-        type: boolean
       keep-e2e:
         type: boolean
         default: false
@@ -35,11 +33,6 @@ on:
         required: true
         default: 'demo'
         type: string
-      reset:
-        description: 'Reset environment after deploy'
-        required: false
-        default: false
-        type: boolean
       keep-e2e:
         description: 'Add keep_namespace label'
         required: false
@@ -69,7 +62,7 @@ jobs:
           echo "Deploying environment to https://${{ inputs.environment }}.e2e-k8s.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
           echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
           echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Reset environment: ${{ inputs.reset }}" >> $GITHUB_STEP_SUMMARY
+
       - name: Print deployment parameters
         run: |
           echo "Environment: $ENV"
@@ -128,6 +121,7 @@ jobs:
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
+            --set data_seed.enabled=true \
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
@@ -144,12 +138,3 @@ jobs:
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
-
-  reset-data:
-    if: ${{ inputs.reset }}
-    needs: deploy
-    uses: ./.github/workflows/k8s-reset-data.yml
-    with:
-      environment: ${{ inputs.environment }}
-      chart-branch: ${{ inputs.chart-branch }}
-    secrets: inherit
