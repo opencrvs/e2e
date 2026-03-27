@@ -49,6 +49,7 @@ jobs:
   deploy:
     env:
       ENV: ${{ inputs.environment }}
+      NAMESPACE: opencrvs-${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
     runs-on: [self-hosted, k8s, e2e]
@@ -75,22 +76,26 @@ jobs:
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-        # Create namespace separately from deployments. With two separate deployments (mosip & e2e), if other fails, we still want to be able to clean it based on updated_at.
-      - name: Ensure namespace exists with updated_at label
+          echo "Namespace: $NAMESPACE"
+      - name: Clear up previous deployments
         run: |
-          if ! kubectl get namespace "opencrvs-${ENV}" >/dev/null 2>&1; then
-            kubectl create namespace "opencrvs-${ENV}"
-          fi
-          kubectl label namespace --overwrite "opencrvs-${ENV}" updated_at=$(date +%s)
+          echo "Deleting namespace $NAMESPACE"
+          kubectl delete namespace "$NAMESPACE" || true
+          PG_DB_NAME="${ENV//-/_}__events"
+          echo "Deleting database $PG_DB_NAME"
+          kubectl exec -n opencrvs-deps-e2e -it postgres-0 -- bash -c "su - postgres -c \"psql -c 'DROP DATABASE IF EXISTS \\\"${PG_DB_NAME}\\\";'\"" || true
+      - name: Create namespace
+        run: |
+          kubectl create namespace "$NAMESPACE"
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api infrastructure/charts/opencrvs-mosip \
-          --namespace "opencrvs-${ENV}" \
+          --namespace "$NAMESPACE" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
           --atomic
       - name: Add updated_at timestamp label to namespace
-        run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
+        run: kubectl label namespace --overwrite $NAMESPACE updated_at=$(date +%s)
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -102,9 +107,9 @@ jobs:
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
-            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
+            | sed "s#namespace: opencrvs-deps-e2e#namespace: $NAMESPACE#" \
             | grep -vE 'resourceVersion|uid|creationTimestamp' \
-            | kubectl apply -n opencrvs-${ENV} -f - \
+            | kubectl apply -n $NAMESPACE -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
           done
       - name: Update k8s-env/opencrvs/values.yaml
@@ -112,7 +117,7 @@ jobs:
           sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
-          stern -n "opencrvs-${ENV}" \
+          stern -n "$NAMESPACE" \
             --since 1s \
             --tail 0 \
             --exclude 'kube-probe' \
@@ -122,7 +127,7 @@ jobs:
           STERN_PID=$!
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
             --timeout 15m \
-            --namespace "opencrvs-${ENV}" \
+            --namespace "$NAMESPACE" \
             -f k8s-env/opencrvs/values.yaml \
             --atomic \
             --set image.tag="$CORE_IMAGE_TAG" \
@@ -133,16 +138,16 @@ jobs:
             exit $STATUS
       - name: Get notes from Helm release
         run: |
-          helm get notes opencrvs -n "opencrvs-${ENV}" || echo "No notes found"
-      - name: Add keep namespace label opencrvs-${ENV}
+          helm get notes opencrvs -n "$NAMESPACE" || echo "No notes found"
+      - name: Add keep namespace label $NAMESPACE
         if: inputs.keep-e2e
-        run: kubectl label namespace opencrvs-${ENV} keep_namespace='true' --overwrite
+        run: kubectl label namespace $NAMESPACE keep_namespace='true' --overwrite
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
-          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
+          kubectl -n "$NAMESPACE" get secrets -l owner=helm -o json | \
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
-          xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
+          xargs -r kubectl -n "$NAMESPACE" delete secret || \
           echo "No helm locks found, all is good"
 
   reset-data:
