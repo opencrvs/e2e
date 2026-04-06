@@ -65,6 +65,7 @@ jobs:
     needs: [check-env-existance]
     if: needs.check-env-existance.outputs.exists == 'true' && (github.event.client_payload.reset || inputs.reset || true) 
     uses: ./.github/workflows/k8s-reset-data.yml
+    continue-on-error: true
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       chart-branch: ${{ inputs.chart-branch }}
