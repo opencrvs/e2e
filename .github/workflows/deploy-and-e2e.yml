@@ -48,6 +48,27 @@ jobs:
       - name: Print Entire Event Payload
         run: |
           echo "${{ toJson(github.event) }}"
+  check-env-existance:
+    name: Check if environment exists
+    runs-on: [self-hosted, k8s, e2e]
+    outputs:
+      exists: ${{ steps.check.outputs.status }}
+    steps:
+    - name: check namespace
+      id: check
+      env:
+        ENV: ${{ github.event.client_payload.stack || inputs.stack }}
+      run: |
+        kubectl get ns opencrvs-${ENV} && status=true || status=false
+        echo "status=$status"  >> $GITHUB_OUTPUT
+  reset-data:
+    needs: [check-env-existance]
+    if: needs.check-env-existance.outputs.exists == 'true' && (github.event.client_payload.reset || inputs.reset || true) 
+    uses: ./.github/workflows/k8s-reset-data.yml
+    with:
+      environment: ${{ github.event.client_payload.stack || inputs.stack }}
+      chart-branch: ${{ inputs.chart-branch }}
+    secrets: inherit
 
   cache-node-js:
     name: Cache Node.js dependencies
@@ -95,17 +116,19 @@ jobs:
 
   deploy:
     uses: ./.github/workflows/k8s-deploy.yml
+    if: always()
+    needs: reset-data
     with:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
-      reset: ${{ github.event.client_payload.reset || inputs.reset || true }}
       chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
 
   test:
     needs: [debug, deploy, cache-node-js]
+    if: always() && needs.deploy.result == 'success'
     runs-on: ubuntu-24.04
     environment: ${{ github.event.client_payload.stack || inputs.stack }}
     strategy:
@@ -229,7 +252,7 @@ jobs:
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true
+    if: always() && needs.test.result == 'success' && inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
