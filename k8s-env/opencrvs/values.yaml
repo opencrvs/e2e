@@ -165,5 +165,6 @@ data_cleanup:
     ES_REINDEXING_STATUS_INDEX: reindexing_status_{{STACK}}
 
 env:
+  TWO_FA_ENABLED: "false"
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-e2e.svc.cluster.local:8200"
   APN_ENVIRONMENT: {{STACK}}
