@@ -138,9 +138,10 @@ search:
   env:
     OPENCRVS_INDEX_NAME: ocrvs--{{STACK}}
 
-user_mgmt:
+user_mgnt:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
+    DEFAULT_USER_PASSWORD: "test"
 documents:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
