@@ -54,17 +54,17 @@ jobs:
     outputs:
       exists: ${{ steps.check.outputs.status }}
     steps:
-    - name: check namespace
-      id: check
-      env:
-        ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-      run: |
-        kubectl get ns opencrvs-${ENV} && status=true || status=false
-        helm ls -n opencrvs-${ENV} opencrvs && status=true || status=false
-        echo "status=$status"  >> $GITHUB_OUTPUT
+      - name: check namespace
+        id: check
+        env:
+          ENV: ${{ github.event.client_payload.stack || inputs.stack }}
+        run: |
+          kubectl get ns opencrvs-${ENV} && status=true || status=false
+          helm ls -n opencrvs-${ENV} opencrvs && status=true || status=false
+          echo "status=$status"  >> $GITHUB_OUTPUT
   reset-data:
     needs: [check-env-existance]
-    if: needs.check-env-existance.outputs.exists == 'true' && (github.event.client_payload.reset || inputs.reset || true) 
+    if: needs.check-env-existance.outputs.exists == 'true' && (github.event.client_payload.reset || inputs.reset || true)
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
@@ -117,7 +117,7 @@ jobs:
 
   deploy:
     uses: ./.github/workflows/k8s-deploy.yml
-    if: always()
+    if: '!cancelled()'
     needs: reset-data
     with:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
@@ -129,7 +129,7 @@ jobs:
 
   test:
     needs: [debug, deploy, cache-node-js]
-    if: always() && needs.deploy.result == 'success'
+    if: "!cancelled() && needs.deploy.result == 'success'"
     runs-on: ubuntu-24.04
     environment: ${{ github.event.client_payload.stack || inputs.stack }}
     strategy:
@@ -201,9 +201,9 @@ jobs:
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
           npx playwright test --shard=${{ matrix.shard }}/20
         env:
-          DOMAIN: "${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}"
+          DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}'
       - id: ctrf_check
-        if: always()
+        if: '!cancelled()'
         run: |
           [ -d ctrf ] && \
            echo "ctrf=true" >> $GITHUB_OUTPUT || \
@@ -215,10 +215,10 @@ jobs:
           github-report: true
           summary-report: true
           test-report: true
-        if: always() && steps.ctrf_check.outputs.ctrf == 'true'
+        if: "!cancelled() && steps.ctrf_check.outputs.ctrf == 'true'"
       - name: Upload report artifact
         uses: actions/upload-artifact@v7
-        if: always()
+        if: '!cancelled()'
         with:
           name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: playwright-report/
@@ -253,7 +253,7 @@ jobs:
     runs-on: [self-hosted]
     env:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
-    if: always() && needs.test.result == 'success' && inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true
+    if: "!cancelled() && needs.test.result == 'success' && inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
