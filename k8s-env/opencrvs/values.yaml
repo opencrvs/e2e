@@ -114,6 +114,7 @@ events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
     ES_REINDEXING_STATUS_INDEX: reindexing_status_{{STACK}}
+    DEFAULT_USER_PASSWORD: "test"
   resources:
     memoryRequest: "1Gi"
     cpuRequest: "1"
