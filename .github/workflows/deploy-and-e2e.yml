@@ -60,7 +60,7 @@ jobs:
           ENV: ${{ github.event.client_payload.stack || inputs.stack }}
         run: |
           kubectl get ns opencrvs-${ENV} && status=true || status=false
-          helm ls -n opencrvs-${ENV} opencrvs && status=true || status=false
+          [ -n "$(helm ls -n opencrvs-${ENV} --no-headers)" ] && status=true || status=false
           echo "status=$status"  >> $GITHUB_OUTPUT
   reset-data:
     needs: [check-env-existance]
