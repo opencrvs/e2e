@@ -8,11 +8,11 @@ on:
       core-image-tag:
         description: Core image tag
         required: true
-        default: 'v1.9.5'
+        default: 'v1.9.12'
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
-        default: 'v1.9.5'
+        default: 'v1.9.12'
       stack:
         type: string
         description: Stack name
@@ -59,8 +59,7 @@ jobs:
         env:
           ENV: ${{ github.event.client_payload.stack || inputs.stack }}
         run: |
-          kubectl get ns opencrvs-${ENV} && status=true || status=false
-          [ -n "$(helm ls -n opencrvs-${ENV} --no-headers)" ] && status=true || status=false
+          helm get values opencrvs -n opencrvs-${ENV} && status=true || status=false
           echo "status=$status"  >> $GITHUB_OUTPUT
   reset-data:
     needs: [check-env-existance]
