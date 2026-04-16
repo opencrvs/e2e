@@ -157,12 +157,10 @@ data_migration:
 postgres_on_deploy:
   env:
     TARGET_DB: {{STACK}}__events
-  secrets:
-    reference-data-db-secret:
-      - REFERENCE_DATA_POSTGRES_USER
-      - REFERENCE_DATA_POSTGRES_PASSWORD
-      - REFERENCE_DATA_EDITOR_USER
-      - REFERENCE_DATA_EDITOR_PASSWORD
+    REFERENCE_DATA_POSTGRES_USER: {{STACK}}_ref_data
+    REFERENCE_DATA_POSTGRES_PASSWORD: {{STACK}}_ref_data_password
+    REFERENCE_DATA_EDITOR_USER: {{STACK}}_ref_editor
+    REFERENCE_DATA_EDITOR_PASSWORD: {{STACK}}_ref_editor_password
 
 data_seed:
   enabled: false
