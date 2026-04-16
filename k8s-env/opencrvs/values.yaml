@@ -124,6 +124,7 @@ countryconfig:
     E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
+    REFERENCE_DATA_DATABASE_URL: postgres://{{STACK}}_ref_data:{{STACK}}_ref_data_password@postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local:5432/{{STACK}}__events
 
 events:
   env:
@@ -154,6 +155,10 @@ data_migration:
 postgres_on_deploy:
   env:
     TARGET_DB: {{STACK}}__events
+    REFERENCE_DATA_POSTGRES_USER: {{STACK}}_ref_data
+    REFERENCE_DATA_POSTGRES_PASSWORD: {{STACK}}_ref_data_password
+    REFERENCE_DATA_EDITOR_USER: {{STACK}}_ref_editor
+    REFERENCE_DATA_EDITOR_PASSWORD: {{STACK}}_ref_editor_password
 
 data_seed:
   enabled: false
