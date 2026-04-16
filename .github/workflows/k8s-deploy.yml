@@ -102,7 +102,9 @@ jobs:
           done
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
-          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          STACK_SANITIZED=${STACK//-/_}
+          sed -i -e "s#{{STACK_SANITIZED}}#${ENV}#g" \
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
           stern -n "opencrvs-${ENV}" \
