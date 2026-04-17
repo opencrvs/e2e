@@ -64,7 +64,7 @@ jobs:
         - name: Update k8s-env/opencrvs/values.yaml
           env:
             ENV: ${{ steps.env_vars.outputs.ENV }}
-          run: sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          run: sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
         - name: Cleanup environment
           env:
             ENV: ${{ steps.env_vars.outputs.ENV }}
