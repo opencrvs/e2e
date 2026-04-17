@@ -258,7 +258,8 @@ jobs:
         uses: actions/checkout@v6
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
-          sed -i -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Cleanup environment
         run: |
           kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
