@@ -62,10 +62,10 @@ redis:
 postgres:
   auth_mode: auto
   host: postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local
-  events_db: {{STACK}}__events
-  events_migrator: {{STACK}}_migrator
-  events_app: {{STACK}}_app
-  events_analytics: {{STACK}}_analytics
+  events_db: {{STACK_SANITIZED}}__events
+  events_migrator: {{STACK_SANITIZED}}_migrator
+  events_app: {{STACK_SANITIZED}}_app
+  events_analytics: {{STACK_SANITIZED}}_analytics
 
 resources:
   memoryRequest: "128Mi"
@@ -118,6 +118,7 @@ countryconfig:
     E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
+    REFERENCE_DATA_DATABASE_URL: postgres://{{STACK_SANITIZED}}_ref_data:{{STACK_SANITIZED}}_ref_data_password@postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local:5432/{{STACK_SANITIZED}}__events
 
 events:
   env:
@@ -147,7 +148,11 @@ data_migration:
 
 postgres_on_deploy:
   env:
-    TARGET_DB: {{STACK}}__events
+    TARGET_DB: {{STACK_SANITIZED}}__events
+    REFERENCE_DATA_POSTGRES_USER: {{STACK_SANITIZED}}_ref_data
+    REFERENCE_DATA_POSTGRES_PASSWORD: {{STACK_SANITIZED}}_ref_data_password
+    REFERENCE_DATA_EDITOR_USER: {{STACK_SANITIZED}}_ref_editor
+    REFERENCE_DATA_EDITOR_PASSWORD: {{STACK_SANITIZED}}_ref_editor_password
 
 data_seed:
   enabled: false
