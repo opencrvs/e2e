@@ -57,6 +57,9 @@ mongodb:
       db: {{STACK}}--events
       user: {{STACK}}--events
       roles: "[{ role: 'readWrite', db: '{{STACK}}--events' }, {role: 'read', db: '{{STACK}}--user-mgnt'}]"
+    - prefix: WEBHOOKS
+      db: {{STACK}}--webhooks
+      user: {{STACK}}--webhooks
 redis:
   auth_mode: use_secret
   host: redis-0.redis.opencrvs-deps-e2e.svc.cluster.local
