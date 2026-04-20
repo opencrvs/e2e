@@ -37,6 +37,9 @@ mongodb:
       db: {{STACK}}--hearth-dev
       user: {{STACK}}--hearth
       roles: "[{ role: 'readWrite', db: '{{STACK}}--hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: '{{STACK}}--hearth-dev' }]"
+    - prefix: CONFIG
+      db: {{STACK}}--application-config
+      user: {{STACK}}--config
     - prefix: PERFORMANCE
       db: {{STACK}}--performance
       user: {{STACK}}--performance
