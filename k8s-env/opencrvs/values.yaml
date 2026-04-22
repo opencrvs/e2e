@@ -50,9 +50,6 @@ mongodb:
       db: {{STACK}}--openhim-dev
       user: {{STACK}}--openhim
       roles: "[{ role: 'readWrite', db: '{{STACK}}--openhim' }, { role: 'readWrite', db: '{{STACK}}--openhim-dev' }]"
-    - prefix: NOTIFICATION
-      db: {{STACK}}--notification
-      user: {{STACK}}--notification
     - prefix: EVENTS
       db: {{STACK}}--events
       user: {{STACK}}--events
