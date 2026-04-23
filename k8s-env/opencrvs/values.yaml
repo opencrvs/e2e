@@ -43,9 +43,6 @@ mongodb:
     - prefix: PERFORMANCE
       db: {{STACK}}--performance
       user: {{STACK}}--performance
-    - prefix: NOTIFICATION
-      db: {{STACK}}--notification
-      user: {{STACK}}--notification
     - prefix: EVENTS
       db: {{STACK}}--events
       user: {{STACK}}--events
