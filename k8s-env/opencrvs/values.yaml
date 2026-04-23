@@ -43,13 +43,6 @@ mongodb:
     - prefix: PERFORMANCE
       db: {{STACK}}--performance
       user: {{STACK}}--performance
-    - prefix: METRICS
-      db: {{STACK}}--metrics
-      user: {{STACK}}--metrics
-    - prefix: OPENHIM
-      db: {{STACK}}--openhim-dev
-      user: {{STACK}}--openhim
-      roles: "[{ role: 'readWrite', db: '{{STACK}}--openhim' }, { role: 'readWrite', db: '{{STACK}}--openhim-dev' }]"
     - prefix: EVENTS
       db: {{STACK}}--events
       user: {{STACK}}--events
