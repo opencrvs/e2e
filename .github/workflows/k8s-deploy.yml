@@ -14,6 +14,9 @@ on:
       keep-e2e:
         type: boolean
         default: false
+      branch:
+        type: string
+        default: 'develop'
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -38,6 +41,10 @@ on:
         required: false
         type: boolean
         default: false
+      branch:
+        description: 'e2e branch'
+        required: false
+        default: 'develop'
 jobs:
   deploy:
     env:
@@ -48,6 +55,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
       - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
         uses: actions/checkout@v6
         with:
