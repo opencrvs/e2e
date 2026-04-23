@@ -124,6 +124,7 @@ jobs:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
+      branch: ${{ github.event.client_payload.branch || inputs.branch }}
     secrets: inherit
 
   test:
