@@ -127,7 +127,6 @@ search:
 user_mgnt:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
-    DEFAULT_USER_PASSWORD: "test"
 documents:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
