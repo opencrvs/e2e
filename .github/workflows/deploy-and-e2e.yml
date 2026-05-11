@@ -67,7 +67,7 @@ jobs:
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
-      chart-branch: ${{ inputs.chart-branch }}
+      chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
     secrets: inherit
 
   cache-node-js:
