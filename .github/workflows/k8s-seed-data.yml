@@ -47,7 +47,7 @@ jobs:
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
                 -s templates/data-seed-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services:0.1.29 | kubectl apply --wait -n ${namespace} -f -
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
 
         - name: Checking data-seed job status
           run: |

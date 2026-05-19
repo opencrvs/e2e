@@ -7,15 +7,15 @@ on:
         description: "Target environment"
         required: true
         type: string
-      chart-branch:
-        description: 'Helm chart version to deploy'
+      core-branch:
+        description: 'Core image tag to deploy'
         required: false
         default: 'develop'
   workflow_call:
     inputs:
       environment:
         type: string
-      chart-branch:
+      core-branch:
         type: string
 jobs:
   prepare:
@@ -66,13 +66,13 @@ jobs:
     steps:
         - name: Checkout repo
           uses: actions/checkout@v6
-        - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
+        - name: Checkout OpenCRVS helm charts repository ${{ inputs.core-branch }}
           uses: actions/checkout@v6
           with:
             repository: opencrvs/opencrvs-helm-charts
             path: infrastructure
-            ref: ${{ inputs.chart-branch }}
-        - name: Verify branch status ${{ inputs.chart-branch }}
+            ref: ${{ inputs.core-branch }}
+        - name: Verify branch status ${{ inputs.core-branch }}
           working-directory: infrastructure
           run: git status
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
