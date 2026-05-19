@@ -7,8 +7,6 @@ on:
         type: string
       countryconfig-image-tag:
         type: string
-      chart-branch:
-        type: string
       environment:
         type: string
       keep-e2e:
@@ -26,10 +24,6 @@ on:
       countryconfig-image-tag:
         description: 'Tag of the countryconfig image'
         required: true
-        default: 'develop'
-      chart-branch:
-        description: 'Helm chart version to deploy'
-        required: false
         default: 'develop'
       environment:
         description: 'Target environment'
@@ -55,16 +49,14 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
+      - name: Checkout OpenCRVS helm charts from core repository ${{ inputs.core-branch }}
         uses: actions/checkout@v6
         with:
-          repository: opencrvs/opencrvs-helm-charts
-          path: infrastructure
-          ref: ${{ inputs.chart-branch }}
-      - name: Verify branch status ${{ inputs.chart-branch }}
-        working-directory: infrastructure
+          repository: opencrvs/opencrvs-core
+          path: core
+          ref: ${{ inputs.core-branch }}
+      - name: Verify branch status ${{ inputs.core-branch }}
+        working-directory: core
         run: git status
       - name: Generate summary
         run: |
@@ -86,7 +78,7 @@ jobs:
           kubectl label namespace --overwrite "opencrvs-${ENV}" updated_at=$(date +%s)
       - name: Deploy OpenCRVS MOSIP API
         run: |
-          helm upgrade --install mosip-api infrastructure/charts/opencrvs-mosip \
+          helm upgrade --install mosip-api core/charts/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
@@ -123,7 +115,7 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
-          helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
+          helm upgrade --install opencrvs core/charts/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f k8s-env/opencrvs/values.yaml \
