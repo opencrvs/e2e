@@ -66,14 +66,14 @@ jobs:
     steps:
         - name: Checkout repo
           uses: actions/checkout@v6
-        - name: Checkout OpenCRVS helm charts repository ${{ inputs.core-branch }}
+        - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
           uses: actions/checkout@v6
           with:
-            repository: opencrvs/opencrvs-helm-charts
-            path: infrastructure
+            repository: opencrvs/opencrvs-core
+            path: core
             ref: ${{ inputs.core-branch }}
         - name: Verify branch status ${{ inputs.core-branch }}
-          working-directory: infrastructure
+          working-directory: core
           run: git status
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v8
@@ -88,7 +88,7 @@ jobs:
                 --set data_seed.enabled=true \
                 --namespace ${namespace} \
                 -s templates/${{ matrix.job-name }}-job.yaml \
-                infrastructure/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+                core/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
         - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
