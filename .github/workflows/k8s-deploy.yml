@@ -12,7 +12,7 @@ on:
       keep-e2e:
         type: boolean
         default: false
-      branch:
+      core-branch:
         type: string
         default: 'develop'
   workflow_dispatch:
@@ -35,8 +35,8 @@ on:
         required: false
         type: boolean
         default: false
-      branch:
-        description: 'e2e branch'
+      core-branch:
+        description: 'Core branch'
         required: false
         default: 'develop'
 jobs:
@@ -54,8 +54,8 @@ jobs:
         with:
           repository: opencrvs/opencrvs-core
           path: core
-          ref: ${{ inputs.core-image-tag }}
-      - name: Verify branch status ${{ inputs.core-image-tag }}
+          ref: ${{ inputs.core-branch }}
+      - name: Verify branch status ${{ inputs.core-branch }}
         working-directory: core
         run: git status
       - name: Generate summary

@@ -116,6 +116,7 @@ jobs:
     needs: reset-data
     with:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
+      core-branch: ${{ inputs.stack }}
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
