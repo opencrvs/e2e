@@ -12,6 +12,9 @@ on:
       keep-e2e:
         type: boolean
         default: false
+      branch:
+        type: string
+        default: 'develop'
       core-branch:
         type: string
         default: 'develop'
@@ -35,6 +38,10 @@ on:
         required: false
         type: boolean
         default: false
+      branch:
+        description: 'e2e branch'
+        required: false
+        default: 'develop'
       core-branch:
         description: 'Core branch'
         required: false
@@ -49,6 +56,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
       - name: Checkout OpenCRVS helm charts from core repository ${{ inputs.core-image-tag }}
         uses: actions/checkout@v6
         with:
