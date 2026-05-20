@@ -33,6 +33,11 @@ jobs:
             --create-namespace \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/traefik/values.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik
+      - name: Apply configmaps
+        # Normally helm creates namespace. But since we want to apply configmaps before helm, we need to ensure the namespace is present.
+        run: |
+          kubectl create namespace opencrvs-deps-e2e --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f k8s-env/dependencies/configmaps/
       - name: Install OpenCRVS dependencies
         id: deploy
         run: |
