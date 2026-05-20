@@ -1,10 +1,10 @@
 name: Reset environment
-run-name: "Reset ${{ inputs.environment }} environment"
+run-name: 'Reset ${{ inputs.environment }} environment'
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target environment"
+        description: 'Target environment'
         required: true
         type: string
       branch:
@@ -34,17 +34,7 @@ jobs:
       - name: Get helm release values and Quote specific fields that are commonly numeric
         id: get-values
         run: |
-          helm get values opencrvs -n ${namespace} -ojson | \
-            jq '
-              # Quote OpenCRVS core image tags
-              if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
-                .image.tag = (.image.tag | tostring)
-              else . end |
-              # Quote Countryconfig image tags
-              if has("countryconfig") and (.countryconfig | has("image")) and (.countryconfig.image.tag | type == "number") then
-                .countryconfig.image.tag = (.countryconfig.image.tag | tostring)
-              else . end
-            ' > /tmp/${namespace}.json
+          helm get values opencrvs -n ${namespace} -ojson > /tmp/${namespace}.json
             echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
       - name: Upload helm release values file /tmp/opencrvs-${{ inputs.environment }}.json
         uses: actions/upload-artifact@v7
@@ -59,8 +49,8 @@ jobs:
       namespace: opencrvs-${{ inputs.environment }}
     runs-on: [self-hosted, k8s, e2e]
     strategy:
-      max-parallel: 1  # Ensure jobs run one by one
-      fail-fast: true  # Stop on first failure
+      max-parallel: 1 # Ensure jobs run one by one
+      fail-fast: true # Stop on first failure
       matrix:
         job-name:
           - data-cleanup

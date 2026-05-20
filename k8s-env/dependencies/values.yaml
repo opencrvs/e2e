@@ -16,6 +16,7 @@ mongodb:
   use_default_credentials: false
 
 postgres:
+  image: chumaky/postgres_mongo_fdw:17.6_fdw5.5.2
   use_default_credentials: false
 
 monitoring:
@@ -33,6 +34,11 @@ monitoring:
 
 filebeat:
   image: ghcr.io/opencrvs/filebeat:8.16.4
+  custom_ilm_configmap: filebeat-ilm-config-e2e
 
 metricbeat:
   image: ghcr.io/opencrvs/metricbeat:8.16.4
+  custom_ilm_configmap: metricbeat-ilm-config-e2e
+
+apm_server:
+  custom_config_configmap: apm-server-config-e2e
