@@ -23,17 +23,31 @@ jobs:
       - k8s
       - e2e
     steps:
-      - name: Get helm release values and Quote specific fields that are commonly numeric
-        run: |
-          helm get values opencrvs -n ${namespace} -ojson > ${namespace}.json
-      - name: Seeding data
-        run: |
-          kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
-          helm template -f ${namespace}.json \
-              --set data_seed.enabled=true \
-              --namespace ${namespace} \
-              -s templates/data-seed-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services:0.1.29 | kubectl apply --wait -n ${namespace} -f -
+        - name: Get helm release values and Quote specific fields that are commonly numeric
+          run: |
+            helm get values opencrvs -n ${namespace} -ojson | \
+              jq '
+                # Quote image tags
+                if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
+                  .image.tag = (.image.tag | tostring)
+                else . end |
+                # Quote version numbers
+                if has("version") and (.version | type == "number") then
+                  .version = (.version | tostring)
+                else . end |
+                # Quote port numbers if needed (optional)
+                if has("service") and (.service | has("port")) and (.service.port | type == "number") then
+                  .service.port = (.service.port | tostring)
+                else . end
+              ' > ${namespace}.json
+        - name: Seeding data
+          run: |
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
+            helm template -f ${namespace}.json \
+                --set data_seed.enabled=true \
+                --namespace ${namespace} \
+                -s templates/data-seed-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
 
       - name: Checking data-seed job status
         run: |

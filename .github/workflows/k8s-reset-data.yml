@@ -7,15 +7,21 @@ on:
         description: 'Target environment'
         required: true
         type: string
-      chart-branch:
-        description: 'Helm chart version to deploy'
+      branch:
+        description: 'e2e branch to use for reset jobs'
+        required: false
+        default: 'develop'
+      core-branch:
+        description: 'Core branch to deploy'
         required: false
         default: 'develop'
   workflow_call:
     inputs:
       environment:
         type: string
-      chart-branch:
+      branch:
+        type: string
+      core-branch:
         type: string
 jobs:
   prepare:
@@ -54,42 +60,44 @@ jobs:
           - data-seed
           - elasticsearch-reindex
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-      - name: Checkout OpenCRVS helm charts repository ${{ inputs.chart-branch }}
-        uses: actions/checkout@v6
-        with:
-          repository: opencrvs/opencrvs-helm-charts
-          path: infrastructure
-          ref: ${{ inputs.chart-branch }}
-      - name: Verify branch status ${{ inputs.chart-branch }}
-        working-directory: infrastructure
-        run: git status
-      - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
-        uses: actions/download-artifact@v8
-        with:
-          name: opencrvs-${{ inputs.environment }}-values-file
-          path: /tmp
-      - name: Create job ${{ matrix.job-name }} from helm template and apply it
-        run: |
-          kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
-          helm template -f ${{ needs.prepare.outputs.values-file }} \
-              --set data_cleanup.enabled=true \
-              --set data_seed.enabled=true \
-              --namespace ${namespace} \
-              -s templates/${{ matrix.job-name }}-job.yaml \
-              infrastructure/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
-      - name: Checking ${{ matrix.job-name }} job status
-        run: |
-          while true; do
-            kubectl wait --for=condition=ready pod -ljob-name=${{ matrix.job-name }} --timeout=300s -n ${namespace} && \
-            kubectl logs job/${{ matrix.job-name }} --all-containers -f -n ${namespace} && \
-            touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break; 
-            sleep 1; done &
-          echo "---------------------- Waiting for job completion ----------------------"
-          kubectl wait --for=condition=complete job/${{ matrix.job-name }} -n ${namespace} --timeout=600s; status=$? || true
-          [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
-          [ ! -f /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt ] && kubectl logs job/${{ matrix.job-name }} --all-containers -n ${namespace} || \
-            rm -vf /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt
-          kill %1 2>/dev/null && echo "Stopped log streaming" || true
-          exit $status
+        - name: Checkout repo
+          uses: actions/checkout@v6
+          with:
+            ref: ${{ inputs.branch }}
+        - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
+          uses: actions/checkout@v6
+          with:
+            repository: opencrvs/opencrvs-core
+            path: core
+            ref: ${{ inputs.core-branch }}
+        - name: Verify branch status ${{ inputs.core-branch }}
+          working-directory: core
+          run: git status
+        - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
+          uses: actions/download-artifact@v8
+          with:
+            name: opencrvs-${{ inputs.environment }}-values-file
+            path: /tmp
+        - name: Create job ${{ matrix.job-name }} from helm template and apply it
+          run: |
+            kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
+            helm template -f ${{ needs.prepare.outputs.values-file }} \
+                --set data_cleanup.enabled=true \
+                --set data_seed.enabled=true \
+                --namespace ${namespace} \
+                -s templates/${{ matrix.job-name }}-job.yaml \
+                core/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+        - name: Checking ${{ matrix.job-name }} job status
+          run: |
+            while true; do
+              kubectl wait --for=condition=ready pod -ljob-name=${{ matrix.job-name }} --timeout=300s -n ${namespace} && \
+              kubectl logs job/${{ matrix.job-name }} --all-containers -f -n ${namespace} && \
+              touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break; 
+              sleep 1; done &
+            echo "---------------------- Waiting for job completion ----------------------"
+            kubectl wait --for=condition=complete job/${{ matrix.job-name }} -n ${namespace} --timeout=600s; status=$? || true
+            [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
+            [ ! -f /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt ] && kubectl logs job/${{ matrix.job-name }} --all-containers -n ${namespace} || \
+              rm -vf /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt
+            kill %1 2>/dev/null && echo "Stopped log streaming" || true
+            exit $status

@@ -22,10 +22,6 @@ on:
         required: false
         default: false
         type: boolean
-      chart-branch:
-        description: Helm chart version to deploy
-        required: false
-        default: 'develop'
       branch:
         description: e2e branch
         required: false
@@ -67,7 +63,7 @@ jobs:
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
-      chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
+      core-branch: ${{ inputs.stack }}
     secrets: inherit
 
   cache-node-js:
@@ -120,11 +116,11 @@ jobs:
     needs: reset-data
     with:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
+      core-branch: ${{ github.event.client_payload.stack || inputs.stack }}
+      branch: ${{ github.event.client_payload.branch || inputs.branch }}
       countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
-      chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
-      branch: ${{ github.event.client_payload.branch || inputs.branch }}
     secrets: inherit
 
   test:
