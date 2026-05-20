@@ -7,13 +7,19 @@ on:
         description: "Target environment"
         required: true
         type: string
+      branch:
+        description: 'e2e branch to use for reset jobs'
+        required: false
+        default: 'develop'
       core-branch:
-        description: 'Core image tag to deploy'
+        description: 'Core branch to deploy'
         required: false
         default: 'develop'
   workflow_call:
     inputs:
       environment:
+        type: string
+      branch:
         type: string
       core-branch:
         type: string
@@ -66,6 +72,8 @@ jobs:
     steps:
         - name: Checkout repo
           uses: actions/checkout@v6
+          with:
+            ref: ${{ inputs.branch }}
         - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
           uses: actions/checkout@v6
           with:
