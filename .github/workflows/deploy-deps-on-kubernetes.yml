@@ -10,6 +10,11 @@ on:
         type: choice
         options:
           - "e2e"
+
+env:
+  DEPENDENCIES_CHART_VERSION: "v2.0.0"
+  TRAEFIK_CHART_VERSION: "39.0.0"
+
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
@@ -28,7 +33,7 @@ jobs:
       - name: Install Traefik
         run: |
           kubectl scale deployment traefik --replicas=0 --namespace traefik || true
-          helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
+          helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik:${TRAEFIK_CHART_VERSION} \
             --namespace traefik \
             --create-namespace \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/traefik/values.yaml
@@ -36,9 +41,10 @@ jobs:
       - name: Install OpenCRVS dependencies
         id: deploy
         run: |
-          helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
+          helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart:${DEPENDENCIES_CHART_VERSION} \
             --namespace "opencrvs-deps-e2e" \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/dependencies/values.yaml \
             --create-namespace \
             --timeout 15m \
             --atomic
+
