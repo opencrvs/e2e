@@ -30,7 +30,7 @@ min_free_disk_size: "30g"
 # - kubeadm
 # - kubelet
 # - kubectl
-kubernetes_version: "v1.34"
+kubernetes_version: "v1.35"
 
 # Kubernetes Eviction Policy Configuration
 #
@@ -56,15 +56,15 @@ eviction_soft_imagefs: "20Gi"         # Minimum free space for container images 
 
 
 # Container Network Interface plugin: Calico version
-calico_version: "v3.26.1"
-# CNI configuration
+calico_version: "v3.32.0"
+# CNI configuration (read-only after installation)
 pod_network_cidr: "192.168.0.0/16"
 
 # Helm version
-helm_version: "v3.19.2"
+helm_version: "v4.1.1"
 
 # Certificate manager chart version
-cert_manager_version: "v1.19.1"
+cert_manager_version: "v1.20.2"
 
 # Action runner controller chart version
 arc_chart_version: "0.23.7"

@@ -45,7 +45,7 @@
         apiGroup: rbac.authorization.k8s.io
 
 - name: Deploy opencrvs-infra-runner
-  retries: 5
+  retries: 10
   delay: 60
   kubernetes.core.k8s:
     state: present

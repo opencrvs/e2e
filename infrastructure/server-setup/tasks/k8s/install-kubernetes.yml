@@ -21,6 +21,19 @@
     filename: kubernetes
     state: present
 
+- name: Prefer Kubernetes packages from pkgs.k8s.io
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/kubernetes-pkgs-k8s
+    mode: "0644"
+    content: |
+      Package: kubelet kubeadm kubectl
+      Pin: origin pkgs.k8s.io
+      Pin-Priority: 1001
+
+      Package: kubelet kubeadm kubectl
+      Pin: origin packages.microsoft.com
+      Pin-Priority: -1
+
 - name: Install specific Kubernetes version
   become: yes
   ansible.builtin.apt:
