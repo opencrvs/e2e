@@ -1,0 +1,14 @@
+- name: Install Helm
+  # Default helm installation script was replaced with manual curl due to random issue:
+  # curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to get.helm.sh:443
+  # FIXME: replace amd64 with architecture varible taken from ansible facts
+  ansible.builtin.shell: |
+    TMPDIR=$(mktemp -d)
+    curl -sSL --retry-all-errors --retry 5 \
+      -o "$TMPDIR/helm.tar.gz" \
+      "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    tar -zxf "$TMPDIR/helm.tar.gz" -C "$TMPDIR"
+    sudo install -m 0755 "$TMPDIR/linux-amd64/helm" /usr/local/bin/helm
+    rm -rf "$TMPDIR"
+  args:
+    creates: /usr/local/bin/helm

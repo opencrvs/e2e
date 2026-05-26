@@ -1,0 +1,14 @@
+- name: Copy rotate_backups.sh file to backup_server_user's home directory
+  copy:
+    src: ./files/rotate_backups.sh
+    dest: '{{ backup_server_user_home }}/rotate_backups.sh'
+    owner: '{{ backup_server_user }}'
+    mode: 0755
+- name: 'Setup backup rotation'
+  cron:
+    user: '{{ crontab_user }}'
+    name: 'rotate backups in {{ backup_server_user_home }}/{{ k8s_cluster_env }}'
+    minute: '0'
+    hour: '0'
+    # FIXME: We should have dedicated variable for backup
+    job: 'bash {{ backup_server_user_home }}/rotate_backups.sh --backup_dir={{ backup_server_user_home }}/{{ k8s_cluster_env }} --amount_to_keep={{ amount_of_backups_to_keep }} >> /var/log/opencrvs-rotate-backups.log 2>&1'

@@ -1,8 +1,12 @@
 - name: Disable swap
   shell: swapoff -a
   
-- name: Remove swap from fstab
-  shell: sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+- name: Comment active swap entries in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*[ \t]swap[ \t].*)$'
+    replace: '# \1'
+    backup: yes
 
 - name: Load required kernel modules
   shell: |

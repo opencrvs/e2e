@@ -1,0 +1,22 @@
+- name: Insert OpenCRVS eviction policies
+  blockinfile:
+    path: /var/lib/kubelet/config.yaml
+    block: |
+      evictionHard:
+        nodefs.available: "{{ eviction_hard_nodefs }}"
+        imagefs.available: "{{ eviction_hard_imagefs }}"
+
+      evictionSoft:
+        nodefs.available: "{{ eviction_soft_nodefs }}"
+        imagefs.available: "{{ eviction_soft_imagefs }}"
+      evictionSoftGracePeriod:
+        nodefs.available: "1h"
+        imagefs.available: "1h"
+    marker: "# {mark} OpenCRVS EVICTION POLICY"
+  register: kubelet_eviction_update
+
+- name: Restart kubelet if config changed
+  systemd:
+    name: kubelet
+    state: restarted
+  when: kubelet_eviction_update.changed

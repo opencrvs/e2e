@@ -36,14 +36,25 @@
     - { port: 7946, proto: "udp" }   # Used by some CNIs (e.g., Flannel, Weave)
     - { port: 8472, proto: "udp" }   # VXLAN (Flannel/Calico; verify if needed)
     - { port: 4789, proto: "udp" }   # VXLAN (Calico; verify if needed)
+    - { port: 179, proto: "tcp" }    # BGP (Calico)
+    - { port: 179, proto: "udp" }    # BGP (Calico)
     # Expose traefik on node port
     # Rules are required for internet facing load balancer (if exists)
     - { port: 30080, proto: "tcp" }  # NodePort HTTP
     - { port: 30443, proto: "tcp" }  # NodePort HTTPS
   ignore_errors: yes
 
+- name: "Allow traffic on Calico interfaces"
+  community.general.ufw:
+    rule: allow
+    interface_in: "{{ item }}"
+  loop:
+    - cali+
+    - vxlan.calico
+  ignore_errors: yes
+
 - name: "Enable UFW with deny by default"
   ufw:
-    state: disabled
+    state: enabled
     default: deny
     direction: incoming

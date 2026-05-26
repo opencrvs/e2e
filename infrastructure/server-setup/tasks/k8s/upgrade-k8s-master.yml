@@ -1,0 +1,42 @@
+- name: Get version from kubelet
+  ansible.builtin.shell: kubelet --version | awk '{print $2}' | sed 's/v//'
+  register: kubelet_version_raw
+  changed_when: false
+
+- name: Get current Kubernetes version
+  ansible.builtin.shell: kubectl version | grep 'Server Version' | awk '{print $3}' | sed 's/v//'
+  register: current_k8s_version_raw
+
+- name: Set version facts
+  ansible.builtin.set_fact:
+    kubelet_version: "{{ kubelet_version_raw.stdout }}"
+    current_k8s_version: "{{ current_k8s_version_raw.stdout }}"
+
+- name: Determine if upgrade is needed
+  ansible.builtin.set_fact:
+    upgrade_needed: "{{ current_k8s_version != kubelet_version }}"
+
+- name: Display upgrade status
+  ansible.builtin.debug:
+    msg: |
+      Kubelet version: {{ kubelet_version }}
+      Server version: {{ current_k8s_version }}
+      Target version: {{ kubernetes_version }}
+      Upgrade needed: {{ upgrade_needed }}
+
+- name: Pull required Kubernetes images for upgrade
+  become: yes
+  command: kubeadm config images pull
+  when: upgrade_needed
+- name: Apply kubeadm upgrade to kubelet version
+  when: upgrade_needed
+  become: yes
+  ansible.builtin.shell: kubeadm upgrade apply {{ kubelet_version }} -y
+
+- name: Restart kubelet
+  become: yes
+  when: upgrade_needed
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

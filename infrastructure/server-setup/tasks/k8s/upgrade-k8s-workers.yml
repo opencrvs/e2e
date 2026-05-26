@@ -1,0 +1,8 @@
+# NOTE: Nodes are not cordoned and workloads keep running while kubelet restart
+#       Application may become not available if upgrade fails.
+- name: Restart kubelet
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

@@ -1,0 +1,40 @@
+- name: Ensure PGDG key directory exists
+  ansible.builtin.file:
+    path: /usr/share/postgresql-common/pgdg
+    state: directory
+    mode: '0755'
+
+- name: Download PGDG APT repository key
+  ansible.builtin.get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    mode: '0644'
+    force: true
+
+- name: Add PGDG APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    filename: pgdg
+    state: present
+  register: pgdg_repo
+
+- name: Update APT cache if repository changed
+  ansible.builtin.apt:
+    update_cache: yes
+  when: pgdg_repo is changed
+
+- name: Install pgBackRest
+  ansible.builtin.apt:
+    name: pgbackrest
+    state: present
+
+- name: Configure pgBackRest global repo path
+  ansible.builtin.copy:
+    dest: /etc/pgbackrest.conf
+    owner: root
+    group: root
+    mode: '0644'
+    # FIXME: Is there any smarter way to configure file per user?
+    content: |
+      [global]
+      repo1-path={{ backup_server_user_home }}/{{ k8s_cluster_env }}

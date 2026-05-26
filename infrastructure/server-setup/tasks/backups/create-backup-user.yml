@@ -1,0 +1,27 @@
+- name: Ensure backup user is present
+  user:
+    name: '{{ backup_server_user }}'
+    state: present
+    create_home: true
+    home: '{{ backup_server_user_home }}'
+    shell: /bin/bash
+    groups: postgres
+    append: true 
+
+- name: Ensure .ssh directory exists
+  file:
+    path: "{{ backup_server_user_home }}/.ssh"
+    state: directory
+    mode: 0700
+    owner: backup
+    group: backup
+
+- name: Add public key to authorized_keys
+  ansible.builtin.lineinfile:
+    path: "{{ backup_server_user_home }}/.ssh/authorized_keys"
+    line: "{{ backup_host_public_key }}"
+    create: yes
+    owner: backup
+    group: backup
+    mode: 0600
+  when: backup_host_public_key is defined

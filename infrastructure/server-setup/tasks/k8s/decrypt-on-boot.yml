@@ -4,10 +4,39 @@
     state: present
   when: disk_encryption_key is defined
 
-- name: Save disk encryption key into a file as an example (in production use a hardware security module)
+- name: 'Register encrypted file system'
+  stat:
+    path: "{{ data_file_path }}"
+    get_checksum: False
+  register: encryptedFileSystemPostCheck
+  when: disk_encryption_key is defined
+
+- name: Check if Disk encryption key file exists
+  ansible.builtin.stat:
+    path: "{{ disk_encryption_key_path }}"
+  register: encryption_keyfile_stat
+  when: disk_encryption_key is defined
+
+- name: Read existing Disk encryption key
+  ansible.builtin.slurp:
+    src: "{{ disk_encryption_key_path }}"
+  register: existing_disk_encryption_key
+  when:
+    - disk_encryption_key is defined
+    - encryption_keyfile_stat.stat.exists
+
+- name: Fail if key exists and differs
+  ansible.builtin.fail:
+    msg: "Disk encryption key on disk does not match ansible variable! GitHub secret ENCRYPTION_KEY was updated!"
+  when:
+    - disk_encryption_key is defined
+    - encryption_keyfile_stat.stat.exists
+    - existing_disk_encryption_key['content'] | b64decode != ("DISK_ENCRYPTION_KEY=" ~ disk_encryption_key ~ "\n")
+
+- name: Save disk encryption key into a file
   when: disk_encryption_key is defined
   ansible.builtin.copy:
-    dest: /root/disk-encryption-key.txt
+    dest: "{{ disk_encryption_key_path }}"
     group: 1000
     owner: 1000
     mode: g+rwx
@@ -23,13 +52,14 @@
     group: root
     recurse: yes
 
-- name: Install k8s-help script
-  copy:
-    src: ../cryptfs/decrypt.sh
-    dest: "/opt/opencrvs/scripts/cryptfs/decrypt.sh"
+- name: Install cryptfs scripts (all executable)
+  ansible.builtin.copy:
+    src: "./files/cryptfs/"
+    dest: "/opt/opencrvs/scripts/cryptfs/"
     owner: "{{ ansible_user }}"
-    group: 'application'
-    mode: '0755'
+    group: application
+    mode: "0755"
+    directory_mode: "0755"
 
 - name: Copy reboot.service systemd file. Must decrypt disk on reboot
   ansible.builtin.copy:
@@ -42,7 +72,7 @@
       Description=Mount encrypted dir
 
       [Service]
-      ExecStart=bash /opt/opencrvs/scripts/cryptfs/decrypt.sh -key /root/disk-encryption-key.txt >> /var/log/cryptfs-reboot.log 2>&1
+      ExecStart=bash /opt/opencrvs/scripts/cryptfs/decrypt.sh -key {{ disk_encryption_key_path }} -f {{ data_file_path }} >> /var/log/cryptfs-reboot.log 2>&1
 
       [Install]
       WantedBy=multi-user.target

@@ -1,6 +1,8 @@
 ---
 - name: Install Tigera Operator
-  shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml
+  shell: |
+    curl  --retry-all-errors --retry 5 -O https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml
+    kubectl create -f tigera-operator.yaml
   environment:
     KUBECONFIG: /home/provision/.kube/config
   register: tigera_result
