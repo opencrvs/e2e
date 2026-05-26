@@ -60,11 +60,6 @@ all:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEEtz5M5hYKcUehDiCm84BplV+3t1ex8DPjIsMtQEWGv cihan.m.bebek@gmail.com
         state: present
         role: admin
-      - name: shoumik
-        ssh_keys:
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRSRTqm3vOfjyTutISEtbVp7ZddoWa9NZDZLeWZGzLy dsi@dsi-Inspiron-15-3511
-        state: present
-        role: admin
       - name: pankaj
         ssh_keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL23KrPmFT6tZxR5d7dsTybtDf5j9DWzJcoR/Y7iJfL6 github
@@ -82,12 +77,10 @@ all:
 
     workers:
       hosts:
-        e2e-k8s-worker-01:
-          ansible_host: 10.1.1.7
-          labels:
-            role: data1
         e2e-k8s-worker-02:
           ansible_host: 10.1.1.8
+          labels:
+            role: data1
         e2e-k8s-worker-03:
           ansible_host: 10.1.1.1
         e2e-k8s-worker-04:
