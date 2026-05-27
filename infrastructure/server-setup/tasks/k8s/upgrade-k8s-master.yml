@@ -1,0 +1,88 @@
+- name: Get version from kubelet
+  ansible.builtin.shell: kubelet --version | awk '{print $2}' | sed 's/v//'
+  register: kubelet_version_raw
+  changed_when: false
+
+- name: Get current Kubernetes version
+  ansible.builtin.shell: kubectl version | grep 'Server Version' | awk '{print $3}' | sed 's/v//'
+  register: current_k8s_version_raw
+
+- name: Set version facts
+  ansible.builtin.set_fact:
+    kubelet_version: "{{ kubelet_version_raw.stdout }}"
+    current_k8s_version: "{{ current_k8s_version_raw.stdout }}"
+
+- name: Determine if upgrade is needed
+  ansible.builtin.set_fact:
+    upgrade_needed: "{{ current_k8s_version != kubelet_version }}"
+
+- name: Display upgrade status
+  ansible.builtin.debug:
+    msg: |
+      Kubelet version: {{ kubelet_version }}
+      Server version: {{ current_k8s_version }}
+      Target version: {{ kubernetes_version }}
+      Upgrade needed: {{ upgrade_needed }}
+
+- name: Pull required Kubernetes images for upgrade
+  become: yes
+  command: kubeadm config images pull
+  when: upgrade_needed
+
+# Kubernetes v1.35+ kubelet no longer accepts --pod-infra-container-image.
+# If this stale flag remains in /var/lib/kubelet/kubeadm-flags.env after upgrade,
+# kubelet fails to start with:
+#   failed to parse kubelet flag: unknown flag: --pod-infra-container-image
+#
+# The sandbox/pause image should be configured through the container runtime
+# instead, e.g. containerd's sandbox_image.
+#
+# Related kubeadm issue:
+# https://github.com/kubernetes/kubeadm/issues/3281
+- name: Check kubeadm kubelet flags file
+  become: yes
+  ansible.builtin.stat:
+    path: /var/lib/kubelet/kubeadm-flags.env
+  register: kubeadm_flags_file
+
+- name: Remove deprecated kubelet pod-infra-container-image flag
+  become: yes
+  ansible.builtin.replace:
+    path: /var/lib/kubelet/kubeadm-flags.env
+    regexp: '\s*--pod-infra-container-image=[^ "]*'
+    replace: ''
+  when: 
+    - kubeadm_flags_file.stat.exists
+    - upgrade_needed
+  register: kubeadm_flags_cleanup
+
+- name: Restart kubelet after removing deprecated flag
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+  when:
+    - kubeadm_flags_file.stat.exists
+    - kubeadm_flags_cleanup.changed
+    - upgrade_needed
+
+- name: Plan kubeadm upgrade
+  when: upgrade_needed
+  become: yes
+  ansible.builtin.shell: kubeadm upgrade plan
+  retries: 3
+  delay: 20
+
+- name: Apply kubeadm upgrade to kubelet version
+  when: upgrade_needed
+  become: yes
+  ansible.builtin.shell: kubeadm upgrade apply {{ kubelet_version }} -y --v=5
+
+- name: Restart kubelet
+  become: yes
+  when: upgrade_needed
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

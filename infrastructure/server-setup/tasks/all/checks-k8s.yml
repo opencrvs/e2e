@@ -1,0 +1,177 @@
+---
+- name: Check if Kubernetes cluster is initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_is_installed
+
+- name: Pre-flight checks block
+  when: k8s_is_installed.stat.exists
+  block:
+    - name: Get current Kubernetes version
+      ansible.builtin.shell: kubectl version | grep 'Server Version' | awk '{print $3}' | sed 's/v//'
+      register: current_k8s_version_raw
+
+    - name: Get target Kubernetes version
+      ansible.builtin.shell: echo {{ kubernetes_version }} | sed 's/v//'
+      register: target_k8s_version_raw
+
+    - name: Set version facts
+      ansible.builtin.set_fact:
+        current_k8s_version: "{{ current_k8s_version_raw.stdout }}"
+        k8s_target_version: "{{ target_k8s_version_raw.stdout }}"
+
+    - name: Display current and target versions
+      ansible.builtin.debug:
+        msg: |
+          Current Kubernetes version: {{ current_k8s_version }}
+          Target Kubernetes version: {{ k8s_target_version }}
+          Configuration files exist: {{ k8s_is_installed.stat.exists }}
+
+    - name: Parse version numbers
+      ansible.builtin.set_fact:
+        current_major: "{{ current_k8s_version.split('.')[0] }}"
+        current_minor: "{{ current_k8s_version.split('.')[1] }}"
+        target_major: "{{ k8s_target_version.split('.')[0] }}"
+        target_minor: "{{ k8s_target_version.split('.')[1] }}"
+
+    - name: Check if downgrade attempt
+      ansible.builtin.fail:
+        msg: |
+          ❌ Downgrade detected!
+          Current version: {{ current_k8s_version }}
+          Target version: {{ k8s_target_version }}
+          Please downgrade manually using kubeadm!
+      when: 
+        - (target_major | int < current_major | int) or
+          (target_major | int == current_major | int and target_minor | int < current_minor | int)
+
+    - name: Validate minor version upgrade (no version skipping)
+      ansible.builtin.fail:
+        msg: |
+          ❌ Invalid upgrade path detected!
+          Current version: {{ current_k8s_version }}
+          Target version: {{ k8s_target_version }}
+          
+          You are trying to skip minor versions. Kubernetes must be upgraded sequentially.
+          
+          Required upgrade path:
+          {% set minor_diff = (target_minor | int) - (current_minor | int) %}
+          {% for i in range(minor_diff) %}
+            {{ current_major }}.{{ (current_minor | int) + i }} → {{ current_major }}.{{ (current_minor | int) + i + 1 }}
+          {% endfor %}
+          
+          Please upgrade one minor version at a time.
+          Refer to: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
+      when:
+        - (target_minor | int) - (current_minor | int) > 1
+
+    - name: Check all nodes are Ready
+      ansible.builtin.shell: kubectl get nodes --no-headers | grep -v " Ready" | wc -l
+      register: not_ready_nodes
+      changed_when: false
+      failed_when: not_ready_nodes.stdout | int > 0
+
+    - name: Verify all nodes are Ready
+      ansible.builtin.debug:
+        msg: "✅ All nodes are Ready"
+
+    - name: Check system pods status
+      ansible.builtin.shell: |
+        kubectl get pods -n kube-system --no-headers | \
+        grep -v -E "Running|Completed" | wc -l
+      register: unhealthy_pods
+      changed_when: false
+      failed_when: unhealthy_pods.stdout | int > 0
+
+    - name: Verify system pods are healthy
+      ansible.builtin.debug:
+        msg: "✅ All kube-system pods are Running"
+
+    - name: Install pluto for API deprecation check
+      ansible.builtin.get_url:
+        url: "https://github.com/FairwindsOps/pluto/releases/download/v5.19.0/pluto_5.19.0_linux_amd64.tar.gz"
+        dest: "/tmp/pluto.tar.gz"
+        mode: '0644'
+
+    - name: Extract pluto
+      ansible.builtin.unarchive:
+        src: "/tmp/pluto.tar.gz"
+        dest: "/tmp/"
+        remote_src: yes
+
+    - name: Check for deprecated APIs
+      ansible.builtin.shell: |
+        /tmp/pluto detect-all-in-cluster --target-versions k8s=v{{ k8s_target_version }} -o wide
+      register: pluto_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display deprecated API warnings
+      ansible.builtin.debug:
+        msg: |
+          {% if 'API REMOVALS' in pluto_check.stdout or pluto_check.stdout | length > 100 %}
+          ⚠️  WARNING: Deprecated APIs detected!
+          {{ pluto_check.stdout }}
+          
+          Please address these before upgrading to avoid issues.
+          {% else %}
+          ✅ No deprecated APIs found
+          {% endif %}
+      when: pluto_check.stdout is defined
+
+    - name: Fail if critical API deprecations found
+      ansible.builtin.fail:
+        msg: |
+          ❌ Critical API deprecations detected that will break in {{ k8s_target_version }}
+          Please remediate before upgrading.
+      when:
+        - pluto_check.stdout is defined
+        - "'REMOVED' in pluto_check.stdout"
+
+    - name: Check Calico/Tigera operator health
+      ansible.builtin.shell: |
+        kubectl get tigerastatus -o jsonpath='{.items[*].status.conditions[?(@.type=="Available")].status}' | \
+        grep -v "True" | wc -l
+      register: calico_status
+      changed_when: false
+      failed_when: calico_status.stdout | int > 0
+      ignore_errors: yes
+
+    - name: Verify Calico is healthy
+      ansible.builtin.debug:
+        msg: "✅ Calico/Tigera operator is healthy"
+      when: calico_status.rc == 0
+
+    - name: Check Calico pods if tigerastatus not available
+      ansible.builtin.shell: |
+        kubectl get pods -n calico-system --no-headers 2>/dev/null | \
+        grep -v -E "Running|Completed" | wc -l
+      register: calico_pods_status
+      changed_when: false
+      when: calico_status.rc != 0
+
+    - name: Alternative Calico namespace check
+      ansible.builtin.shell: |
+        kubectl get pods -n tigera-operator --no-headers 2>/dev/null | \
+        grep -v -E "Running|Completed" | wc -l
+      register: tigera_pods_status
+      changed_when: false
+      when: calico_status.rc != 0
+
+    - name: Verify Calico pods (alternative check)
+      ansible.builtin.debug:
+        msg: "✅ Calico pods are healthy"
+      when: 
+        - calico_status.rc != 0
+        - (calico_pods_status.stdout | default('0') | int == 0 or tigera_pods_status.stdout | default('0') | int == 0)
+
+    - name: Pre-flight checks summary
+      ansible.builtin.debug:
+        msg: |
+          ====================================
+          ✅ All pre-flight checks passed!
+          ====================================
+          Current version: {{ current_k8s_version }}
+          Target version: {{ k8s_target_version }}
+          
+          Proceeding with upgrade...

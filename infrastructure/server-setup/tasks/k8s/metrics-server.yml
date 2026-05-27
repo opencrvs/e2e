@@ -19,14 +19,16 @@
     -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
   environment:
     KUBECONFIG: /home/provision/.kube/config
+
 - name: Wait for metrics server to be ready
   shell: |
     kubectl wait --for=condition=ready pod -l k8s-app=metrics-server -n kube-system --timeout=30s
   become: yes
-  retries: 3
-  delay: 1
+  retries: 5
+  delay: 30
   environment:
     KUBECONFIG: /home/provision/.kube/config
+
 - name: Verify metrics server installation
   shell: |
      kubectl get deployment metrics-server -n kube-system

@@ -10,35 +10,13 @@
 - hosts: backup
   become: yes
   become_method: sudo
-  # FIXME: Should be executed only of backup host is defined
   tags: backup
   tasks:
-    - name: Ensure backup user is present
-      user:
-        name: '{{ backup_server_user }}'
-        state: present
-        create_home: true
-        home: '{{ backup_server_user_home }}'
-        shell: /bin/bash
-
-    - name: Copy rotate_backups.sh file to backup_server_user's home directory
-      copy:
-        src: ../backups/rotate_backups.sh
-        dest: '{{ backup_server_user_home }}/rotate_backups.sh'
-        owner: '{{ backup_server_user }}'
-        mode: 0755
-    - name: Create backup secret
-      include_tasks: tasks/backups/create-backup-server-credentials.yml
+    - name: Install pgBackRest
+      include_tasks: tasks/backups/install-pgbackrest.yml
+    - name: Create backup user
+      include_tasks: tasks/backups/create-backup-user.yml
+    - name: Configure crontab
+      include_tasks: tasks/backups/crontab-rotate-backup.yml
     - name: Setup server login emails
       include_tasks: tasks/backups/setup-email-alert.yml
-
-# FIXME:
-# Rewrite backup rotation script to iterate over subdirectories
-    # - name: 'Setup backup rotation'
-    #   cron:
-    #     user: '{{ crontab_user }}'
-    #     name: 'rotate backups in {{ backup_server_remote_target_directory }}'
-    #     minute: '0'
-    #     hour: '0'
-    #     job: 'bash {{ backup_server_user_home }}/rotate_backups.sh --backup_dir={{ backup_server_remote_target_directory }} --amount_to_keep={{ amount_of_backups_to_keep }} >> /var/log/opencrvs-rotate-backups.log 2>&1'
-    #     state: "{{ 'present' if (amount_of_backups_to_keep) else 'absent' }}"

@@ -25,6 +25,7 @@
     src: /etc/kubernetes/admin.conf
     dest: /home/provision/.kube/config
     owner: "{{ ansible_user }}"
+    # FIXME: double check provision workflow
     group: application
     mode: '0600'
     remote_src: yes

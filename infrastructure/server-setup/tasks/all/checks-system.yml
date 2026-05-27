@@ -1,0 +1,34 @@
+- name: Check if single_node is defined
+  fail:
+    msg: |
+      Configuration error: single_node variable is not defined.
+      Please add 'single_node: true' or 'single_node: false' under the 'all.vars' section.
+  when: single_node is not defined
+
+- name: Get all Node groups 
+  ansible.builtin.set_fact:
+    child_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | list }}"
+
+- name: Display child groups
+  debug:
+    msg: "Detected Node groups: {{ child_groups }}"
+
+- name: Fail if single_node is set to False and worker nodes are not present
+  fail:
+    msg: |
+      Configuration mismatch detected!
+      single_node is set to 'false' but only {{ child_groups | length }} group found: {{ child_groups }}
+      For multi-node setup (single_node: false), you need at least 2 groups (e.g., master and workers).
+  when: 
+    - single_node == false
+    - child_groups | length == 1
+
+- name: Fail if single_node is set to True and multiple groups are present
+  fail:
+    msg: |
+      Configuration mismatch detected!
+      single_node is set to 'true' but multiple groups found: {{ child_groups }}
+      For single-node setup (single_node: true), only one group should be present.
+  when: 
+    - single_node == true
+    - child_groups | length > 1

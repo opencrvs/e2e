@@ -144,15 +144,15 @@
 
 - name: Check short Diffie-Hellman keys
   ansible.builtin.shell: |
-    awk '$5 < 3071' /etc/ssh/moduli | grep -q .
+    awk '$5 < 3071' /etc/ssh/moduli | grep -q . && echo "found" || echo "none"
   register: short_dh_keys
-  ignore_errors: yes
+  changed_when: false
 
 - name: Remove short Diffie-Hellman keys
   ansible.builtin.shell: |
     awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
     mv /etc/ssh/moduli.safe /etc/ssh/moduli
-  when: short_dh_keys.rc == 0
+  when: '"found" in short_dh_keys.stdout'
   become: yes
 
 # Cleanup weak server keys
@@ -251,20 +251,6 @@
     marker: '# {mark} ANSIBLE MANAGED BLOCK FOR USER {{ ansible_user }}'
   become: yes
 
-
-# Add restriction configuration to sshd_config
-# For Ubuntu 22.04
-- name: SSHD Restrict key exchange, cipher, and MAC algorithms (Ubuntu 22.04)
-  ansible.builtin.copy:
-    src: ./files/sshd_audit_hardening.22.04.conf
-    dest: /etc/ssh/sshd_config.d/audit_hardening.conf
-    owner: root
-    group: root
-    mode: '0644'
-  when:
-    - ansible_facts['os_family'] == 'Debian'
-    - ansible_facts['distribution'] == 'Ubuntu'
-    - ansible_facts['distribution_version'] is version('22.04', '<=')
 # For Ubuntu 24.04
 - name: SSHD Restrict key exchange, cipher, and MAC algorithms (Ubuntu 24.04)
   ansible.builtin.copy:
@@ -309,5 +295,3 @@
     state: restarted
   when: ssh_status.rc == 0
   become: yes
-
-

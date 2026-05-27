@@ -7,14 +7,64 @@
 #
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 ansible_python_interpreter: /usr/bin/python3
-encrypt_data: False
 
-backup_server_user: 'backup'
-backup_server_user_home: '/home/backup'
 crontab_user: root
 provisioning_user: provision
-kubernetes_version: "v1.33"
+
+# User for ssh connection to backup server
+backup_server_user: 'backup'
+# Home directory for user on backup server
+backup_server_user_home: '/home/backup'
+# Amount of backups to keep (one week)
+amount_of_backups_to_keep: 7
+
+# Disk Encryption key location as an example (in production use a hardware security module)
+disk_encryption_key_path: /root/disk-encryption-key.txt
+
+# Path to encrypted file with citizens data
+data_file_path: /cryptfs_file_sparse.img
+
+# Minimum required disk space for successful kubernetes deployment
+min_free_disk_size: "30g"
+# Kubernetes components versions:
+# - kubeadm
+# - kubelet
+# - kubectl
+kubernetes_version: "v1.35"
+
+# Kubernetes Eviction Policy Configuration
+#
+# By default, Kubernetes uses percentage thresholds to trigger disk evictions.
+# OpenCRVS servers often have large disk partitions, so specifying absolute disk
+# sizes is more effective and makes disk management predictable.
+#
+# OpenCRVS recommends:
+#   - Keeping at least 10GiB of free disk space for safe upgrades and stable operation.
+#   - Using absolute values for eviction thresholds to avoid unnecessary evictions or outages.
+#
+# The settings below define the minimum free disk space (in GiB) required before Kubernetes will start evicting pods.
+# NOTE: Even if root (/) and container images are located on the same partition both policies must be explicitly defined
+# --- Hard Eviction Thresholds ---
+# If free disk space drops below this value, Kubernetes immediately evicts pods to free up space.
+eviction_hard_nodefs: "10Gi"          # Minimum free space on root (/) filesystem
+eviction_hard_imagefs: "10Gi"         # Minimum free space for container images
+
+# --- Soft Eviction Thresholds ---
+# If free disk space stays below this value for a sustained period, Kubernetes will evict pods gradually.
+eviction_soft_nodefs: "20Gi"          # Minimum free space on root (/) filesystem over time
+eviction_soft_imagefs: "20Gi"         # Minimum free space for container images over time
+
+
+# Container Network Interface plugin: Calico version
+calico_version: "v3.32.0"
+# CNI configuration (read-only after installation)
 pod_network_cidr: "192.168.0.0/16"
-calico_version: "v3.26.1"
-backup_server_ssh_credentials_secret: "backup-server-ssh-credentials"
-backup_ssh_key_path: /home/backup/.ssh/id_ed25519
+
+# Helm version
+helm_version: "v4.1.1"
+
+# Certificate manager chart version
+cert_manager_version: "v1.20.2"
+
+# Action runner controller chart version
+arc_chart_version: "0.23.7"

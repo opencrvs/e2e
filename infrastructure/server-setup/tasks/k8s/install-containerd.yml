@@ -5,7 +5,13 @@
     purge: true
   loop:
     - docker
+    - docker-ce
+    - docker-ce-cli
+    - docker-buildx-plugin
+    - docker-ce-rootless-extras
+    - docker-compose-plugin
     - docker-engine
+    - python3-docker
     - docker.io
     - containerd
     - runc

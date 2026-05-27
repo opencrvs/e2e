@@ -1,34 +1,13 @@
-# TODO: Make Kubernetes components
-- name: Install Helm using get-helm-3 script
-  ansible.builtin.shell: |
-    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-  args:
-    creates: /usr/local/bin/helm
-
-- name: Install Helm Diff
-  become: false
-  kubernetes.core.helm_plugin:
-    plugin_path: "https://github.com/databus23/helm-diff"
-    state: present
-
-- name: Deploy latest version of cert-manager
-  kubernetes.core.helm:
-    name: cert-manager
-    chart_ref: cert-manager
-    chart_repo_url: https://charts.jetstack.io
-    release_namespace: cert-manager
-    chart_version: v1.18.2
-    create_namespace: true
-    values:
-      crds:
-        enabled: true
-        keep: true
+- name: Download actions-runner-controller
+  shell: |
+    curl -sSL --retry-all-errors --retry 5 \
+      -o /tmp/actions-runner-controller-{{ arc_chart_version }}.tgz \
+      https://github.com/actions/actions-runner-controller/releases/download/actions-runner-controller-{{ arc_chart_version }}/actions-runner-controller-{{ arc_chart_version }}.tgz
 
 - name: Deploy actions-runner-controller via Helm
   kubernetes.core.helm:
     name: actions-runner-controller
-    chart_ref: actions-runner-controller
-    chart_repo_url: https://actions-runner-controller.github.io/actions-runner-controller/
+    chart_ref: "/tmp/actions-runner-controller-{{ arc_chart_version }}.tgz"
     release_namespace: actions-runner-system
     create_namespace: true
     values:
@@ -66,8 +45,8 @@
         apiGroup: rbac.authorization.k8s.io
 
 - name: Deploy opencrvs-infra-runner
-  retries: 5
-  delay: 10
+  retries: 10
+  delay: 60
   kubernetes.core.k8s:
     state: present
     definition:

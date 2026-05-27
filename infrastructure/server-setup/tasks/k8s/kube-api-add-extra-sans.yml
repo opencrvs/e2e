@@ -45,7 +45,17 @@
 # -- Build merged list of SANs from all sources --
 - name: Build new list of SANs
   ansible.builtin.set_fact:
-    merged_sans: "{{ (current_sans + [kube_api_host] + root_config_sans + [ansible_host]) | unique }}"
+    merged_sans: >-
+      {{
+        (current_sans
+        + [kube_api_host | default(None)]
+        + root_config_sans
+        + [ansible_host | default(None)])
+        | select('defined')
+        | reject('equalto', None)
+        | unique
+        | list
+      }}
 
 - name: Decide if a SAN update is needed
   ansible.builtin.set_fact:
@@ -77,18 +87,20 @@
 
 - name: Delete kube-apiserver pods to restart with new certs
   when: sans_update_needed
+  retries: 5
+  delay: 30
   ansible.builtin.command: kubectl -n kube-system delete pod -l component=kube-apiserver --timeout=30s
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
 - name: Check api-server status
+  retries: 5
+  delay: 30
   shell: |
     kubectl wait --for=condition=ready pod -l component=kube-apiserver -n kube-system --timeout=30s
   register: kubectl_result
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
-  retries: 5
-  delay: 10
 
 - name: Show result of restart
   debug:

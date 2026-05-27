@@ -1,0 +1,32 @@
+# Kubernetes v1.35+ kubelet no longer accepts --pod-infra-container-image.
+# If this stale flag remains in /var/lib/kubelet/kubeadm-flags.env after upgrade,
+# kubelet fails to start with:
+#   failed to parse kubelet flag: unknown flag: --pod-infra-container-image
+#
+# The sandbox/pause image should be configured through the container runtime
+# instead, e.g. containerd's sandbox_image.
+#
+# Related kubeadm issue:
+# https://github.com/kubernetes/kubeadm/issues/3281
+- name: Check kubeadm kubelet flags file
+  become: yes
+  ansible.builtin.stat:
+    path: /var/lib/kubelet/kubeadm-flags.env
+  register: kubeadm_flags_file
+
+- name: Remove deprecated kubelet pod-infra-container-image flag
+  become: yes
+  ansible.builtin.replace:
+    path: /var/lib/kubelet/kubeadm-flags.env
+    regexp: '\s*--pod-infra-container-image=[^ "]*'
+    replace: ''
+  when: kubeadm_flags_file.stat.exists
+
+# NOTE: Nodes are not cordoned and workloads keep running while kubelet restart
+#       Application may become not available if upgrade fails.
+- name: Restart kubelet
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes
