@@ -82,7 +82,7 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v4
+        uses: dawidd6/action-ansible-playbook@v9
         env:
           ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
           ANSIBLE_SSH_TIMEOUT: 10
