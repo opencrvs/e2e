@@ -8,7 +8,12 @@
     rule: allow
     port: "{{ item }}"
     proto: tcp
-  loop: [80, 443]
+  loop:
+    # Http and HTTPS for Traefik (if using hostPort or nodePort)
+    - { port: 80, proto: "tcp" }
+    - { port: 443, proto: "tcp" }
+    # Calico Typha
+    - { port: 5473, proto: "tcp" }
   when: "'master' in group_names"
 
 # Kube and overlay ports for all nodes, adjust as needed
