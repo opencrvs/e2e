@@ -7,13 +7,6 @@ export const derivedVariables = [
     scope: 'ENVIRONMENT'
   },
   {
-    name: 'AUTH_HOST',
-    valueLabel: 'AUTH_HOST',
-    valueType: 'VARIABLE',
-    type: 'disabled',
-    scope: 'ENVIRONMENT'
-  },
-  {
     name: 'COUNTRY_CONFIG_HOST',
     valueLabel: 'COUNTRY_CONFIG_HOST',
     valueType: 'VARIABLE',
