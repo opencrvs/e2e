@@ -63,8 +63,8 @@ resources:
   memoryLimit: "2Gi"
   cpuLimit: "4"
 
-image:
-  tag: develop
+auth:
+  enabled: false
 
 dashboards:
   enabled: false
@@ -99,7 +99,6 @@ countryconfig:
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
     OPENID_PROVIDER_CLIENT_ID: mock-client_id
-    V2_EVENTS: "true"
     # FIXME: In general these values should be passed externally using `--set key=value`
     ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.e2e-k8s.opencrvs.dev/authorize
     MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.e2e-k8s.opencrvs.dev/esignet/get-oidp-user-info
@@ -115,6 +114,7 @@ events:
     ES_INDEX_PREFIX: events_{{STACK}}
     ES_REINDEXING_STATUS_INDEX: reindexing_status_{{STACK}}
     DEFAULT_USER_PASSWORD: "test"
+    TWO_FA_ENABLED: "false"
   resources:
     memoryRequest: "1Gi"
     cpuRequest: "1"
@@ -152,6 +152,5 @@ data_cleanup:
     ES_REINDEXING_STATUS_INDEX: reindexing_status_{{STACK}}
 
 env:
-  TWO_FA_ENABLED: "false"
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-e2e.svc.cluster.local:8200"
   APN_ENVIRONMENT: {{STACK}}
