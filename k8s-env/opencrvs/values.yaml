@@ -64,7 +64,8 @@ resources:
   cpuLimit: "4"
 
 auth:
-  enabled: false
+  env:
+    TWO_FA_ENABLED: "false"
 
 dashboards:
   enabled: false
