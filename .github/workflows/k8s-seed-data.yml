@@ -1,10 +1,10 @@
-name: Seed data (k8s)
-run-name: 'Seed data to ${{ inputs.environment }} environment'
+name: 05. Seed environment
+run-name: "Seed data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment'
+        description: "Target environment"
         required: true
         default: 'e2e'
         type: string
@@ -23,43 +23,84 @@ jobs:
       - k8s
       - e2e
     steps:
-        - name: Get helm release values and Quote specific fields that are commonly numeric
-          run: |
-            helm get values opencrvs -n ${namespace} -ojson | \
-              jq '
-                # Quote image tags
-                if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
-                  .image.tag = (.image.tag | tostring)
-                else . end |
-                # Quote version numbers
-                if has("version") and (.version | type == "number") then
-                  .version = (.version | tostring)
-                else . end |
-                # Quote port numbers if needed (optional)
-                if has("service") and (.service | has("port")) and (.service.port | type == "number") then
-                  .service.port = (.service.port | tostring)
-                else . end
-              ' > ${namespace}.json
-        - name: Seeding data
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
-            helm template -f ${namespace}.json \
-                --set data_seed.enabled=true \
-                --namespace ${namespace} \
-                -s templates/data-seed-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
+      - name: Get deployed Helm chart version
+        id: helm-version
+        run: |
+          if ! helm list -n ${namespace} | grep -q opencrvs; then
+            echo "❌ Error: No OpenCRVS Helm release found in ${namespace} namespace"
+            echo "or there is in-progress deployment"
+            exit 1
+          fi
+          
+          DEPLOYED_VERSION=$(helm list -n ${namespace} -o json | jq -r '.[] | select(.name=="opencrvs") | .chart' | sed 's/opencrvs-services-//')
+          
+          if [ -z "$DEPLOYED_VERSION" ]; then
+            echo "❌ Error: Could not determine deployed version in ${namespace} namespace"
+            exit 1
+          fi
+          
+          echo "version=$DEPLOYED_VERSION" >> $GITHUB_OUTPUT
+          echo "📊 Using deployed Helm chart version: $DEPLOYED_VERSION"
+      - name: Get helm release values and Quote specific fields that are commonly numeric
+        id: get-values
+        run: |
+          helm get values opencrvs -n ${namespace} -ojson > /tmp/${namespace}.json
+            echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
 
-        - name: Checking data-seed job status
+      - name: Upload helm release values file /tmp/opencrvs-${{ inputs.environment }}.json
+        uses: actions/upload-artifact@v7
+        with:
+          name: opencrvs-${{ inputs.environment }}-values-file
+          path: /tmp/opencrvs-${{ inputs.environment }}.json
+          retention-days: 1
+  seed:
+    name: ${{ matrix.job-name }}
+    needs: prepare
+    environment: ${{ inputs.environment }}
+    env:
+      namespace: opencrvs-${{ inputs.environment }}
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
+    strategy:
+      max-parallel: 1  # Ensure jobs run one by one
+      fail-fast: true  # Stop on first failure
+      matrix:
+        job-name:
+          - data-seed
+    steps:
+        - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
+          uses: actions/download-artifact@v8
+          with:
+            name: opencrvs-${{ inputs.environment }}-values-file
+            path: /tmp
+        - name: Create job ${{ matrix.job-name }} from helm template and apply it
+          run: |
+            kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
+            echo "Templating with version: ${{ needs.prepare.outputs.version }}"
+            helm template \
+              --version ${{ needs.prepare.outputs.version }} \
+              --values ${{ needs.prepare.outputs.values-file }} \
+              --set data_cleanup.enabled=true \
+              --set data_seed.enabled=true \
+              --namespace ${namespace} \
+              --show-only templates/${{ matrix.job-name }}-job.yaml \
+              oci://ghcr.io/opencrvs/opencrvs-services \
+              | kubectl apply -n ${namespace} --wait=true -f -
+            echo "✅ ${{ matrix.job-name }} job created successfully"
+        - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
-              kubectl wait --for=condition=ready pod -ljob-name=data-seed --timeout=300s -n ${namespace} && \
-              kubectl logs job/data-seed --all-containers -f -n ${namespace} && \
-              touch /tmp/logs_stramed-${namespace}-data-seed.txt  || break;
-              sleep 10; done &
+              kubectl wait --for=condition=ready pod -ljob-name=${{ matrix.job-name }} --timeout=300s -n ${namespace} && \
+              kubectl logs job/${{ matrix.job-name }} --all-containers -f -n ${namespace} && \
+              touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break; 
+              sleep 1; done &
             echo "---------------------- Waiting for job completion ----------------------"
-            kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s; status=$? || true
+            kubectl wait --for=condition=complete job/${{ matrix.job-name }} -n ${namespace} --timeout=600s; status=$? || true
             [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
-            [ ! -f /tmp/logs_stramed-${namespace}-data-seed.txt ] && kubectl logs job/data-seed --all-containers -n ${namespace} || \
-              rm -vf /tmp/logs_stramed-${namespace}-data-seed.txt
+            [ ! -f /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt ] && kubectl logs job/${{ matrix.job-name }} --all-containers -n ${namespace} || \
+              rm -vf /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt
             kill %1 2>/dev/null && echo "Stopped log streaming" || true
             exit $status
+

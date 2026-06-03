@@ -1,4 +1,4 @@
-name: Deploy
+name: 03. Deploy OpenCRVS
 run-name: 'Deploy OpenCRVS (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})'
 on:
   workflow_call:
@@ -21,15 +21,15 @@ on:
   workflow_dispatch:
     inputs:
       core-image-tag:
-        description: 'Tag of the core image'
+        description: "Tag of the core image"
         required: true
         default: 'develop'
       countryconfig-image-tag:
-        description: 'Tag of the countryconfig image'
+        description: "Tag of the countryconfig image"
         required: true
         default: 'develop'
       environment:
-        description: 'Target environment'
+        description: "Target environment"
         required: true
         default: 'demo'
         type: string
@@ -52,7 +52,10 @@ jobs:
       ENV: ${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-    runs-on: [self-hosted, k8s, e2e]
+    runs-on:
+      - self-hosted
+      - k8s
+      - e2e
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6

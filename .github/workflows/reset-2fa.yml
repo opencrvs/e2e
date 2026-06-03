@@ -1,5 +1,5 @@
-name: Reset 2FA
-run-name: Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }}
+name: 06. Reset 2FA
+run-name: "Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
     inputs:
@@ -13,30 +13,10 @@ on:
         default: "e2e"
         required: true
         options:
-          - "e2e"
+        - e2e
 
 jobs:
-  approve:
-    environment: ${{ inputs.environment }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
-        uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: ${{ vars.GH_APPROVERS }}
-          minimum-approvals: 1
-          issue-title: "Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }}"
-          issue-body: >
-            Please approve or deny Reset 2FA from user ${{ inputs.user }} in 
-            ${{ inputs.environment }} initiated from GitHub Actions by @${{ github.actor }}.
-
-          exclude-workflow-initiator-as-approver: false
-
   reset:
-    needs: approve
     environment: ${{ inputs.environment }}
     runs-on:
       - self-hosted
@@ -47,7 +27,7 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v4
+        uses: dawidd6/action-ansible-playbook@v9
         env:
           ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
           ANSIBLE_SSH_TIMEOUT: 10

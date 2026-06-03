@@ -1,4 +1,4 @@
-name: Deploy Dependencies
+name: 02. Deploy Dependencies
 run-name: Deploy Dependencies on ${{ inputs.environment }}
 on:
   workflow_dispatch:
@@ -46,10 +46,22 @@ jobs:
       - name: Install OpenCRVS dependencies
         id: deploy
         run: |
+          stern -n "opencrvs-deps-${ENV}" \
+            --since 1s \
+            --tail 0 \
+            --exclude 'kube-probe' \
+            --exclude '"level":(30|info)' \
+            --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
+            . &
+          STERN_PID=$!
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart:${DEPENDENCIES_CHART_VERSION} \
             --namespace "opencrvs-deps-e2e" \
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/dependencies/values.yaml \
             --create-namespace \
             --timeout 15m \
             --atomic
+            --atomic; STATUS=$?;
+
+          kill $STERN_PID 2>/dev/null || true
+          exit $STATUS
 
