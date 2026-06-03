@@ -1,0 +1,303 @@
+name: 07. Sync GitHub env to Kubernetes
+run-name: "Sync GitHub env to k8s for ${{ inputs.environment }} (${{ inputs.namespace_template }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "e2e"
+        type: choice
+        options:
+          - e2e
+      namespace_template:
+        description: "Secrets mapping template"
+        default: "opencrvs"
+        type: choice
+        options:
+          - opencrvs
+          - opencrvs-deps
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: e2e
+      namespace_template:
+        type: string
+        default: opencrvs
+
+jobs:
+  get-restore-env-name:
+    name: Get restore environment name
+    outputs:
+      restore_env_name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: "Env name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}"
+        run: |
+          echo "Determined restore environment name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}"
+  get-restore-env-mode:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get restore environment mode
+    outputs:
+      restore_mode: ${{ vars.BACKUP_ENVIRONMENT_MODE }}
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    steps:
+      - name: "Env name: ${{ needs.get-restore-env-name.outputs.restore_env_name }} and mode ${{ vars.BACKUP_ENVIRONMENT_MODE }}"
+        run: |
+          echo "Determined restore environment mode: ${{ vars.BACKUP_ENVIRONMENT_MODE }}"
+
+  get-restore-encryption-key:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup encryption key
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+  get-restore-ssh-key:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup ssh key
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_HOST_PRIVATE_KEY'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
+  get-restore-postgres-admin-user:
+    needs:
+      - get-restore-env-name
+      - get-restore-env-mode
+    if: needs.get-restore-env-name.outputs.restore_env_name && needs.get-restore-env-mode.outputs.restore_mode == 'differential'
+    name: Get postgres admin user
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'POSTGRES_USER'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  get-restore-postgres-admin-password:
+    needs:
+      - get-restore-env-name
+      - get-restore-env-mode
+    if: needs.get-restore-env-name.outputs.restore_env_name && needs.get-restore-env-mode.outputs.restore_mode == 'differential'
+    name: Get postgres admin password
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'POSTGRES_PASSWORD'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  get-restore-host:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup host
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    runs-on: ubuntu-24.04
+    outputs:
+      host: ${{ vars.BACKUP_HOST }}
+    steps:
+      - run: echo ${{ vars.BACKUP_HOST }}
+  get-restore-ssh-user:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup ssh user
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_SERVER_USER'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
+  sync-env:
+    needs:
+      - get-restore-env-name
+      - get-restore-ssh-key
+      - get-restore-host
+      - get-restore-ssh-user
+      - get-restore-encryption-key
+      - get-restore-postgres-admin-user
+      - get-restore-postgres-admin-password
+    if: always()
+    name: Sync GitHub env to Kubernetes
+    environment: ${{ inputs.environment }}
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      # Create a temporary file for environment variables
+      # to store GitHub Secrets and Variables (base64 encoded)
+      # Making those values base64 encoded allows us to avoid further complex escaping issues
+      # with special characters and multiline values when generating Kubernetes Secret manifests
+      - name: Export all secrets and environment variables from GitHub
+        run: |
+            ENV_FILE=$(mktemp)
+            jq -n -r '
+                [${{ toJSON(secrets) }}, ${{ toJSON(vars) }}] 
+                | add
+                | with_entries(.value |= @base64)
+                | to_entries[] 
+                | "\(.key)=\(.value)"
+            ' > $ENV_FILE
+
+            echo env_file=$ENV_FILE >> $GITHUB_ENV
+            cat $ENV_FILE | cut -d\= -f1
+      - name: Save restore (backup source) environment secrets
+        if: needs.get-restore-env-name.outputs.restore_env_name
+        run: |
+          RESTORE_ENCRYPTION_PASSPHRASE=$(echo "${{ needs.get-restore-encryption-key.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          echo "::add-mask::$RESTORE_ENCRYPTION_PASSPHRASE"
+
+          BACKUP_HOST=$(echo -n ${{ needs.get-restore-host.outputs.host }} | base64)
+
+          BACKUP_HOST_PRIVATE_KEY=$(echo "${{ needs.get-restore-ssh-key.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64 | tr -d ' \n')
+          echo "::add-mask::$BACKUP_HOST_PRIVATE_KEY"
+
+          BACKUP_SERVER_USER=$(echo "${{ needs.get-restore-ssh-user.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          echo "::add-mask::$BACKUP_SERVER_USER"
+
+          if [ -n "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" ]; then
+            POSTGRES_USER=$(echo "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" | base64 --decode | \
+            openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+            echo "::add-mask::$POSTGRES_USER"
+            echo POSTGRES_USER=$POSTGRES_USER >> $env_file
+          else
+            echo "No postgres admin user found for restore environment, skipping"
+          fi
+          if [ -n "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" ]; then
+            POSTGRES_PASSWORD=$(echo "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" | base64 --decode | \
+            openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+            echo "::add-mask::$POSTGRES_PASSWORD"
+            echo POSTGRES_PASSWORD=$POSTGRES_PASSWORD >> $env_file
+          else
+            echo "No postgres admin password found for restore environment, skipping"
+          fi
+
+          echo RESTORE_ENCRYPTION_PASSPHRASE=$RESTORE_ENCRYPTION_PASSPHRASE >> $env_file
+          echo BACKUP_HOST=$BACKUP_HOST >> $env_file
+          echo BACKUP_HOST_PRIVATE_KEY=$BACKUP_HOST_PRIVATE_KEY >> $env_file
+          echo BACKUP_SERVER_USER=$BACKUP_SERVER_USER >> $env_file
+          grep BACKUP_HOST_PRIVATE_KEY $env_file || echo "No restore encryption passphrase to add"
+
+      - name: Preprocess mapping into Secret YAMLs
+        run: |
+          set -euo pipefail
+          mkdir -p k8s-secrets
+
+          mapping_file=".github/TEMPLATES/secret-mapping-${{ inputs.namespace_template }}.yml"
+
+          # Iterate over all kubernetes secret names in mapping
+          for secret_name in $(yq e 'keys | .[]' "$mapping_file"); do
+          skip_manifest=false
+          type=$(yq e ".\"$secret_name\".\"type\"" "$mapping_file")
+          if [ -z "$type" ] || [ "$type" == "null" ]; then
+            type="Opaque"
+          fi
+          namespace=$(yq e ".\"$secret_name\".\"namespace\"" "$mapping_file")
+          if [ -z "$namespace" ] || [ "$namespace" = "null" ]; then
+            namespace="${{ inputs.namespace_template }}-${{ inputs.environment }}"
+          fi
+          echo "🔧 Generating Secret: $secret_name, type: $type"
+          {
+            echo "data:"
+            while IFS= read -r key; do
+              # Skip comments
+              if echo "$key" | grep -q "^[[:space:]]*#"; then
+                continue
+              fi
+
+              if echo "$key" | grep -q ":"; then
+                github_var=$(echo "$key" | cut -d: -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                k8s_var=$(echo "$key" | cut -d: -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              else
+                github_var="$key"
+                k8s_var="$key"
+              fi
+
+              value=$(grep "^$github_var=" "$env_file" | cut -d= -f2- | tail -1 || true)
+
+              if [ -n "$value" ]; then
+                echo "  $k8s_var: $value"
+              else
+                echo "⚠️  Warning: $github_var not found in env_file → setting $k8s_var as empty" >&2
+                echo "  $k8s_var: ''"
+                skip_manifest=true
+              fi
+            done < <(yq e ".\"$secret_name\".\"data\"[]" "$mapping_file")
+            echo "apiVersion: v1"
+            echo "kind: Secret"
+            echo "type: $type"
+            echo "metadata:"
+            echo "  name: $secret_name"
+            echo "  namespace: $namespace"
+          } > "k8s-secrets/$secret_name.yaml"
+          if [ "$skip_manifest" == "true" ]; then
+            echo "⚠️  Skipping Kubernetes secret $secret_name due to empty or not defined GitHub secrets or variables"
+            rm -f "k8s-secrets/$secret_name.yaml"
+          fi
+          done
+
+      - name: Map Dockerhub credentials if available
+        env:
+          # TODO: Rename to DOCKERHUB_USERNAME after swarm migration
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME || '' }}
+          # TODO: Rename to DOCKERHUB_TOKEN after swarm migration 
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKER_TOKEN || '' }}
+          DOCKERHUB_SECRET_NAME: ${{ vars.DOCKERHUB_SECRET_NAME || 'dockerhub-credentials' }}
+          NAMESPACE_TEMPLATE: ${{ inputs.namespace_template }}
+        run: |
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ] && [ "z$NAMESPACE_TEMPLATE" = "zopencrvs" ]; then
+            kubectl create secret docker-registry "$DOCKERHUB_SECRET_NAME" \
+              --docker-server=https://index.docker.io/v1/ \
+              --docker-username="$DOCKERHUB_USERNAME" \
+              --docker-password="$DOCKERHUB_TOKEN" \
+              --namespace="${NAMESPACE_TEMPLATE}-${{ inputs.environment }}" \
+              --dry-run=client -o yaml > "k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
+            echo "✅ Generated Docker Registry Secret manifest: k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
+          else
+            echo "ℹ️  Dockerhub credentials not provided, skipping Docker Registry Secret creation for $DOCKERHUB_SECRET_NAME"
+          fi
+
+      - name: Apply secrets to Kubernetes
+        run: |
+          echo "✅ Generated manifests:"
+          ls -l k8s-secrets
+          set -euo pipefail
+          for f in k8s-secrets/*.yaml; do
+            namespace=$(yq e ".metadata.namespace" "$f")
+            [ "$namespace" == "null" ] && echo "ℹ️  No namespace defined for $f, skipping secret creation" && continue
+            echo "🚀 Applying $f within namespace"
+            kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
+            yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"
+            kubectl delete --ignore-not-found -n $namespace -f "$f"
+            kubectl apply -n $namespace -f "$f"
+            echo "Dropping last-applied-configuration annotation for secret $(basename ${f/.yaml/})"
+            kubectl annotate secret -n $namespace "$(basename ${f/.yaml/})" kubectl.kubernetes.io/last-applied-configuration-
+          done
+
+      - name: Cleanup secrets and variables
+        if: always()
+        run: |
+          rm -fv $env_file
+          rm -fvr k8s-secrets
