@@ -49,17 +49,17 @@ jobs:
                 -s templates/data-seed-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
 
-      - name: Checking data-seed job status
-        run: |
-          while true; do
-            kubectl wait --for=condition=ready pod -ljob-name=data-seed --timeout=300s -n ${namespace} && \
-            kubectl logs job/data-seed --all-containers -f -n ${namespace} && \
-            touch /tmp/logs_stramed-${namespace}-data-seed.txt  || break;
-            sleep 10; done &
-          echo "---------------------- Waiting for job completion ----------------------"
-          kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s; status=$? || true
-          [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
-          [ ! -f /tmp/logs_stramed-${namespace}-data-seed.txt ] && kubectl logs job/data-seed --all-containers -n ${namespace} || \
-            rm -vf /tmp/logs_stramed-${namespace}-data-seed.txt
-          kill %1 2>/dev/null && echo "Stopped log streaming" || true
-          exit $status
+        - name: Checking data-seed job status
+          run: |
+            while true; do
+              kubectl wait --for=condition=ready pod -ljob-name=data-seed --timeout=300s -n ${namespace} && \
+              kubectl logs job/data-seed --all-containers -f -n ${namespace} && \
+              touch /tmp/logs_stramed-${namespace}-data-seed.txt  || break;
+              sleep 10; done &
+            echo "---------------------- Waiting for job completion ----------------------"
+            kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s; status=$? || true
+            [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
+            [ ! -f /tmp/logs_stramed-${namespace}-data-seed.txt ] && kubectl logs job/data-seed --all-containers -n ${namespace} || \
+              rm -vf /tmp/logs_stramed-${namespace}-data-seed.txt
+            kill %1 2>/dev/null && echo "Stopped log streaming" || true
+            exit $status
