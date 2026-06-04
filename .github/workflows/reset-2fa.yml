@@ -1,4 +1,4 @@
-name: 06. Reset 2FA
+name: 07. Reset 2FA
 run-name: "Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
