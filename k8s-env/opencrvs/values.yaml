@@ -73,6 +73,7 @@ dashboards:
 gateway:
   env:
     MINIO_BUCKET: {{STACK}}--ocrvs
+    DISABLE_RATE_LIMIT: "true"
   resources:
     memoryRequest: "512Mi"
     cpuRequest: "200m"
@@ -144,6 +145,8 @@ postgres_on_deploy:
 
 data_seed:
   enabled: false
+  env:
+    ACTIVATE_USERS: "true"
 
 data_cleanup:
   env:
