@@ -237,7 +237,7 @@ jobs:
       - name: Get Previous Run Conclusion
         id: get-previous-conclusion
         run: |
-          previous_conclusion=$(gh run list --limit 1 --status=completed --workflow="Deploy & run E2E" --json conclusion -q '.[0].conclusion')
+          previous_conclusion=$(gh run list --limit 1 --status=completed --workflow="01. Deploy & run E2E" --json conclusion -q '.[0].conclusion')
           echo "PREVIOUS_CONCLUSION=$previous_conclusion" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
