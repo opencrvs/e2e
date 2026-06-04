@@ -1,4 +1,4 @@
-name: 02. Deploy Dependencies
+name: 03. Deploy Dependencies
 run-name: Deploy Dependencies on ${{ inputs.environment }}
 on:
   workflow_dispatch:

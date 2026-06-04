@@ -1,4 +1,4 @@
-name: 01. Provision Infrastructure
+name: 02. Provision Infrastructure
 run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:

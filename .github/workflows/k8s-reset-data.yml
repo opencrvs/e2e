@@ -1,4 +1,4 @@
-name: Reset environment
+name: 06. Reset environment
 run-name: 'Reset ${{ inputs.environment }} environment'
 on:
   workflow_dispatch:

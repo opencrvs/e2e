@@ -1,4 +1,4 @@
-name: Force Cancel E2E Workflow Run
+name: 09. Force Cancel E2E Workflow Run
 run-name: Force Cancel E2E Workflow ${{ inputs.run_id }}
 on:
   workflow_dispatch:

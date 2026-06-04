@@ -1,4 +1,4 @@
-name: 07. Sync GitHub env to Kubernetes
+name: 08. Sync GitHub env to Kubernetes
 run-name: "Sync GitHub env to k8s for ${{ inputs.environment }} (${{ inputs.namespace_template }})"
 
 on:

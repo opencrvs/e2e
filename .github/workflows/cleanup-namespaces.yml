@@ -1,4 +1,4 @@
-name: "Cleanup Old E2E Namespaces"
+name: "10. Cleanup Old E2E Namespaces"
 
 on:
   workflow_dispatch:
