@@ -1,4 +1,4 @@
-name: Provision Infrastructure
+name: 01. Provision Infrastructure
 run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:
@@ -17,6 +17,7 @@ on:
         type: choice
         options:
           - all
+          - checks
           - updates
           - users
           - backup
@@ -25,7 +26,6 @@ on:
           - fail2ban
           - data-partition
           - decrypt-on-boot
-          - checks
           - containerd-setup
           - k8s
           - system-preparation
@@ -69,20 +69,19 @@ jobs:
           k8s_runner_token: ${{ secrets.GH_TOKEN }}
           repository: ${{ github.repository }}
           k8s_cluster_env: ${{ inputs.environment }}
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_TOKEN }}
           smtp_host: ${{ secrets.SMTP_HOST }}
           smtp_port: ${{ secrets.SMTP_PORT }}
           smtp_user: ${{ secrets.SMTP_USERNAME }}
           smtp_secure: ${{ secrets.SMTP_SECURE }}
-          # FIXME: Make this field configurable via secrets
-          smtp_from: "team@opencrvs.org"
+          smtp_from: ${{ secrets.SENDER_EMAIL_ADDRESS}}
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
+          backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
+          self_hosted_runner_additional_labels: ${{ vars.SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
-        uses: dawidd6/action-ansible-playbook@v4
+        uses: dawidd6/action-ansible-playbook@v9
         env:
           ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
           ANSIBLE_SSH_TIMEOUT: 10
