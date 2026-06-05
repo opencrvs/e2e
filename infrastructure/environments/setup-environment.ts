@@ -890,22 +890,6 @@ ALL_QUESTIONS.push(
       },
       {
         type: 'VARIABLE' as const,
-        name: 'AUTH_HOST',
-        value: answerOrExisting(
-          allAnswers.domain,
-          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-          (val) => `https://auth.${val}`
-        ),
-        didExist: findExistingValue(
-          'AUTH_HOST',
-          'VARIABLE',
-          'ENVIRONMENT',
-          existingValues
-        ),
-        scope: 'ENVIRONMENT' as const
-      },
-      {
-        type: 'VARIABLE' as const,
         name: 'COUNTRY_CONFIG_HOST',
         value: answerOrExisting(
           allAnswers.domain,
