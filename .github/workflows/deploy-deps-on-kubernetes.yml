@@ -59,7 +59,6 @@ jobs:
             -f https://raw.githubusercontent.com/opencrvs/e2e/${{ github.ref_name }}/k8s-env/dependencies/values.yaml \
             --create-namespace \
             --timeout 15m \
-            --atomic
             --atomic; STATUS=$?;
 
           kill $STERN_PID 2>/dev/null || true
