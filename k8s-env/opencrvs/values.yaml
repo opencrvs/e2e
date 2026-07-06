@@ -7,9 +7,6 @@ hpa:
   enabled: false
 
 hostname: e2e-k8s.opencrvs.dev
-influxdb:
-  host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local
-  db: {{STACK}}_ocrvs
 elasticsearch:
   auth_mode: auto
   port: 9200
