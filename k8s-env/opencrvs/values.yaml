@@ -23,24 +23,6 @@ minio:
   host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
   external_url: minio.e2e-k8s.opencrvs.dev
 
-mongodb:
-  auth_mode: auto
-  host: mongodb-0.mongodb.opencrvs-deps-e2e.svc.cluster.local
-  databases:
-    - prefix: USER_MGNT
-      db: {{STACK}}--user-mgnt
-      user: {{STACK}}--user-mgnt
-    - prefix: HEARTH
-      db: {{STACK}}--hearth-dev
-      user: {{STACK}}--hearth
-      roles: "[{ role: 'readWrite', db: '{{STACK}}--hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: '{{STACK}}--hearth-dev' }]"
-    - prefix: PERFORMANCE
-      db: {{STACK}}--performance
-      user: {{STACK}}--performance
-    - prefix: EVENTS
-      db: {{STACK}}--events
-      user: {{STACK}}--events
-      roles: "[{ role: 'readWrite', db: '{{STACK}}--events' }, {role: 'read', db: '{{STACK}}--user-mgnt'}]"
 redis:
   auth_mode: use_secret
   host: redis-0.redis.opencrvs-deps-e2e.svc.cluster.local

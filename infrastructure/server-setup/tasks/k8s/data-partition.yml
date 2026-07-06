@@ -74,30 +74,30 @@
     - is_mounted.rc != 0
 
   # Create data directories
-- name: Check mongo data directory
+- name: Check postgres data directory
   stat:
-    path: /data/mongo
-  register: mongo_data
+    path: /data/postgres
+  register: postgres_data
 
-- name: 'Create mongo data directory'
+- name: 'Create postgres data directory'
   file:
-    path: /data/mongo
+    path: /data/postgres
     state: directory
-  when: not mongo_data.stat.exists
+  when: not postgres_data.stat.exists
 
-- name: Check mongo data backup directory
+- name: Check postgres data backup directory
   stat:
-    path: /data/backups/mongo
-  register: mongo_data_backup
+    path: /data/backups/postgres
+  register: postgres_data_backup
 
-- name: 'Create mongo backup directory'
+- name: 'Create postgres backup directory'
   file:
-    path: /data/backups/mongo
+    path: /data/backups/postgres
     state: directory
     group: 1000
     owner: 1000
     mode: g+rwx
-  when: not mongo_data_backup.stat.exists
+  when: not postgres_data_backup.stat.exists
 
 - name: 'Create traefik data directory'
   file:
