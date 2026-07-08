@@ -258,8 +258,15 @@ jobs:
       ENV: ${{ github.event.client_payload.stack || inputs.stack }}
     if: "!cancelled() && needs.test.result == 'success' && inputs.keep-e2e != 'true' && inputs.keep-e2e != true && github.event.client_payload.keep-e2e != 'true' && github.event.client_payload.keep-e2e != true"
     steps:
-      - name: Checkout repo
+      - name: Checkout OpenCRVS helm charts from core repository ${{ inputs.core-image-tag }}
         uses: actions/checkout@v6
+        with:
+          repository: opencrvs/opencrvs-core
+          path: core
+          ref: ${{ inputs.core-branch }}
+      - name: Verify branch status ${{ inputs.core-branch }}
+        working-directory: core
+        run: git status
       - name: Get helm release values and Quote specific fields that are commonly numeric
         id: get-values
         run: |
@@ -269,10 +276,10 @@ jobs:
           kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
           helm template -f /tmp/opencrvs-${ENV}.json \
               --set data_cleanup.enabled=true \
-              --set image.tag="$CORE_IMAGE_TAG" \
+              --set image.tag="${{ inputs.core-image-tag }}" \
               --namespace opencrvs-${ENV} \
               -s templates/data-cleanup-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services:${OPENCRVS_CHART_VERSION} | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+              core/charts/opencrvs-services/ | kubectl apply -n opencrvs-${ENV} --wait=true -f -
           sleep 30;
           kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
           kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
