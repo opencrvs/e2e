@@ -40,6 +40,9 @@ concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
   cancel-in-progress: true
 
+env:
+  OPENCRVS_CHART_VERSION: "v2.1.0"
+
 jobs:
   debug:
     name: Debug output
@@ -269,7 +272,7 @@ jobs:
               --set image.tag="$CORE_IMAGE_TAG" \
               --namespace opencrvs-${ENV} \
               -s templates/data-cleanup-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+              oci://ghcr.io/opencrvs/opencrvs-services:${OPENCRVS_CHART_VERSION} | kubectl apply -n opencrvs-${ENV} --wait=true -f -
           sleep 30;
           kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
           kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
