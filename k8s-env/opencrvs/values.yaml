@@ -71,7 +71,13 @@ client:
    CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
 countryconfig:
   image:
-    name: opencrvs/opencrvs-testland
+    # testland (packages/testland in opencrvs-core), published to ghcr by core's
+    # image matrix. No "/" in the name => inherits platform.repository
+    # (ghcr.io/opencrvs), resolving to ghcr.io/opencrvs/ocrvs-testland (public,
+    # no pull secret needed). The companion assets image consumed by the
+    # data-migration-analytics hook resolves to ocrvs-testland:<tag>-assets.
+    name: ocrvs-testland
+    # tag is overridden at deploy time via --set countryconfig.image.tag=<core sha>
     tag: develop
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
