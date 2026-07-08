@@ -1,16 +1,12 @@
 name: 01. Deploy & run E2E
-run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}, testland: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }})'
+run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }})'
 on:
   repository_dispatch:
     types: [run_e2e]
   workflow_dispatch:
     inputs:
       core-image-tag:
-        description: Core image tag
-        required: true
-        default: 'v2.0.0'
-      countryconfig-image-tag:
-        description: Your Country Config DockerHub image tag
+        description: Core image tag (also tags the testland image — testland ships in core)
         required: true
         default: 'v2.0.0'
       stack:
@@ -41,7 +37,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OPENCRVS_CHART_VERSION: "v2.0.0"
+  OPENCRVS_CHART_VERSION: 'v2.0.0'
 
 jobs:
   debug:
@@ -77,28 +73,44 @@ jobs:
     name: Cache Node.js dependencies
     runs-on: ubuntu-24.04
     steps:
+      # testland resolves @opencrvs/toolkit as a yarn workspace, so toolkit and
+      # its build inputs (commons, events) must be checked out and built from
+      # the same core ref — otherwise yarn would fall back to the npm-published
+      # toolkit and tests would not see the PR's toolkit changes.
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-testland'
-          fetch-depth: 0
+          repository: 'opencrvs/opencrvs-core'
+          ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
+          sparse-checkout: |
+            packages/testland
+            packages/toolkit
+            packages/commons
+            packages/events
 
-      - name: Checkout country branch
-        run: |
-          git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-      - name: Set up Node.js from country .nvmrc
+      # Cone-mode sparse checkout always includes root files, so the monorepo
+      # root .nvmrc is available even though packages/testland has none.
+      - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
+      # Root yarn workspace install hoists dependencies to the repo-root
+      # node_modules, so that (plus each package's local node_modules) is what
+      # has to be cached — not just packages/testland. Build outputs are not
+      # cached; the toolkit chain rebuilds in every job (fast).
       - name: Cache Node.js dependencies
         uses: actions/cache@v6
         id: cache
         with:
           path: |
             node_modules
+            packages/testland/node_modules
+            packages/toolkit/node_modules
+            packages/commons/node_modules
+            packages/events/node_modules
             ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -109,13 +121,14 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: yarn
+
       - uses: nick-fields/retry@v4
         name: Install Playwright Browsers
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           timeout_minutes: 10
           max_attempts: 3
-          command: npx playwright install --with-deps
+          command: cd packages/testland && npx playwright install --with-deps
 
   deploy:
     uses: ./.github/workflows/k8s-deploy.yml
@@ -125,7 +138,6 @@ jobs:
       core-image-tag: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}
       core-branch: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
       branch: ${{ github.event.client_payload.branch || inputs.branch }}
-      countryconfig-image-tag: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
@@ -138,7 +150,7 @@ jobs:
       max-parallel: 15
       fail-fast: false
       matrix:
-      # Since we are not yet in a place where we can reliably run all tests in parallel, we will run the slowest ones first
+        # Since we are not yet in a place where we can reliably run all tests in parallel, we will run the slowest ones first
         shard:
           [
             20,
@@ -160,19 +172,21 @@ jobs:
             6,
             10,
             11,
-            13,
+            13
           ]
     name: shard-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-testland'
-          fetch-depth: 0
+          repository: 'opencrvs/opencrvs-core'
+          ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
+          sparse-checkout: |
+            packages/testland
+            packages/toolkit
+            packages/commons
+            packages/events
 
-      - name: Checkout country branch
-        run: |
-          git checkout ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
-      - name: Set up Node.js from country .nvmrc
+      - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
@@ -183,22 +197,29 @@ jobs:
         with:
           path: |
             node_modules
+            packages/testland/node_modules
+            packages/toolkit/node_modules
+            packages/commons/node_modules
+            packages/events/node_modules
             ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: yarn
+      - name: Build toolkit (with commons and events)
+        run: yarn --cwd packages/toolkit build:all
       - uses: nick-fields/retry@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           timeout_minutes: 10
           max_attempts: 3
-          command: npx playwright install --with-deps
+          command: cd packages/testland && npx playwright install --with-deps
       - name: Run Playwright Tests
+        working-directory: packages/testland
         run: |
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
@@ -207,6 +228,7 @@ jobs:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}'
       - id: ctrf_check
         if: '!cancelled()'
+        working-directory: packages/testland
         run: |
           [ -d ctrf ] && \
            echo "ctrf=true" >> $GITHUB_OUTPUT || \
@@ -214,7 +236,7 @@ jobs:
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: './ctrf/*.json'
+          report-path: './packages/testland/ctrf/*.json'
           github-report: true
           summary-report: true
           test-report: true
@@ -224,7 +246,7 @@ jobs:
         if: '!cancelled()'
         with:
           name: playwright-report-${{ github.event.client_payload.stack || inputs.stack }}-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: playwright-report/
+          path: packages/testland/playwright-report/
           retention-days: 30
 
   get-previous-run:
