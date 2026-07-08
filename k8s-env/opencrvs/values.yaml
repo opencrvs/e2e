@@ -89,7 +89,7 @@ client:
    CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
 countryconfig:
   image:
-    name: opencrvs/ocrvs-testland
+    name: opencrvs/opencrvs-testland
     tag: develop
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
