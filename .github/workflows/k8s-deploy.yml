@@ -1,11 +1,11 @@
 name: 04. Deploy OpenCRVS
-run-name: 'Deploy OpenCRVS (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})'
+run-name: 'Deploy OpenCRVS (core: ${{ inputs.core-image-tag }}, testland: ${{ inputs.testland-image-tag }})'
 on:
   workflow_call:
     inputs:
       core-image-tag:
         type: string
-      countryconfig-image-tag:
+      testland-image-tag:
         type: string
       environment:
         type: string
@@ -24,8 +24,8 @@ on:
         description: "Tag of the core image"
         required: true
         default: 'develop'
-      countryconfig-image-tag:
-        description: "Tag of the countryconfig image"
+      testland-image-tag:
+        description: "Tag of the testland image"
         required: true
         default: 'develop'
       environment:
@@ -51,7 +51,9 @@ jobs:
     env:
       ENV: ${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
-      COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
+      # Chart-facing var name kept (feeds --set countryconfig.image.tag); value
+      # is now the testland image tag (== core sha).
+      COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.testland-image-tag }}
     runs-on:
       - self-hosted
       - k8s
@@ -74,7 +76,7 @@ jobs:
         run: |
           echo "Deploying environment to https://${{ inputs.environment }}.e2e-k8s.${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
           echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Testland image tag: ${{ inputs.testland-image-tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Print deployment parameters
         run: |
