@@ -257,19 +257,19 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
-      - name: Update k8s-env/opencrvs/values.yaml
+      - name: Get helm release values and Quote specific fields that are commonly numeric
+        id: get-values
         run: |
-          sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
-                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          helm get values opencrvs -n opencrvs-${ENV} -ojson > /tmp/opencrvs-${ENV}.json
       - name: Cleanup environment
         run: |
           kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
-          helm template -f k8s-env/opencrvs/values.yaml \
+          helm template -f /tmp/opencrvs-${ENV}.json \
               --set data_cleanup.enabled=true \
               --set image.tag="$CORE_IMAGE_TAG" \
               --namespace opencrvs-${ENV} \
               -s templates/data-cleanup-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services:v2.0.0 | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
           sleep 30;
           kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
           kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
