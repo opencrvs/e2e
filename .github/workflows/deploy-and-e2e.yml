@@ -1,5 +1,5 @@
 name: 01. Deploy & run E2E
-run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}, farajaland: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }})'
+run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }}, testland: ${{ github.event.client_payload.countryconfig-image-tag || inputs.countryconfig-image-tag }})'
 on:
   repository_dispatch:
     types: [run_e2e]
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-farajaland'
+          repository: 'opencrvs/opencrvs-testland'
           fetch-depth: 0
 
       - name: Checkout country branch
@@ -88,7 +88,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: cache
         with:
           path: |
@@ -163,7 +163,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-farajaland'
+          repository: 'opencrvs/opencrvs-testland'
           fetch-depth: 0
 
       - name: Checkout country branch
@@ -175,7 +175,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Cache Node.js dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         id: cache
         with:
           path: |
@@ -257,19 +257,19 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
-      - name: Update k8s-env/opencrvs/values.yaml
+      - name: Get helm release values and Quote specific fields that are commonly numeric
+        id: get-values
         run: |
-          sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
-                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+          helm get values opencrvs -n opencrvs-${ENV} -ojson > /tmp/opencrvs-${ENV}.json
       - name: Cleanup environment
         run: |
           kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
-          helm template -f k8s-env/opencrvs/values.yaml \
+          helm template -f /tmp/opencrvs-${ENV}.json \
               --set data_cleanup.enabled=true \
               --set image.tag="$CORE_IMAGE_TAG" \
               --namespace opencrvs-${ENV} \
               -s templates/data-cleanup-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services:v2.0.0 | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} --wait=true -f -
           sleep 30;
           kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
           kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
