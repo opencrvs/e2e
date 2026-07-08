@@ -68,7 +68,7 @@ jobs:
                 --set data_cleanup.env.make_bucket=false \
                 --namespace ${{ matrix.namespace }} \
                 -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${{ matrix.namespace }} --wait=true -f -
+                oci://ghcr.io/opencrvs/opencrvs-services:v2.0.0 | kubectl apply -n ${{ matrix.namespace }} --wait=true -f -
             sleep 30;
             kubectl logs job/data-cleanup -f --all-containers=true -n ${{ matrix.namespace }} || true
             kubectl wait --for=condition=complete job/data-cleanup -n ${{ matrix.namespace }} --timeout=600s;

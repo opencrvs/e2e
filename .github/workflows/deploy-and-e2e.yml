@@ -8,11 +8,11 @@ on:
       core-image-tag:
         description: Core image tag
         required: true
-        default: 'v1.9.12'
+        default: 'v2.0.0'
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
-        default: 'v1.9.12'
+        default: 'v2.0.0'
       stack:
         type: string
         description: Stack name
@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OPENCRVS_CHART_VERSION: "v2.1.0"
+  OPENCRVS_CHART_VERSION: "v2.0.0"
 
 jobs:
   debug:
