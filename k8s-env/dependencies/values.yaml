@@ -12,11 +12,7 @@ minio:
 elasticsearch:
   use_default_credentials: false
 
-mongodb:
-  use_default_credentials: false
-
 postgres:
-  image: chumaky/postgres_mongo_fdw:17.6_fdw5.5.2
   use_default_credentials: false
 
 monitoring:
