@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-farajaland'
+          repository: 'opencrvs/opencrvs-testland'
           fetch-depth: 0
 
       - name: Checkout country branch
@@ -162,7 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          repository: 'opencrvs/opencrvs-farajaland'
+          repository: 'opencrvs/opencrvs-testland'
           fetch-depth: 0
 
       - name: Checkout country branch
