@@ -60,15 +60,17 @@ jobs:
           id: get-values
           run: |
             helm get values opencrvs -n ${{ matrix.namespace }} -ojson > /tmp/${{ matrix.namespace }}.json
+        # FIXME: utilities.image.tag remove after v2.1.0 release
         - name: Cleanup environment
           run: |
             kubectl delete job -n ${{ matrix.namespace }} --ignore-not-found=true data-cleanup
             helm template -f /tmp/${{ matrix.namespace }}.json \
                 --set data_cleanup.enabled=true \
                 --set data_cleanup.env.make_bucket=false \
+                --set utilities.image.tag=35b1e0f \
                 --namespace ${{ matrix.namespace }} \
                 -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services:v2.0.0 | kubectl apply -n ${{ matrix.namespace }} --wait=true -f -
+                oci://ghcr.io/opencrvs/opencrvs-services:v2.1.0 | kubectl apply -n ${{ matrix.namespace }} --wait=true -f -
             sleep 30;
             kubectl logs job/data-cleanup -f --all-containers=true -n ${{ matrix.namespace }} || true
             kubectl wait --for=condition=complete job/data-cleanup -n ${{ matrix.namespace }} --timeout=600s;
