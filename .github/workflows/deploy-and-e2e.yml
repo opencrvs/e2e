@@ -82,6 +82,7 @@ jobs:
           repository: 'opencrvs/opencrvs-core'
           ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
           sparse-checkout: |
+            development-environment
             packages/testland
             packages/toolkit
             packages/commons
@@ -181,6 +182,7 @@ jobs:
           repository: 'opencrvs/opencrvs-core'
           ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
           sparse-checkout: |
+            development-environment
             packages/testland
             packages/toolkit
             packages/commons
