@@ -8,7 +8,7 @@ on:
 jobs:
   discover_cleanup:
     name: List namespaces to cleanup
-    runs-on: self-hosted
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       namespaces: ${{ steps.discover_ns.outputs.namespaces }}
     steps:
@@ -45,7 +45,7 @@ jobs:
           printf '\t- %s\n' "${NAMESPACES_TO_CLEANUP[@]}"
   cleanup:
     needs: discover_cleanup
-    runs-on: self-hosted
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: ${{ needs.discover_cleanup.outputs.namespaces != '[""]' && needs.discover_cleanup.outputs.namespaces != '[]' && needs.discover_cleanup.outputs.namespaces != '' }}
     strategy:
       max-parallel: 10

@@ -42,7 +42,7 @@ env:
 jobs:
   debug:
     name: Debug output
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Print Entire Event Payload
         run: |
@@ -71,7 +71,7 @@ jobs:
 
   cache-node-js:
     name: Cache Node.js dependencies
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       # testland resolves @opencrvs/toolkit as a yarn workspace, so toolkit and
       # its build inputs (commons, events) must be checked out and built from
@@ -146,7 +146,7 @@ jobs:
   test:
     needs: [debug, deploy, cache-node-js]
     if: "!cancelled() && needs.deploy.result == 'success'"
-    runs-on: ubuntu-24.04
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       max-parallel: 15
       fail-fast: false
@@ -252,7 +252,7 @@ jobs:
           retention-days: 30
 
   get-previous-run:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       previous_run_result: ${{ steps.set-output.outputs.result }}
 
