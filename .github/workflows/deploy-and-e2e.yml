@@ -73,20 +73,29 @@ jobs:
     name: Cache Node.js dependencies
     runs-on: ubuntu-24.04
     steps:
-      # testland resolves @opencrvs/toolkit as a yarn workspace, so toolkit and
-      # its build inputs (commons, events) must be checked out and built from
-      # the same core ref — otherwise yarn would fall back to the npm-published
-      # toolkit and tests would not see the PR's toolkit changes.
+      # testland resolves @opencrvs/toolkit as a workspace package, so toolkit
+      # and its build inputs (commons, events) must be checked out and built
+      # from the same core ref — otherwise the install would fall back to the
+      # npm-published toolkit and tests would not see the PR's toolkit changes.
+      # patches/ carries the workspace's pnpm patchedDependencies files, which
+      # pnpm requires to exist on every install.
       - uses: actions/checkout@v6
         with:
           repository: 'opencrvs/opencrvs-core'
           ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
           sparse-checkout: |
             development-environment
+            patches
             packages/testland
             packages/toolkit
             packages/commons
             packages/events
+
+      # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
+      # by the packageManager field); older branches still install with yarn.
+      - name: Setup pnpm
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        uses: pnpm/action-setup@v4
 
       # Cone-mode sparse checkout always includes root files, so the monorepo
       # root .nvmrc is available even though packages/testland has none.
@@ -95,10 +104,11 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      # Root yarn workspace install hoists dependencies to the repo-root
-      # node_modules, so that (plus each package's local node_modules) is what
-      # has to be cached — not just packages/testland. Build outputs are not
-      # cached; the toolkit chain rebuilds in every job (fast).
+      # The root workspace install materializes dependencies under the
+      # repo-root node_modules, so that (plus each package's local
+      # node_modules) is what has to be cached — not just packages/testland.
+      # Build outputs are not cached; the toolkit chain rebuilds in every
+      # job (fast).
       - name: Cache Node.js dependencies
         uses: actions/cache@v6
         id: cache
@@ -111,7 +121,7 @@ jobs:
             packages/events/node_modules
             ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -121,7 +131,7 @@ jobs:
         with:
           timeout_minutes: 10
           max_attempts: 3
-          command: yarn
+          command: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
 
       - uses: nick-fields/retry@v4
         name: Install Playwright Browsers
@@ -183,10 +193,17 @@ jobs:
           ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
           sparse-checkout: |
             development-environment
+            patches
             packages/testland
             packages/toolkit
             packages/commons
             packages/events
+
+      # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
+      # by the packageManager field); older branches still install with yarn.
+      - name: Setup pnpm
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        uses: pnpm/action-setup@v4
 
       - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
@@ -205,15 +222,15 @@ jobs:
             packages/events/node_modules
             ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: yarn
+        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
       - name: Build toolkit (with commons and events)
-        run: yarn --cwd packages/toolkit build:all
+        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
       - uses: nick-fields/retry@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
