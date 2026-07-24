@@ -1,4 +1,5 @@
-chart_dev_mode: false
+
+hostname: e2e-k8s.opencrvs.dev
 
 ingress:
   tls_resolver: letsencrypt
@@ -6,7 +7,12 @@ ingress:
 hpa:
   enabled: false
 
-hostname: e2e-k8s.opencrvs.dev
+otel:
+  enabled: true
+  deployment_environment: {{STACK}}
+  exporter_otlp_endpoint: "http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4318"
+
+
 elasticsearch:
   auth_mode: auto
   port: 9200
