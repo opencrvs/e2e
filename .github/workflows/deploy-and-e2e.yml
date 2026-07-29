@@ -71,7 +71,7 @@ jobs:
 
   cache-node-js:
     name: Cache Node.js dependencies
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted-e2e
     steps:
       # testland resolves @opencrvs/toolkit as a workspace package, so toolkit
       # and its build inputs (commons, events) must be checked out and built
@@ -156,7 +156,7 @@ jobs:
   test:
     needs: [debug, deploy, cache-node-js]
     if: "!cancelled() && needs.deploy.result == 'success'"
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted-e2e
     strategy:
       max-parallel: 15
       fail-fast: false
@@ -187,56 +187,56 @@ jobs:
           ]
     name: shard-${{ matrix.shard }}
     steps:
-      - uses: actions/checkout@v6
-        with:
-          repository: 'opencrvs/opencrvs-core'
-          ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
-          sparse-checkout: |
-            development-environment
-            patches
-            packages/testland
-            packages/toolkit
-            packages/commons
-            packages/events
+      # - uses: actions/checkout@v6
+      #   with:
+      #     repository: 'opencrvs/opencrvs-core'
+      #     ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
+      #     sparse-checkout: |
+      #       development-environment
+      #       patches
+      #       packages/testland
+      #       packages/toolkit
+      #       packages/commons
+      #       packages/events
 
       # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
       # by the packageManager field); older branches still install with yarn.
-      - name: Setup pnpm
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
-        uses: pnpm/action-setup@v4
+      # - name: Setup pnpm
+      #   if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+      #   uses: pnpm/action-setup@v4
 
-      - name: Set up Node.js from core .nvmrc
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
+      # - name: Set up Node.js from core .nvmrc
+      #   uses: actions/setup-node@v6
+      #   with:
+      #     node-version-file: .nvmrc
 
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v6
-        id: cache
-        with:
-          path: |
-            node_modules
-            packages/testland/node_modules
-            packages/toolkit/node_modules
-            packages/commons/node_modules
-            packages/events/node_modules
-            ~/.cache/yarn/v6
-            ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+      # - name: Cache Node.js dependencies
+      #   uses: actions/cache@v6
+      #   id: cache
+      #   with:
+      #     path: |
+      #       node_modules
+      #       packages/testland/node_modules
+      #       packages/toolkit/node_modules
+      #       packages/commons/node_modules
+      #       packages/events/node_modules
+      #       ~/.cache/yarn/v6
+      #       ~/.cache/ms-playwright
+      #     key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-node-
 
-      - name: Install Dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
-      - name: Build toolkit (with commons and events)
-        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
-      - uses: nick-fields/retry@v4
-        if: steps.cache.outputs.cache-hit != 'true'
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: cd packages/testland && npx playwright install --with-deps
+      # - name: Install Dependencies
+      #   if: steps.cache.outputs.cache-hit != 'true'
+      #   run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
+      # - name: Build toolkit (with commons and events)
+      #   run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
+      # - uses: nick-fields/retry@v4
+      #   if: steps.cache.outputs.cache-hit != 'true'
+      #   with:
+      #     timeout_minutes: 10
+      #     max_attempts: 3
+      #     command: cd packages/testland && npx playwright install --with-deps
       - name: Run Playwright Tests
         working-directory: packages/testland
         run: |
