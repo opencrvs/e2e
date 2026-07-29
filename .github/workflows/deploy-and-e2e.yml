@@ -205,10 +205,10 @@ jobs:
       #   if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
       #   uses: pnpm/action-setup@v4
 
-      # - name: Set up Node.js from core .nvmrc
-      #   uses: actions/setup-node@v6
-      #   with:
-      #     node-version-file: .nvmrc
+      - name: Set up Node.js from core .nvmrc
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
 
       # - name: Cache Node.js dependencies
       #   uses: actions/cache@v6
