@@ -91,6 +91,13 @@ jobs:
             packages/commons
             packages/events
 
+      # Cone-mode sparse checkout always includes root files, so the monorepo
+      # root .nvmrc is available even though packages/testland has none.
+      - name: Set up Node.js from core .nvmrc
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
       # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
       # by the packageManager field); older branches still install with yarn.
       - name: Setup pnpm
@@ -100,13 +107,6 @@ jobs:
       - name: Configure pnpm store
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         run: pnpm config set store-dir .pnpm-store
-
-      # Cone-mode sparse checkout always includes root files, so the monorepo
-      # root .nvmrc is available even though packages/testland has none.
-      - name: Set up Node.js from core .nvmrc
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
 
       # The root workspace install materializes dependencies under the
       # repo-root node_modules, so that (plus each package's local
@@ -226,14 +226,14 @@ jobs:
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@v4
 
-      - name: Configure pnpm store
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
-        run: pnpm config set store-dir .pnpm-store
-
       - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
+
+      - name: Configure pnpm store
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm config set store-dir .pnpm-store
 
       - name: Restore Node.js dependency cache
         uses: actions/cache/restore@v6
