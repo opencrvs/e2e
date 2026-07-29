@@ -187,17 +187,17 @@ jobs:
           ]
     name: shard-${{ matrix.shard }}
     steps:
-      # - uses: actions/checkout@v6
-      #   with:
-      #     repository: 'opencrvs/opencrvs-core'
-      #     ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
-      #     sparse-checkout: |
-      #       development-environment
-      #       patches
-      #       packages/testland
-      #       packages/toolkit
-      #       packages/commons
-      #       packages/events
+      - uses: actions/checkout@v6
+        with:
+          repository: 'opencrvs/opencrvs-core'
+          ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
+          sparse-checkout: |
+            development-environment
+            patches
+            packages/testland
+            packages/toolkit
+            packages/commons
+            packages/events
 
       # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
       # by the packageManager field); older branches still install with yarn.
