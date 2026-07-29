@@ -12,7 +12,7 @@ on:
           - "e2e"
 
 env:
-  DEPENDENCIES_CHART_VERSION: "v2.0.0"
+  DEPENDENCIES_CHART_VERSION: "v1.9.16"
   TRAEFIK_CHART_VERSION: "39.0.0"
 
 jobs:
