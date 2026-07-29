@@ -97,6 +97,10 @@ jobs:
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@v4
 
+      - name: Configure pnpm store
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm config set store-dir .pnpm-store
+
       # Cone-mode sparse checkout always includes root files, so the monorepo
       # root .nvmrc is available even though packages/testland has none.
       - name: Set up Node.js from core .nvmrc
@@ -109,8 +113,8 @@ jobs:
       # node_modules) is what has to be cached — not just packages/testland.
       # Build outputs are not cached; the toolkit chain rebuilds in every
       # job (fast).
-      - name: Cache Node.js dependencies
-        uses: actions/cache@v6
+      - name: Restore Node.js dependency cache
+        uses: actions/cache/restore@v6
         id: cache
         with:
           path: |
@@ -119,10 +123,12 @@ jobs:
             packages/toolkit/node_modules
             packages/commons/node_modules
             packages/events/node_modules
+            .pnpm-store
             ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('.nvmrc', 'yarn.lock', 'pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('.nvmrc') }}-
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
@@ -140,6 +146,21 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: cd packages/testland && npx playwright install --with-deps
+
+      - name: Save Node.js dependency cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            node_modules
+            packages/testland/node_modules
+            packages/toolkit/node_modules
+            packages/commons/node_modules
+            packages/events/node_modules
+            .pnpm-store
+            ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
   deploy:
     uses: ./.github/workflows/k8s-deploy.yml
@@ -205,38 +226,47 @@ jobs:
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@v4
 
+      - name: Configure pnpm store
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        run: pnpm config set store-dir .pnpm-store
+
       - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
-      # - name: Cache Node.js dependencies
-      #   uses: actions/cache@v6
-      #   id: cache
-      #   with:
-      #     path: |
-      #       node_modules
-      #       packages/testland/node_modules
-      #       packages/toolkit/node_modules
-      #       packages/commons/node_modules
-      #       packages/events/node_modules
-      #       ~/.cache/yarn/v6
-      #       ~/.cache/ms-playwright
-      #     key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-node-
+      - name: Restore Node.js dependency cache
+        uses: actions/cache/restore@v6
+        id: cache
+        with:
+          path: |
+            node_modules
+            packages/testland/node_modules
+            packages/toolkit/node_modules
+            packages/commons/node_modules
+            packages/events/node_modules
+            .pnpm-store
+            ~/.cache/yarn/v6
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-node-${{ hashFiles('.nvmrc', 'yarn.lock', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('.nvmrc') }}-
+            ${{ runner.os }}-node-
 
-      # - name: Install Dependencies
-      #   if: steps.cache.outputs.cache-hit != 'true'
-      #   run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
-      # - name: Build toolkit (with commons and events)
-      #   run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
-      # - uses: nick-fields/retry@v4
-      #   if: steps.cache.outputs.cache-hit != 'true'
-      #   with:
-      #     timeout_minutes: 10
-      #     max_attempts: 3
-      #     command: cd packages/testland && npx playwright install --with-deps
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
+
+      - name: Build toolkit (with commons and events)
+        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
+
+      - uses: nick-fields/retry@v4
+        name: Install Playwright Browsers
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: cd packages/testland && npx playwright install --with-deps
       - name: Run Playwright Tests
         working-directory: packages/testland
         run: |
