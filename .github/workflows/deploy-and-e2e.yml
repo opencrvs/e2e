@@ -63,7 +63,7 @@ jobs:
   reset-data:
     needs: [check-env-existance]
     if: needs.check-env-existance.outputs.exists == 'true' && (github.event.client_payload.reset || inputs.reset || true)
-    uses: ./.github/workflows/k8s-reset-data.yml
+    uses: ./.github/workflows/clear-all-data.yml
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       core-branch: ${{ inputs.core-branch }}
@@ -153,8 +153,16 @@ jobs:
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
     secrets: inherit
 
+  seed-data:
+    needs: [deploy]
+    uses: ./.github/workflows/seed-data.yml
+    with:
+      environment: ${{ github.event.client_payload.stack || inputs.stack }}
+      core-branch: ${{ inputs.core-branch }}
+    secrets: inherit
+
   test:
-    needs: [debug, deploy, cache-node-js]
+    needs: [debug, deploy, cache-node-js, seed-data]
     if: "!cancelled() && needs.deploy.result == 'success'"
     runs-on: ubuntu-24.04
     strategy:
