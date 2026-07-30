@@ -1,10 +1,10 @@
-name: Reset environment
-run-name: "Reset ${{ inputs.environment }} environment"
+name: Seed data (k8s)
+run-name: "Seed data to ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target environment"
+        description: 'Target environment'
         required: true
         type: string
       chart-branch:
@@ -19,10 +19,10 @@ on:
         type: string
 jobs:
   prepare:
-    outputs:
-      values-file: ${{ steps.get-values.outputs.values-file }}
     env:
       namespace: opencrvs-${{ inputs.environment }}
+    outputs:
+      values-file: ${{ steps.get-values.outputs.values-file }}
     runs-on: [self-hosted, k8s, e2e]
     steps:
       - name: Get helm release values and Quote specific fields that are commonly numeric
@@ -46,7 +46,8 @@ jobs:
           name: opencrvs-${{ inputs.environment }}-values-file
           path: /tmp/opencrvs-${{ inputs.environment }}.json
           retention-days: 1
-  reset:
+          overwrite: true
+  seed:
     name: ${{ matrix.job-name }}
     needs: prepare
     env:
@@ -57,12 +58,7 @@ jobs:
       fail-fast: true  # Stop on first failure
       matrix:
         job-name:
-          - data-cleanup
-          - postgres-on-deploy
-          - data-migration
-          - data-migration-analytics
           - data-seed
-          - elasticsearch-reindex
     steps:
         - name: Checkout repo
           uses: actions/checkout@v6
@@ -83,18 +79,23 @@ jobs:
         - name: Create job ${{ matrix.job-name }} from helm template and apply it
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
-            helm template -f ${{ needs.prepare.outputs.values-file }} \
-                --set data_cleanup.enabled=true \
-                --set data_seed.enabled=true \
-                --namespace ${namespace} \
-                -s templates/${{ matrix.job-name }}-job.yaml \
-                infrastructure/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+            echo "Templating with version: ${{ inputs.chart-branch }}"
+            helm template \
+              --values ${{ needs.prepare.outputs.values-file }} \
+              --set data_cleanup.enabled=true \
+              --set data_seed.enabled=true \
+              --set data_seed.env.ACTIVATE_USERS=true \
+              --namespace ${namespace} \
+              --show-only templates/${{ matrix.job-name }}-job.yaml \
+              infrastructure/charts/opencrvs-services \
+              | kubectl apply -n ${namespace} --wait=true -f -
+            echo "✅ ${{ matrix.job-name }} job created successfully"
         - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
               kubectl wait --for=condition=ready pod -ljob-name=${{ matrix.job-name }} --timeout=300s -n ${namespace} && \
               kubectl logs job/${{ matrix.job-name }} --all-containers -f -n ${namespace} && \
-              touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break; 
+              touch /tmp/logs_stramed-${namespace}-${{ matrix.job-name }}.txt || break;
               sleep 1; done &
             echo "---------------------- Waiting for job completion ----------------------"
             kubectl wait --for=condition=complete job/${{ matrix.job-name }} -n ${namespace} --timeout=600s; status=$? || true
