@@ -132,7 +132,7 @@ jobs:
             --set-string countryconfig.env.MOSIP_INTEGRATION_CLIENT_ID="$OPENCRVS_MOSIP_CLIENT_ID" \
             --set-string countryconfig.env.MOSIP_INTEGRATION_CLIENT_SECRET="$OPENCRVS_MOSIP_CLIENT_SECRET" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
-            --set data_seed.enabled=true \
+            --set data_seed.enabled=false \
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
