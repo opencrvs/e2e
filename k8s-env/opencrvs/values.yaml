@@ -1,3 +1,14 @@
+validation:
+  enabled: true
+  timeout_seconds: 5
+  active_deadline_seconds: 300
+  monitoring_enabled: false
+  smtp_secret_name: smtp-config
+  allow_insecure_https: true
+  preflight:
+    enabled: true
+  postdeploy:
+    enabled: true
 
 hostname: e2e-k8s.opencrvs.dev
 
