@@ -46,6 +46,8 @@ jobs:
   cleanup:
     needs: discover_cleanup
     runs-on: self-hosted
+    env:
+      namespace: ${{ matrix.namespace }}
     if: ${{ needs.discover_cleanup.outputs.namespaces != '[""]' && needs.discover_cleanup.outputs.namespaces != '[]' && needs.discover_cleanup.outputs.namespaces != '' }}
     strategy:
       max-parallel: 10
@@ -59,23 +61,29 @@ jobs:
         - name: Get helm release values and Quote specific fields that are commonly numeric
           id: get-values
           run: |
-            helm get values opencrvs -n ${{ matrix.namespace }} -ojson > /tmp/${{ matrix.namespace }}.json
+            helm get values opencrvs -n $namespace -ojson > /tmp/${namespace}.json || FAILED=true
+            if [ "$FAILED" = true ]; then
+              echo "⚠️ Warning: No OpenCRVS Helm release found in namespace ${namespace}"
+              ENV=${namespace/opencrvs-/}
+              sed -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml | yq -ojson > /tmp/${namespace}.json
+            fi
         # FIXME: utilities.image.tag remove after v2.1.0 release
         - name: Cleanup environment
           run: |
-            kubectl delete job -n ${{ matrix.namespace }} --ignore-not-found=true data-cleanup
-            helm template -f /tmp/${{ matrix.namespace }}.json \
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
+            helm template -f /tmp/${namespace}.json \
                 --set data_cleanup.enabled=true \
                 --set data_cleanup.env.make_bucket=false \
                 --set utilities.image.tag=35b1e0f \
-                --namespace ${{ matrix.namespace }} \
+                --namespace ${namespace} \
                 -s templates/data-cleanup-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services:v2.1.0 | kubectl apply -n ${{ matrix.namespace }} --wait=true -f -
+                oci://ghcr.io/opencrvs/opencrvs-services:v2.1.0 | kubectl apply -n ${namespace} --wait=true -f -
             sleep 30;
-            kubectl logs job/data-cleanup -f --all-containers=true -n ${{ matrix.namespace }} || true
-            kubectl wait --for=condition=complete job/data-cleanup -n ${{ matrix.namespace }} --timeout=600s;
+            kubectl logs job/data-cleanup -f --all-containers=true -n ${namespace} || true
+            kubectl wait --for=condition=complete job/data-cleanup -n ${namespace} --timeout=600s;
         - name: Uninstall helm release
-          run: helm uninstall opencrvs -n ${{ matrix.namespace }} || echo "Helm release is not installed"
-        - name: Delete namespace ${{ matrix.namespace }}
+          run: helm uninstall opencrvs -n ${namespace} || echo "Helm release is not installed"
+        - name: Delete namespace ${namespace}
           if: failure()
-          run: kubectl delete ns ${{ matrix.namespace }}
+          run: kubectl delete ns ${namespace}
