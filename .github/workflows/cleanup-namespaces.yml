@@ -92,5 +92,5 @@ jobs:
         - name: Uninstall helm release
           run: helm uninstall opencrvs -n ${namespace} || echo "Helm release is not installed"
         - name: Delete namespace ${namespace}
-          if: failure()
+          if: always()
           run: kubectl delete ns ${namespace}
