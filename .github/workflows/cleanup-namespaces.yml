@@ -65,8 +65,15 @@ jobs:
             if [ "$FAILED" = true ]; then
               echo "⚠️ Warning: No OpenCRVS Helm release found in namespace ${namespace}"
               ENV=${namespace/opencrvs-/}
+              TEMPLATE_VALUES_FILE=/tmp/${namespace}.yaml
+              VALUES_FILE=/tmp/${namespace}.json
               sed -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
-                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml | yq -ojson > /tmp/${namespace}.json
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml | yq -ojson > ${TEMPLATE_VALUES_FILE}
+              if yq --version 2>&1 | grep -qi 'mikefarah'; then
+                yq -o=json '.' "${TEMPLATE_VALUES_FILE}" > "${VALUES_FILE}"
+              else
+                yq '.' "${TEMPLATE_VALUES_FILE}" > "${VALUES_FILE}"
+              fi
             fi
         # FIXME: utilities.image.tag remove after v2.1.0 release
         - name: Cleanup environment
