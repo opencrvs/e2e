@@ -89,7 +89,7 @@ jobs:
           kill %1 2>/dev/null && echo "Stopped log streaming" || true
           kubectl logs job/validate-${{ inputs.stage }} -n "${namespace}" > opencrvs-validation.log
           {
-            echo "## OpenCRVS validation"
+            echo "## OpenCRVS ${{ inputs.stage }} validation"
             echo
             awk '
               /<!-- OPENCRVS_VALIDATION_SUMMARY_START -->/ { capture=1; next }
