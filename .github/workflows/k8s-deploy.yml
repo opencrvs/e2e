@@ -41,6 +41,14 @@ on:
         required: false
         default: 'develop'
 jobs:
+  validate-predeploy:
+    uses: ./.github/workflows/validate-opencrvs.yml
+    with:
+      environment: ${{ inputs.environment }}
+      core-branch: ${{ inputs.core-branch }}
+      branch: ${{ inputs.branch }}
+      stage: predeploy
+    secrets: inherit
   deploy:
     env:
       ENV: ${{ inputs.environment }}
@@ -146,3 +154,12 @@ jobs:
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
+
+  validate-postdeploy:
+    uses: ./.github/workflows/validate-opencrvs.yml
+    with:
+      environment: ${{ inputs.environment }}
+      core-branch: ${{ inputs.core-branch }}
+      branch: ${{ inputs.branch }}
+      stage: postdeploy
+    secrets: inherit

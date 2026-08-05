@@ -1,5 +1,5 @@
 validation:
-  enabled: true
+  enabled: false
   timeout_seconds: 5
   active_deadline_seconds: 300
   monitoring_enabled: false
