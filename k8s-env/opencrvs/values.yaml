@@ -10,7 +10,7 @@ validation:
   postdeploy:
     enabled: true
 
-hostname: e2e-k8s.opencrvs.dev
+hostname: {{STACK}}.e2e-k8s.opencrvs.dev
 
 ingress:
   tls_resolver: letsencrypt
