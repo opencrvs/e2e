@@ -95,7 +95,7 @@ jobs:
       # by the packageManager field); older branches still install with yarn.
       - name: Setup pnpm
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       # Cone-mode sparse checkout always includes root files, so the monorepo
       # root .nvmrc is available even though packages/testland has none.
@@ -212,7 +212,7 @@ jobs:
       # by the packageManager field); older branches still install with yarn.
       - name: Setup pnpm
         if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node.js from core .nvmrc
         uses: actions/setup-node@v6
