@@ -50,6 +50,7 @@ jobs:
       stage: predeploy
     secrets: inherit
   deploy:
+    needs: validate-predeploy
     env:
       ENV: ${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
@@ -156,6 +157,7 @@ jobs:
           echo "No helm locks found, all is good"
 
   validate-postdeploy:
+    needs: deploy
     uses: ./.github/workflows/validate-opencrvs.yml
     with:
       environment: ${{ inputs.environment }}

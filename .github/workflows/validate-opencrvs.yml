@@ -68,6 +68,7 @@ jobs:
           helm template \
             --values k8s-env/opencrvs/values.yaml \
             --namespace ${namespace} \
+            --set platform.tag="${{ inputs.core-branch }}" \
             --set validation.enabled=true \
             --show-only templates/validate-${{ inputs.stage }}-job.yaml \
             core/charts/opencrvs-services \
