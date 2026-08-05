@@ -91,10 +91,8 @@ jobs:
             packages/commons
             packages/events
 
-      # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
-      # by the packageManager field); older branches still install with yarn.
+      # pnpm version is pinned by the packageManager field in core's package.json.
       - name: Setup pnpm
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@v4
 
       # Cone-mode sparse checkout always includes root files, so the monorepo
@@ -119,9 +117,8 @@ jobs:
             packages/toolkit/node_modules
             packages/commons/node_modules
             packages/events/node_modules
-            ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -131,7 +128,7 @@ jobs:
         with:
           timeout_minutes: 10
           max_attempts: 3
-          command: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
+          command: pnpm install --frozen-lockfile
 
       - uses: nick-fields/retry@v4
         name: Install Playwright Browsers
@@ -208,10 +205,8 @@ jobs:
             packages/commons
             packages/events
 
-      # Core branches carrying pnpm-lock.yaml install with pnpm (version pinned
-      # by the packageManager field); older branches still install with yarn.
+      # pnpm version is pinned by the packageManager field in core's package.json.
       - name: Setup pnpm
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@v4
 
       - name: Set up Node.js from core .nvmrc
@@ -229,17 +224,16 @@ jobs:
             packages/toolkit/node_modules
             packages/commons/node_modules
             packages/events/node_modules
-            ~/.cache/yarn/v6
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-node-${{ hashFiles('yarn.lock', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm install --frozen-lockfile' || 'yarn' }}
+        run: pnpm install --frozen-lockfile
       - name: Build toolkit (with commons and events)
-        run: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm --dir packages/toolkit build:all' || 'yarn --cwd packages/toolkit build:all' }}
+        run: pnpm --dir packages/toolkit build:all
       - uses: nick-fields/retry@v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
