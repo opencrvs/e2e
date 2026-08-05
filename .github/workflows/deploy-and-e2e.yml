@@ -245,7 +245,7 @@ jobs:
         run: |
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
-          npx playwright test --shard=${{ matrix.shard }}/20
+          npx playwright test --shard=${{ matrix.shard }}/20 --fully-parallel
         env:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}'
       - id: ctrf_check
