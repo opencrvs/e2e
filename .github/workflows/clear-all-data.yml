@@ -1,5 +1,5 @@
-name: 06. Reset environment
-run-name: 'Reset ${{ inputs.environment }} environment'
+name: 08. Clear all environment data
+run-name: "Clear all data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
     inputs:
@@ -57,8 +57,6 @@ jobs:
           - postgres-on-deploy
           - data-migration
           - data-migration-analytics
-          - data-seed
-          - elasticsearch-reindex
     steps:
         - name: Checkout repo
           uses: actions/checkout@v6
@@ -81,12 +79,15 @@ jobs:
         - name: Create job ${{ matrix.job-name }} from helm template and apply it
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
-            helm template -f ${{ needs.prepare.outputs.values-file }} \
-                --set data_cleanup.enabled=true \
-                --set data_seed.enabled=true \
-                --namespace ${namespace} \
-                -s templates/${{ matrix.job-name }}-job.yaml \
-                core/charts/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
+            echo "Templating with version: ${{ inputs.core-branch }}"
+            helm template \
+              --values ${{ needs.prepare.outputs.values-file }} \
+              --set data_cleanup.enabled=true \
+              --namespace ${namespace} \
+              --show-only templates/${{ matrix.job-name }}-job.yaml \
+              core/charts/opencrvs-services \
+              | kubectl apply -n ${namespace} --wait=true -f -
+            echo "✅ ${{ matrix.job-name }} job created successfully"
         - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
