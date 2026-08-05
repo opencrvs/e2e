@@ -71,7 +71,7 @@ jobs:
           repository: opencrvs/opencrvs-core
           path: core
           ref: ${{ inputs.core-branch }}
-      - name: Verify branch status ${{ inputs.core-branch }}
+      - name: Verify core branch status ${{ inputs.core-branch }}
         working-directory: core
         run: git status
       - name: Generate summary
