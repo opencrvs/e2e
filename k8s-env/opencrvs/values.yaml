@@ -10,8 +10,7 @@ hpa:
 otel:
   enabled: true
   deployment_environment: {{STACK}}
-  exporter_otlp_endpoint: "http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4318"
-  exporter_otlp_grpc_endpoint: "opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4317"
+  exporter_otlp_endpoint: "http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4317"
 
 platform:
   tag: v2.0.0
