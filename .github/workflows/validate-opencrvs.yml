@@ -11,10 +11,6 @@ on:
         options:
           - "predeploy"
           - "postdeploy"
-      environment:
-        description: 'Target environment'
-        required: true
-        type: string
       branch:
         description: 'e2e branch to use for reset jobs'
         required: false
@@ -25,9 +21,9 @@ on:
         default: 'develop'
   workflow_call:
     inputs:
-      stage:
-        type: string
       environment:
+        type: string
+      stage:
         type: string
       branch:
         type: string
@@ -45,7 +41,7 @@ jobs:
       - e2e
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.branch }}
       - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
@@ -61,10 +57,12 @@ jobs:
         run: |
           sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
                  -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+      - name: Create namespace
+        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Create job validate-${{ inputs.stage }} from helm template and apply it
         run: |
           kubectl delete job -n ${namespace} --ignore-not-found=true validate-${{ inputs.stage }}
-          echo "Templating with version: ${{ inputs.core-branch }}"
+          echo "Templating with version: ${{ inputs.core-branch }} with core image ${{ inputs.core-image-tag }}"
           helm template \
             --values k8s-env/opencrvs/values.yaml \
             --namespace ${namespace} \
@@ -98,4 +96,3 @@ jobs:
             ' opencrvs-validation.log
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
-
