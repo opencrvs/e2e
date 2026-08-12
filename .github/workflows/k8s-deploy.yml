@@ -147,6 +147,18 @@ jobs:
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
+        # Events registers the country config's integrations (e.g. MOSIP) once,
+        # at startup, by asking auth for a bootstrap token. On a first install
+        # that request races auth's own startup, and losing the race leaves the
+        # integration unregistered until events restarts — mosip-api then
+        # authenticates as a client that does not exist and every MOSIP spec
+        # times out. Restarting events here re-runs the registration against a
+        # stack that is already serving. Safe to keep once core bounds that
+        # request: registration skips names that already exist.
+      - name: Re-run startup integration registration
+        run: |
+          kubectl -n "opencrvs-${ENV}" rollout restart deployment/events
+          kubectl -n "opencrvs-${ENV}" rollout status deployment/events --timeout=5m
       - name: Get notes from Helm release
         run: |
           helm get notes opencrvs -n "opencrvs-${ENV}" || echo "No notes found"
