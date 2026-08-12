@@ -47,6 +47,31 @@ jobs:
       - name: Print Entire Event Payload
         run: |
           echo "${{ toJson(github.event) }}"
+
+  plan:
+    name: Plan shards by estimated weight
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.compute.outputs.matrix }}
+    steps:
+      # Only e2e/compute-shard-plan.ts + its inputs are needed here — no
+      # toolkit/commons/events build, so this can run before/alongside
+      # cache-node-js instead of waiting on it.
+      - uses: actions/checkout@v6
+        with:
+          repository: 'opencrvs/opencrvs-core'
+          ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
+          sparse-checkout: |
+            packages/testland
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - id: compute
+        working-directory: packages/testland
+        run: |
+          matrix=$(npx --yes tsx@4 e2e/compute-shard-plan.ts --shards=20 --prefix=e2e/testcases/)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   check-env-existance:
     name: Check if environment exists
     runs-on: [self-hosted, k8s, e2e]
@@ -160,37 +185,17 @@ jobs:
     secrets: inherit
 
   test:
-    needs: [debug, deploy, cache-node-js, seed-data]
+    needs: [debug, deploy, cache-node-js, seed-data, plan]
     if: "!cancelled() && needs.deploy.result == 'success'"
     runs-on: ubuntu-24.04
     strategy:
       max-parallel: 15
       fail-fast: false
+      # `plan` bin-packs shards by estimated weight (packages/testland/e2e/shard-weights.json)
+      # and already orders them heaviest-first, so the static "slowest first" list this
+      # replaced isn't needed anymore.
       matrix:
-        # Since we are not yet in a place where we can reliably run all tests in parallel, we will run the slowest ones first
-        shard:
-          [
-            20,
-            3,
-            2,
-            1,
-            15,
-            5,
-            4,
-            16,
-            19,
-            7,
-            17,
-            8,
-            9,
-            12,
-            14,
-            18,
-            6,
-            10,
-            11,
-            13
-          ]
+        include: ${{ fromJson(needs.plan.outputs.matrix) }}
     name: shard-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v6
@@ -245,7 +250,7 @@ jobs:
         run: |
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
-          npx playwright test --shard=${{ matrix.shard }}/20
+          npx playwright test ${{ join(matrix.files, ' ') }}
         env:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}'
       - id: ctrf_check
