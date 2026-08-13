@@ -69,7 +69,7 @@ jobs:
       - id: compute
         working-directory: packages/testland
         run: |
-          matrix=$(npx --yes tsx@4 e2e/compute-shard-plan.ts --shards=15 --prefix=e2e/testcases/)
+          matrix=$(npx --yes tsx@4 e2e/compute-shard-plan.ts --shards=20 --prefix=e2e/testcases/)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   check-env-existance:
