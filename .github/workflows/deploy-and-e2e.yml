@@ -69,7 +69,7 @@ jobs:
       - id: compute
         working-directory: packages/testland
         run: |
-          matrix=$(npx --yes tsx@4 e2e/compute-shard-plan.ts --shards=15 --prefix=e2e/testcases/)
+          matrix=$(npx --yes tsx@4 e2e/compute-shard-plan.ts --shards=30 --prefix=e2e/testcases/)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   check-env-existance:
@@ -189,7 +189,6 @@ jobs:
     if: "!cancelled() && needs.deploy.result == 'success'"
     runs-on: ubuntu-24.04
     strategy:
-      max-parallel: 15
       fail-fast: false
       # `plan` bin-packs shards by estimated weight (packages/testland/e2e/shard-weights.json)
       # and already orders them heaviest-first, so the static "slowest first" list this
