@@ -1,5 +1,5 @@
 name: 09. Refresh e2e shard weights
-run-name: 'Refresh shard weights from latest ${{ inputs.core-branch || env.DEFAULT_SOURCE_BRANCH }} run'
+run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop' }} run"
 
 on:
   schedule:
@@ -8,21 +8,20 @@ on:
   workflow_dispatch:
     inputs:
       core-branch:
-        description: 'Which opencrvs-core branch''s latest successful e2e run to aggregate weights from'
+        description: "Which opencrvs-core branch's latest successful e2e run to aggregate weights from"
         required: false
         default: 'develop'
-
-env:
-  # The single source of truth for which branch's latest e2e run feeds this
-  # refresh. Everything below reads from this one place — change it here,
-  # not by hunting through the job steps.
-  DEFAULT_SOURCE_BRANCH: develop
 
 jobs:
   refresh:
     runs-on: ubuntu-24.04
     env:
-      SOURCE_BRANCH: ${{ inputs.core-branch || env.DEFAULT_SOURCE_BRANCH }}
+      # The single source of truth for which branch's latest e2e run feeds
+      # this refresh — everything below reads from this job-level env var,
+      # not by hunting through the steps. `env` context isn't available
+      # here (job-level env can't reference itself), so the default is a
+      # plain literal rather than a separate named constant.
+      SOURCE_BRANCH: ${{ inputs.core-branch || 'develop' }}
     steps:
       - name: Find latest successful e2e run for ${{ env.SOURCE_BRANCH }}
         id: find-run
