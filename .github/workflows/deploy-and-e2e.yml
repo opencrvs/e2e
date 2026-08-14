@@ -267,6 +267,15 @@ jobs:
           summary-report: true
           test-report: true
         if: "!cancelled() && steps.ctrf_check.outputs.ctrf == 'true'"
+      # Small (KBs, no screenshots/traces) — separate from the html report
+      # artifact below so refresh-shard-weights.yml doesn't need to touch that one.
+      - name: Upload ctrf report
+        uses: actions/upload-artifact@v7
+        if: "!cancelled() && steps.ctrf_check.outputs.ctrf == 'true'"
+        with:
+          name: ctrf-report-shard-${{ matrix.shard }}-${{ github.run_id }}
+          path: packages/testland/ctrf/*.json
+          retention-days: 7
       - name: Upload report artifact
         uses: actions/upload-artifact@v7
         if: '!cancelled()'
