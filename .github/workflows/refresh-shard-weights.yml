@@ -26,7 +26,7 @@ jobs:
       - name: Find latest successful e2e run for ${{ env.SOURCE_BRANCH }}
         id: find-run
         env:
-          GH_TOKEN: ${{ secrets.E2E_WORKFLOWS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           run_id=$(gh api "repos/opencrvs/e2e/actions/runs?status=success&per_page=30" \
             --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.name | contains(\"01. Deploy & run E2E\"))][0].id")
@@ -53,7 +53,7 @@ jobs:
       - name: Download that run's ctrf reports
         uses: actions/download-artifact@v8
         with:
-          github-token: ${{ secrets.E2E_WORKFLOWS_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           repository: opencrvs/e2e
           run-id: ${{ steps.find-run.outputs.run_id }}
           pattern: ctrf-report-shard-*-${{ steps.find-run.outputs.run_id }}
