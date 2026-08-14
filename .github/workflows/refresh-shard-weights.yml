@@ -28,8 +28,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          run_id=$(gh api "repos/opencrvs/e2e/actions/runs?status=success&per_page=30" \
-            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.name | contains(\"01. Deploy & run E2E\"))][0].id")
+          # Scoped to this specific workflow via the URL, so no need to
+          # filter on .name — that field is the dynamic run-name (e.g.
+          # "E2E by ocrvs-bot to <stack> (core: <sha>)"), never the
+          # workflow's own static title, and can't be matched on.
+          run_id=$(gh api "repos/opencrvs/e2e/actions/workflows/deploy-and-e2e.yml/runs?status=success&per_page=30" \
+            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\")][0].id")
 
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
             echo "No successful e2e run found for branch $SOURCE_BRANCH"
