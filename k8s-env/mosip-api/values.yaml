@@ -1,3 +1,7 @@
 ingress:
   tls_resolver: letsencrypt
   ssl_enabled: true
+
+mosip_api:
+  env:
+    OPENCRVS_AUTH_URL: http://auth.{{STACK}}.svc.cluster.local:4040

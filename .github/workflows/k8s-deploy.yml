@@ -111,7 +111,7 @@ jobs:
       - name: Update k8s-env/opencrvs/values.yaml
         run: |
           sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
-                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml k8s-env/mosip-api/values.yaml
       - name: Deploy with Helm
         run: |
           stern -n "opencrvs-${ENV}" \
