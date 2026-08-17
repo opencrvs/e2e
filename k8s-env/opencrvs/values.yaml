@@ -99,7 +99,10 @@ countryconfig:
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
     REFERENCE_DATA_DATABASE_URL: postgres://{{STACK_SANITIZED}}_ref_data:{{STACK_SANITIZED}}_ref_data_password@postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local:5432/{{STACK_SANITIZED}}__events
-
+    ORGANISATION: OpenCRVS
+    ENVIRONMENT_NAME: {{STACK}}
+    TELEMETRY_ENABLED: "true"
+    COUNTRY_CODE: FAR
 events:
   env:
     ES_INDEX_PREFIX: events_{{STACK}}
