@@ -3,5 +3,6 @@ ingress:
   ssl_enabled: true
 
 mosip_api:
+  host_data_path: /data/mosip_api_{{STACK_SANITIZED}}
   env:
     OPENCRVS_AUTH_URL: http://auth.{{STACK}}.svc.cluster.local:4040
