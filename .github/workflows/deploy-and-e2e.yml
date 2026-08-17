@@ -31,8 +31,8 @@ on:
         required: false
         default: false
         type: boolean
-      testrail-e2e:
-        description: Also run the qa-testrail-testcases suite (excluded by default)
+      regression-e2e:
+        description: Also run the regression suite (excluded by default)
         required: false
         default: false
         type: boolean
@@ -254,8 +254,8 @@ jobs:
         env:
           DOMAIN: '${{ github.event.client_payload.stack || inputs.stack }}.e2e-k8s.${{ vars.DOMAIN }}'
           # Gates testcases/qa-testrail-testcases in core's playwright.config.ts.
-          # Set from the 'Run TestRail e2e' label on the core PR.
-          TESTRAIL_E2E: '${{ github.event.client_payload.testrail-e2e || inputs.testrail-e2e }}'
+          # Set from the 'Run regression e2e' label on the core PR.
+          REGRESSION_E2E: '${{ github.event.client_payload.regression-e2e || inputs.regression-e2e }}'
       - id: ctrf_check
         if: '!cancelled()'
         working-directory: packages/testland
