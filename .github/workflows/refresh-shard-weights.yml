@@ -1,0 +1,105 @@
+name: 13. Refresh e2e shard weights
+run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop' }} run"
+
+on:
+  schedule:
+    # Weekdays, 00:00 UTC — cheap: no-ops if nothing new since the last refresh.
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      core-branch:
+        description: "Which opencrvs-core branch's latest successful e2e run to aggregate weights from"
+        required: false
+        default: 'develop'
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    env:
+      # A job's env: block can't reference its own env context, so 'develop'
+      # is repeated as a literal here and in the top-level run-name: field
+      # (line 2), instead of being defined once and shared.
+      SOURCE_BRANCH: ${{ inputs.core-branch || 'develop' }}
+    steps:
+      - name: Find latest successful e2e run for ${{ env.SOURCE_BRANCH }}
+        id: find-run
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # We match on head_branch, not .name — .name is the per-run dynamic run-name, not a stable value.
+          #
+          # status= as a query param doesn't reliably filter to successful
+          # runs here (confirmed: it silently drops runs that do have
+          # conclusion == "success"), so filter on .conclusion via jq instead.
+          run_id=$(gh api "repos/opencrvs/e2e/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
+            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][0].id")
+
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful e2e run found for branch $SOURCE_BRANCH"
+            exit 1
+          fi
+
+          echo "Using run: https://github.com/opencrvs/e2e/actions/runs/$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        with:
+          repository: 'opencrvs/opencrvs-core'
+          ref: ${{ env.SOURCE_BRANCH }}
+          sparse-checkout: |
+            packages/testland
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download that run's ctrf reports
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          repository: opencrvs/e2e
+          run-id: ${{ steps.find-run.outputs.run_id }}
+          pattern: ctrf-report-shard-*-${{ steps.find-run.outputs.run_id }}
+          path: ctrf-reports
+
+      - name: Aggregate into shard-weights.json
+        working-directory: packages/testland
+        run: |
+          npx --yes tsx e2e/aggregate-shard-weights.ts ../../ctrf-reports > /tmp/new-weights.json
+          node -e "
+            const fs = require('fs');
+            const path = 'e2e/shard-weights.json';
+            const current = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const fresh = JSON.parse(fs.readFileSync('/tmp/new-weights.json', 'utf8'));
+            const merged = { _comment: current._comment, ...fresh };
+            fs.writeFileSync(path, JSON.stringify(merged, null, 2) + '\n');
+          "
+          npx prettier --write e2e/shard-weights.json
+
+      - name: Open PR with the refreshed weights
+        id: open-pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.CORE_ISSUES_PR_TOKEN }}
+          path: .
+          branch: chore/refresh-shard-weights-${{ steps.find-run.outputs.run_id }}
+          base: ${{ env.SOURCE_BRANCH }}
+          commit-message: 'chore(testland): refresh e2e shard weights'
+          title: 'chore(testland): refresh e2e shard weights'
+          body: |
+            Regenerated `packages/testland/e2e/shard-weights.json` from the latest successful e2e run on `${{ env.SOURCE_BRANCH }}`:
+            https://github.com/opencrvs/e2e/actions/runs/${{ steps.find-run.outputs.run_id }}
+
+            Data-only change — see `packages/testland/e2e/SHARDING.md` for how this fits into CI sharding.
+
+      # Same channel + token + action version as the existing e2e
+      # success/failure notifications in opencrvs-testland-infrastructure's
+      # deploy-and-e2e.yml — reusing that convention rather than a new one.
+      - name: Notify Slack
+        if: steps.open-pr.outputs.pull-request-url != ''
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: 'C08FCLKER8X'
+          slack-message: 'Shard weights refreshed from the latest ${{ env.SOURCE_BRANCH }} e2e run — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
