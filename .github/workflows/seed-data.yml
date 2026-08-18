@@ -64,11 +64,11 @@ jobs:
           - data-seed
     steps:
         - name: Checkout repo
-          uses: actions/checkout@v6
+          uses: actions/checkout@v7
           with:
             ref: ${{ inputs.branch }}
         - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
-          uses: actions/checkout@v6
+          uses: actions/checkout@v7
           with:
             repository: opencrvs/opencrvs-core
             path: core

@@ -79,7 +79,7 @@ jobs:
           backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
           self_hosted_runner_additional_labels: ${{ vars.SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
       - name: checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Run Ansible Playbook
         uses: dawidd6/action-ansible-playbook@v9
         env:

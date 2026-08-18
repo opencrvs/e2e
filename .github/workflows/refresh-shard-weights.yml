@@ -42,7 +42,7 @@ jobs:
           echo "Using run: https://github.com/opencrvs/e2e/actions/runs/$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           repository: 'opencrvs/opencrvs-core'
           ref: ${{ env.SOURCE_BRANCH }}
