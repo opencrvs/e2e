@@ -196,8 +196,7 @@ jobs:
     strategy:
       fail-fast: false
       # `plan` bin-packs shards by estimated weight (packages/testland/e2e/shard-weights.json)
-      # and already orders them heaviest-first, so the static "slowest first" list this
-      # replaced isn't needed anymore.
+      # and orders them heaviest-first, so no static weight list or max-parallel cap is needed.
       matrix:
         include: ${{ fromJson(needs.plan.outputs.matrix) }}
     name: shard-${{ matrix.shard }}

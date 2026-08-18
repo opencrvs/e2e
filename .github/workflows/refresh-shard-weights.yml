@@ -3,8 +3,8 @@ run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop'
 
 on:
   schedule:
-    # Roughly every two weeks — 1st and 15th of each month, 03:00 UTC.
-    - cron: '0 3 1,15 * *'
+    # Weekdays, 00:00 UTC — cheap: no-ops if nothing new since the last refresh.
+    - cron: '0 0 * * 1-5'
   workflow_dispatch:
     inputs:
       core-branch:
@@ -16,11 +16,9 @@ jobs:
   refresh:
     runs-on: ubuntu-24.04
     env:
-      # The single source of truth for which branch's latest e2e run feeds
-      # this refresh — everything below reads from this job-level env var,
-      # not by hunting through the steps. `env` context isn't available
-      # here (job-level env can't reference itself), so the default is a
-      # plain literal rather than a separate named constant.
+      # A job's env: block can't reference its own env context, so 'develop'
+      # is repeated as a literal here and in the top-level run-name: field
+      # (line 2), instead of being defined once and shared.
       SOURCE_BRANCH: ${{ inputs.core-branch || 'develop' }}
     steps:
       - name: Find latest successful e2e run for ${{ env.SOURCE_BRANCH }}
@@ -28,15 +26,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Scoped to this specific workflow via the URL, so no need to
-          # filter on .name — that field is the dynamic run-name (e.g.
-          # "E2E by ocrvs-bot to <stack> (core: <sha>)"), never the
-          # workflow's own static title, and can't be matched on.
+          # We match on head_branch, not .name — .name is the per-run dynamic run-name, not a stable value.
           #
-          # Filtering on .conclusion via jq, not the API's own status=
-          # query param — that param doesn't reliably match "success" here
-          # (verified: it silently excludes runs that genuinely have
-          # conclusion == "success"), so filter client-side instead.
+          # status= as a query param doesn't reliably filter to successful
+          # runs here (confirmed: it silently drops runs that do have
+          # conclusion == "success"), so filter on .conclusion via jq instead.
           run_id=$(gh api "repos/opencrvs/e2e/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
             --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][0].id")
 
