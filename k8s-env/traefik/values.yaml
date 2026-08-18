@@ -75,3 +75,14 @@ deployment:
 
 nodeSelector:
   traefik-role: ingress
+
+tracing:
+  otlp:
+    enabled: true
+    http:
+      enabled: true
+      endpoint: http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4318/v1/traces
+  resourceAttributes:
+    deployment.environment.name: e2e
+    service.namespace: traefik
+  serviceName: traefik
