@@ -1,4 +1,4 @@
-name: 09. Refresh e2e shard weights
+name: 13. Refresh e2e shard weights
 run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop' }} run"
 
 on:
