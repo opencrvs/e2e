@@ -4,5 +4,3 @@ ingress:
 
 mosip_api:
   host_data_path: /data/sqlite_{{STACK_SANITIZED}}
-  env:
-    OPENCRVS_AUTH_URL: http://auth.{{STACK}}.svc.cluster.local:4040
