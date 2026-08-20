@@ -83,10 +83,15 @@ jobs:
             kubectl create namespace "opencrvs-${ENV}"
           fi
           kubectl label namespace --overwrite "opencrvs-${ENV}" updated_at=$(date +%s)
+      - name: Substitute stack placeholders in k8s-env values
+        run: |
+          sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
+                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml k8s-env/mosip-api/values.yaml
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api core/charts/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
+          --set platform.tag="$CORE_IMAGE_TAG" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
           --atomic
@@ -107,10 +112,6 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
           done
-      - name: Update k8s-env/opencrvs/values.yaml
-        run: |
-          sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
-                 -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml
       - name: Deploy with Helm
         run: |
           stern -n "opencrvs-${ENV}" \
