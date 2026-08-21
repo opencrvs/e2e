@@ -29,7 +29,7 @@ jobs:
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install Traefik
         run: |
           kubectl scale deployment traefik --replicas=0 --namespace traefik || true

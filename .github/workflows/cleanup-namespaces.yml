@@ -57,7 +57,7 @@ jobs:
     name: Remove ${{ matrix.namespace }}
     steps:
         - name: Checkout repo
-          uses: actions/checkout@v6
+          uses: actions/checkout@v7
         - name: Get helm release values and Quote specific fields that are commonly numeric
           id: get-values
           run: |
