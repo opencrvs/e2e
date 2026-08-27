@@ -3,8 +3,8 @@ run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop'
 
 on:
   schedule:
-    # Weekdays, 00:00 UTC — cheap: no-ops if nothing new since the last refresh.
-    - cron: '0 0 * * 1-5'
+    # Roughly every two weeks — 1st and 15th of each month, 03:00 UTC.
+    - cron: '0 3 1,15 * *'
   workflow_dispatch:
     inputs:
       core-branch:
