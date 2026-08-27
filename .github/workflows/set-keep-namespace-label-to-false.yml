@@ -1,0 +1,44 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# OpenCRVS is also distributed under the terms of the Civil Registration
+# & Healthcare Disclaimer located at http://opencrvs.org/license.
+#
+# Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
+
+name: '14. Set keep_namespace label to false'
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: 'k8s stack, namespace without ocrvs- prefix. slugified version of the branch name.'
+        required: true
+
+jobs:
+  set-namespace-label-to-false:
+    name: set namespace label to false
+    runs-on: [self-hosted, k8s, e2e]
+    outputs:
+      exists: ${{ steps.check.outputs.status }}
+    steps:
+      - name: check namespace
+        id: check
+        env:
+          ENV: ${{ github.event.client_payload.stack || inputs.stack }}
+        run: |
+          if [[ "$ENV" == "e2e" || "$ENV" == "deps-e2e" ]]; then
+            echo "Skipping protected namespace: opencrvs-${ENV}"
+            echo "status=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          helm get values opencrvs -n opencrvs-${ENV} && status=true || status=false
+          echo "status=$status"  >> $GITHUB_OUTPUT
+
+      - name: Add keep_namespace=false label
+        if: ${{ steps.check.outputs.status == 'true' }}
+        env:
+          ENV: ${{ github.event.client_payload.stack || inputs.stack }}
+        run: |
+          kubectl label namespace opencrvs-${ENV} keep_namespace=false --overwrite
