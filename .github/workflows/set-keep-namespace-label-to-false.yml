@@ -29,7 +29,7 @@ jobs:
           ENV: ${{ github.event.client_payload.stack || inputs.stack }}
         run: |
           if [[ "$ENV" == "dev-e2e" || "$ENV" == "deps-e2e" ]]; then
-            echo "⏭️ Skipping protected namespace: opencrvs-${ENV}"
+            echo "Skipping protected namespace: opencrvs-${ENV}"
             echo "status=false" >> $GITHUB_OUTPUT
             exit 0
           fi
