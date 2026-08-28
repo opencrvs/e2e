@@ -1,5 +1,5 @@
 name: 13. Refresh e2e shard weights
-run-name: "Refresh shard weights from latest ${{ inputs.core-branch || 'develop' }} run"
+run-name: "Refresh shard weights from recent ${{ inputs.core-branch || 'develop' }} runs"
 
 on:
   schedule:
@@ -20,27 +20,27 @@ jobs:
       # is repeated as a literal here and in the top-level run-name: field
       # (line 2), instead of being defined once and shared.
       SOURCE_BRANCH: ${{ inputs.core-branch || 'develop' }}
+      RUN_COUNT: '10'
     steps:
-      - name: Find latest successful e2e run for ${{ env.SOURCE_BRANCH }}
-        id: find-run
+      - name: Find last ${{ env.RUN_COUNT }} successful e2e runs for ${{ env.SOURCE_BRANCH }}
+        id: find-runs
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # We match on head_branch, not .name — .name is the per-run dynamic run-name, not a stable value.
-          #
-          # status= as a query param doesn't reliably filter to successful
-          # runs here (confirmed: it silently drops runs that do have
-          # conclusion == "success"), so filter on .conclusion via jq instead.
-          run_id=$(gh api "repos/opencrvs/e2e/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
-            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][0].id")
+          # .name is the dynamic run-name, not stable - match on head_branch instead.
+          # status= as a query param silently drops real conclusion=="success" runs - filter via jq instead.
+          # Last N, not 1: a single run is noisy, and this only refreshes every couple of weeks.
+          run_ids=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
+            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][:$RUN_COUNT] | map(.id)")
 
-          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+          if [ "$(echo "$run_ids" | jq 'length')" = "0" ]; then
             echo "No successful e2e run found for branch $SOURCE_BRANCH"
             exit 1
           fi
 
-          echo "Using run: https://github.com/opencrvs/e2e/actions/runs/$run_id"
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Using runs: $(echo "$run_ids" | jq -c --arg repo "$GITHUB_REPOSITORY" '. | map("https://github.com/" + $repo + "/actions/runs/" + (. | tostring))')"
+          echo "run_ids=$(echo "$run_ids" | jq -c .)" >> "$GITHUB_OUTPUT"
+          echo "latest_run_id=$(echo "$run_ids" | jq -r '.[0]')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v7
         with:
@@ -53,13 +53,28 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Download that run's ctrf reports
+      - name: Find ctrf artifacts from those runs
+        id: find-artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # A run whose ctrf artifacts already expired (7-day retention) just
+          # contributes nothing here - fewer runs get averaged, not a failure.
+          artifact_ids=$(for run_id in $(echo '${{ steps.find-runs.outputs.run_ids }}' | jq -r '.[]'); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
+              --jq ".artifacts[] | select(.name | startswith(\"ctrf-report-shard-\")) | .id"
+          done | paste -sd, -)
+
+          echo "artifact_ids=$artifact_ids" >> "$GITHUB_OUTPUT"
+
+      # artifact-ids aren't scoped to a single run-id, so this pulls ctrf
+      # reports from all runs found above in one download.
+      - name: Download ctrf reports from those runs
         uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GH_TOKEN }}
-          repository: opencrvs/e2e
-          run-id: ${{ steps.find-run.outputs.run_id }}
-          pattern: ctrf-report-shard-*-${{ steps.find-run.outputs.run_id }}
+          repository: ${{ github.repository }}
+          artifact-ids: ${{ steps.find-artifacts.outputs.artifact_ids }}
           path: ctrf-reports
 
       - name: Aggregate into shard-weights.json
@@ -82,13 +97,13 @@ jobs:
         with:
           token: ${{ secrets.CORE_ISSUES_PR_TOKEN }}
           path: .
-          branch: chore/refresh-shard-weights-${{ steps.find-run.outputs.run_id }}
+          branch: chore/refresh-shard-weights-${{ steps.find-runs.outputs.latest_run_id }}
           base: ${{ env.SOURCE_BRANCH }}
           commit-message: 'chore(testland): refresh e2e shard weights'
           title: 'chore(testland): refresh e2e shard weights'
           body: |
-            Regenerated `packages/testland/e2e/shard-weights.json` from the latest successful e2e run on `${{ env.SOURCE_BRANCH }}`:
-            https://github.com/opencrvs/e2e/actions/runs/${{ steps.find-run.outputs.run_id }}
+            Regenerated `packages/testland/e2e/shard-weights.json`, averaged over the last ${{ env.RUN_COUNT }} successful e2e runs on `${{ env.SOURCE_BRANCH }}`. Most recent:
+            https://github.com/${{ github.repository }}/actions/runs/${{ steps.find-runs.outputs.latest_run_id }}
 
             Data-only change — see `packages/testland/e2e/SHARDING.md` for how this fits into CI sharding.
 
@@ -100,6 +115,6 @@ jobs:
         uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: 'C08FCLKER8X'
-          slack-message: 'Shard weights refreshed from the latest ${{ env.SOURCE_BRANCH }} e2e run — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}'
+          slack-message: 'Shard weights refreshed from the last ${{ env.RUN_COUNT }} ${{ env.SOURCE_BRANCH }} e2e runs — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}'
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
