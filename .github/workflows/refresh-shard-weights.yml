@@ -42,10 +42,22 @@ jobs:
           echo "run_ids=$(echo "$run_ids" | jq -c .)" >> "$GITHUB_OUTPUT"
           echo "latest_run_id=$(echo "$run_ids" | jq -r '.[0]')" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve which core branch to pull the scripts from
+        id: resolve-core-ref
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Same-named core branch as this run, if one exists, else SOURCE_BRANCH.
+          if gh api "repos/opencrvs/opencrvs-core/branches/${{ github.ref_name }}" > /dev/null 2>&1; then
+            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$SOURCE_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v7
         with:
           repository: 'opencrvs/opencrvs-core'
-          ref: ${{ env.SOURCE_BRANCH }}
+          ref: ${{ steps.resolve-core-ref.outputs.ref }}
           sparse-checkout: |
             packages/testland
 
@@ -67,15 +79,17 @@ jobs:
 
           echo "artifact_ids=$artifact_ids" >> "$GITHUB_OUTPUT"
 
-      # artifact-ids aren't scoped to a single run-id, so this pulls ctrf
-      # reports from all runs found above in one download.
+      # download-artifact scopes artifact-ids to this run's own run-id (undocumented) - use the zip API directly instead.
       - name: Download ctrf reports from those runs
-        uses: actions/download-artifact@v8
-        with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          repository: ${{ github.repository }}
-          artifact-ids: ${{ steps.find-artifacts.outputs.artifact_ids }}
-          path: ctrf-reports
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          mkdir -p ctrf-reports
+          for artifact_id in $(echo "${{ steps.find-artifacts.outputs.artifact_ids }}" | tr ',' '\n'); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "ctrf-reports/$artifact_id.zip"
+            unzip -q -o "ctrf-reports/$artifact_id.zip" -d "ctrf-reports/$artifact_id"
+            rm "ctrf-reports/$artifact_id.zip"
+          done
 
       - name: Aggregate into shard-weights.json
         working-directory: packages/testland
