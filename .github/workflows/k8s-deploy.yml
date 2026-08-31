@@ -48,6 +48,10 @@ jobs:
       # Chart-facing var name kept (feeds --set countryconfig.image.tag).
       # Testland ships in core, so the core sha tags both images.
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.core-image-tag }}
+      # MOSIP integration's OpenCRVS system client. Both releases below need it:
+      # countryconfig seeds the client, mosip-api authenticates as it.
+      MOSIP_CLIENT_ID: ${{ secrets.OPENCRVS_MOSIP_CLIENT_ID }}
+      MOSIP_CLIENT_SECRET: ${{ secrets.OPENCRVS_MOSIP_CLIENT_SECRET }}
     runs-on:
       - self-hosted
       - k8s
@@ -94,6 +98,8 @@ jobs:
           --set platform.tag="$CORE_IMAGE_TAG" \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
+          --set mosip_api.env.OPENCRVS_CLIENT_ID="$MOSIP_CLIENT_ID" \
+          --set mosip_api.env.OPENCRVS_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
@@ -131,6 +137,8 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
             --set data_seed.enabled=false \
+            --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_ID="$MOSIP_CLIENT_ID" \
+            --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
