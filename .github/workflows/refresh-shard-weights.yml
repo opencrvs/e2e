@@ -16,9 +16,7 @@ jobs:
   refresh:
     runs-on: ubuntu-24.04
     env:
-      # A job's env: block can't reference its own env context, so 'develop'
-      # is repeated as a literal here and in the top-level run-name: field
-      # (line 2), instead of being defined once and shared.
+      # env: can't reference itself, so 'develop' is duplicated here and in run-name: (line 2).
       SOURCE_BRANCH: ${{ inputs.core-branch || 'develop' }}
       RUN_COUNT: '10'
     steps:
@@ -29,7 +27,7 @@ jobs:
         run: |
           # .name is the dynamic run-name, not stable - match on head_branch instead.
           # status= as a query param silently drops real conclusion=="success" runs - filter via jq instead.
-          # Last N, not 1: a single run is noisy, and this only refreshes every couple of weeks.
+          # N runs, not 1 - a single run is noisy, and this only refreshes biweekly.
           run_ids=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
             --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][:$RUN_COUNT] | map(.id)")
 
@@ -47,7 +45,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Same-named core branch as this run, if one exists, else SOURCE_BRANCH.
+          # Prefers a same-named core branch for the scripts, independent of which runs get aggregated.
           if gh api "repos/opencrvs/opencrvs-core/branches/${{ github.ref_name }}" > /dev/null 2>&1; then
             echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
@@ -70,8 +68,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # A run whose ctrf artifacts already expired (7-day retention) just
-          # contributes nothing here - fewer runs get averaged, not a failure.
+          # Expired (7-day retention) artifacts just contribute nothing here, not a failure.
           artifact_ids=$(for run_id in $(echo '${{ steps.find-runs.outputs.run_ids }}' | jq -r '.[]'); do
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
               --jq ".artifacts[] | select(.name | startswith(\"ctrf-report-shard-\")) | .id"
@@ -79,7 +76,7 @@ jobs:
 
           echo "artifact_ids=$artifact_ids" >> "$GITHUB_OUTPUT"
 
-      # download-artifact scopes artifact-ids to this run's own run-id (undocumented) - use the zip API directly instead.
+      # download-artifact scopes artifact-ids to one run (this one has none) - fetch via GET /actions/artifacts/{id}/zip instead.
       - name: Download ctrf reports from those runs
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -121,9 +118,7 @@ jobs:
 
             Data-only change — see `packages/testland/e2e/SHARDING.md` for how this fits into CI sharding.
 
-      # Same channel + token + action version as the existing e2e
-      # success/failure notifications in opencrvs-testland-infrastructure's
-      # deploy-and-e2e.yml — reusing that convention rather than a new one.
+      # Reuses the channel/token/action version already used for e2e notifications.
       - name: Notify Slack
         if: steps.open-pr.outputs.pull-request-url != ''
         uses: slackapi/slack-github-action@v1.26.0
