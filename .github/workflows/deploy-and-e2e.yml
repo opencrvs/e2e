@@ -1,5 +1,5 @@
 name: 01. Deploy & run E2E
-run-name: 'E2E by ${{ github.event.client_payload.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }})'
+run-name: 'E2E by ${{ inputs.actor || github.actor }} to ${{ github.event.client_payload.stack || github.event.inputs.stack }} (core: ${{ github.event.client_payload.core-image-tag || inputs.core-image-tag }})'
 on:
   repository_dispatch:
     types: [run_e2e]
@@ -36,6 +36,9 @@ on:
         required: false
         default: false
         type: boolean
+      actor:
+        description: Actor name
+        required: false
 
 concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
