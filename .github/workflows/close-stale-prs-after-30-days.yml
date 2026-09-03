@@ -11,7 +11,7 @@ jobs:
   stale:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v11
         with:
           stale-pr-message: 'This PR has been marked with label stale Since it has been inactive for 20 days. It will automatically be closed in 10 days if no further activity occurs.'
           close-pr-message: 'This PR has been automatically closed because it has been inactive for 30 days. Please reopen if you are still working on it.'
