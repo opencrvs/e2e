@@ -91,16 +91,6 @@ jobs:
         run: |
           sed -i -e "s#{{STACK_SANITIZED}}#${ENV//-/_}#g" \
                  -e "s#{{STACK}}#${ENV}#g" k8s-env/opencrvs/values.yaml k8s-env/mosip-api/values.yaml
-      - name: Deploy OpenCRVS MOSIP API
-        run: |
-          helm upgrade --install mosip-api core/charts/opencrvs-mosip \
-          --namespace "opencrvs-${ENV}" \
-          --set platform.tag="$CORE_IMAGE_TAG" \
-          -f k8s-env/mosip-api/values.yaml \
-          --set hostname=$ENV.e2e-k8s.opencrvs.dev \
-          --set mosip_api.env.OPENCRVS_CLIENT_ID="$MOSIP_CLIENT_ID" \
-          --set mosip_api.env.OPENCRVS_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
-          --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
       - name: Copy secrets from dependencies into application namespace
@@ -142,6 +132,16 @@ jobs:
             --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
+      - name: Deploy OpenCRVS MOSIP API
+        run: |
+          helm upgrade --install mosip-api core/charts/opencrvs-mosip \
+          --namespace "opencrvs-${ENV}" \
+          --set platform.tag="$CORE_IMAGE_TAG" \
+          -f k8s-env/mosip-api/values.yaml \
+          --set hostname=$ENV.e2e-k8s.opencrvs.dev \
+          --set mosip_api.env.OPENCRVS_CLIENT_ID="$MOSIP_CLIENT_ID" \
+          --set mosip_api.env.OPENCRVS_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
+          --atomic
       - name: Get notes from Helm release
         run: |
           helm get notes opencrvs -n "opencrvs-${ENV}" || echo "No notes found"
