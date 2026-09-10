@@ -71,7 +71,7 @@ jobs:
           ref: ${{ github.event.client_payload.core-branch || inputs.core-branch }}
           sparse-checkout: |
             packages/testland
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
       - id: compute
@@ -131,7 +131,7 @@ jobs:
       # Cone-mode sparse checkout always includes root files, so the monorepo
       # root .nvmrc is available even though packages/testland has none.
       - name: Set up Node.js from core .nvmrc
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
 
@@ -221,7 +221,7 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Set up Node.js from core .nvmrc
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
 
