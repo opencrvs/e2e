@@ -121,7 +121,7 @@ jobs:
       # Reuses the channel/token/action version already used for e2e notifications.
       - name: Notify Slack
         if: steps.open-pr.outputs.pull-request-url != ''
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.1
         with:
           channel-id: 'C08FCLKER8X'
           slack-message: 'Shard weights refreshed from the last ${{ env.RUN_COUNT }} ${{ env.SOURCE_BRANCH }} e2e runs — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}'
