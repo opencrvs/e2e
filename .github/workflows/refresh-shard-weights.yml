@@ -104,7 +104,7 @@ jobs:
 
       - name: Open PR with the refreshed weights
         id: open-pr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.CORE_ISSUES_PR_TOKEN }}
           path: .
