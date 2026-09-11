@@ -14,6 +14,9 @@ on:
       keep-e2e:
         type: boolean
         default: false
+      use-private-registry:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -35,6 +38,11 @@ on:
         type: string
       keep-e2e:
         description: 'Add keep_namespace label'
+        required: false
+        type: boolean
+        default: false
+      use-private-registry:
+        description: 'Pull platform images from the private ghcr.io/opencrvs/security registry (requires GHCR_TOKEN secret)'
         required: false
         type: boolean
         default: false
@@ -89,6 +97,17 @@ jobs:
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
+      - name: Create GHCR pull secret for private registry images
+        if: inputs.use-private-registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          kubectl create secret docker-registry ghcr-credentials \
+            --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" \
+            --docker-password="$GHCR_TOKEN" \
+            --namespace="opencrvs-${ENV}" \
+            --dry-run=client -o yaml | kubectl apply -f -
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -122,6 +141,15 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
+          REGISTRY_ARGS=(
+              --set platform.repository=ghcr.io/opencrvs
+          )
+          if [ "${{ inputs.use-private-registry }}" = "true" ]; then
+            REGISTRY_ARGS=(
+              --set platform.repository=ghcr.io/opencrvs/security
+              --set platform.imagePullSecrets[0].name=ghcr-credentials
+            )
+          fi
           helm upgrade --install opencrvs infrastructure/charts/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
@@ -133,7 +161,8 @@ jobs:
             --set-string countryconfig.env.MOSIP_INTEGRATION_CLIENT_SECRET="$OPENCRVS_MOSIP_CLIENT_SECRET" \
             --set hostname=$ENV.e2e-k8s.opencrvs.dev \
             --set data_seed.enabled=false \
-            --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
+            --set environment="$ENV" \
+            "${REGISTRY_ARGS[@]}" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
       - name: Get notes from Helm release
