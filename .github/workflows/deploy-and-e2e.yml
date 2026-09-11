@@ -39,6 +39,11 @@ on:
       actor:
         description: Actor name
         required: false
+      registry:
+        description: registry url
+        required: false
+        default: false
+        type: string
 
 concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
@@ -181,6 +186,7 @@ jobs:
       branch: ${{ github.event.client_payload.branch || inputs.branch }}
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
+      registry: ${{ github.event.client_payload.registry || inputs.registry || 'ghcr.io/opencrvs' }}
     secrets: inherit
 
   seed-data:
