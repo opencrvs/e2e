@@ -18,6 +18,9 @@ on:
       core-branch:
         type: string
         default: 'develop'
+      registry:
+        type: string
+        default: 'ghcr.io/opencrvs'
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -46,6 +49,11 @@ on:
         description: 'Core branch'
         required: false
         default: 'develop'
+      registry:
+        description: 'Registry URL'
+        required: false
+        type: string
+        default: 'ghcr.io/opencrvs'
 jobs:
   deploy:
     env:
@@ -103,6 +111,16 @@ jobs:
           --atomic
       - name: Add updated_at timestamp label to namespace
         run: kubectl label namespace --overwrite opencrvs-${ENV} updated_at=$(date +%s)
+      - name: Create GHCR pull secret for private registry images
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          kubectl create secret docker-registry ghcr-credentials \
+            --docker-server=ghcr.io \
+            --docker-username="${{ github.actor }}" \
+            --docker-password="$GHCR_TOKEN" \
+            --namespace="opencrvs-${ENV}" \
+            --dry-run=client -o yaml | kubectl apply -f -
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -144,7 +162,9 @@ jobs:
             --set data_seed.enabled=true \
             --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_ID="$MOSIP_CLIENT_ID" \
             --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
-            --set environment="$ENV" 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
+            --set environment="$ENV" \
+            --set platform.repository=${{ inputs.registry }} \
+            --set platform.imagePullSecrets[0].name=ghcr-credentials 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
       - name: Get notes from Helm release
