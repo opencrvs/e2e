@@ -8,11 +8,11 @@ on:
       core-image-tag:
         description: Core image tag
         required: true
-        default: 'v1.9.12'
+        default: 'v1.9.18'
       countryconfig-image-tag:
         description: Your Country Config DockerHub image tag
         required: true
-        default: 'v1.9.12'
+        default: 'v1.9.18'
       stack:
         type: string
         description: Stack name
@@ -35,6 +35,11 @@ on:
         required: false
         default: false
         type: boolean
+      registry:
+        description: registry url
+        required: false
+        default: false
+        type: string
 
 concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
@@ -124,9 +129,11 @@ jobs:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
+      registry: ${{ github.event.client_payload.registry || inputs.registry || 'ghcr.io/opencrvs' }}
     secrets: inherit
 
   seed-data:
+    if: '!cancelled()'
     needs: [deploy]
     uses: ./.github/workflows/seed-data.yml
     with:
