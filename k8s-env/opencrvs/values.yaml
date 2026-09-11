@@ -55,7 +55,7 @@ auth:
     TWO_FA_ENABLED: "false"
 
 dashboards:
-  enabled: false
+  enabled: true
 
 gateway:
   env:
