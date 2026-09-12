@@ -133,6 +133,7 @@ jobs:
     secrets: inherit
 
   seed-data:
+    if: '!cancelled()'
     needs: [deploy]
     uses: ./.github/workflows/seed-data.yml
     with:
