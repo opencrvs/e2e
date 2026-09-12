@@ -35,6 +35,11 @@ on:
         required: false
         default: false
         type: boolean
+      use-private-registry:
+        description: use ghcr.io/opencrvs/security
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.event.client_payload.stack || inputs.stack }}
@@ -124,9 +129,11 @@ jobs:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       chart-branch: ${{ github.event.client_payload.chart-branch || inputs.chart-branch }}
       keep-e2e: ${{ github.event.client_payload.keep-e2e == 'true' || github.event.client_payload.keep-e2e == true || inputs.keep-e2e || false }}
+      use-private-registry: ${{ github.event.client_payload.use-private-registry == 'true' || github.event.client_payload.use-private-registry == true || inputs.use-private-registry || false }}
     secrets: inherit
 
   seed-data:
+    if: '!cancelled()'
     needs: [deploy]
     uses: ./.github/workflows/seed-data.yml
     with:
