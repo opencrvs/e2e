@@ -38,7 +38,7 @@ on:
       registry:
         description: registry url
         required: false
-        default: false
+        default: 'ghcr.io/opencrvs'
         type: string
 
 concurrency:
