@@ -191,7 +191,7 @@ jobs:
 
   seed-data:
     needs: [deploy]
-    if: '!cancelled()'
+    if: "!cancelled() && needs.deploy.result == 'success'"
     uses: ./.github/workflows/seed-data.yml
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
