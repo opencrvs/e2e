@@ -55,7 +55,7 @@ env:
 jobs:
   debug:
     name: Debug output
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Print Entire Event Payload
         run: |
@@ -63,7 +63,7 @@ jobs:
 
   plan:
     name: Plan shards by estimated weight
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.compute.outputs.matrix }}
     steps:
@@ -109,7 +109,7 @@ jobs:
 
   cache-node-js:
     name: Cache Node.js dependencies
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       # testland resolves @opencrvs/toolkit as a workspace package, so toolkit
       # and its build inputs (commons, events) must be checked out and built
@@ -201,7 +201,7 @@ jobs:
   test:
     needs: [debug, deploy, cache-node-js, seed-data, plan]
     if: "!cancelled() && needs.deploy.result == 'success'"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       # `plan` bin-packs shards by estimated weight (packages/testland/e2e/shard-weights.json)
