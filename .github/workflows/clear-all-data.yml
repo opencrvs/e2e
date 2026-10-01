@@ -23,6 +23,10 @@ on:
         type: string
       core-branch:
         type: string
+      data-cleanup-only:
+        description: 'Run only the data-cleanup job (skip postgres-on-deploy and data migrations)'
+        type: boolean
+        default: false
 jobs:
   prepare:
     outputs:
@@ -52,11 +56,8 @@ jobs:
       max-parallel: 1 # Ensure jobs run one by one
       fail-fast: true # Stop on first failure
       matrix:
-        job-name:
-          - data-cleanup
-          - postgres-on-deploy
-          - data-migration
-          - data-migration-analytics
+        # data-cleanup-only is set by callers (e.g. deploy-and-e2e); standalone runs execute all jobs
+        job-name: ${{ fromJSON(inputs.data-cleanup-only && '["data-cleanup"]' || '["data-cleanup", "postgres-on-deploy", "data-migration", "data-migration-analytics"]') }}
     steps:
         - name: Checkout repo
           uses: actions/checkout@v7

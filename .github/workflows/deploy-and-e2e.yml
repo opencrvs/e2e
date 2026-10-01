@@ -105,6 +105,7 @@ jobs:
     with:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       core-branch: ${{ inputs.core-branch }}
+      data-cleanup-only: true
     secrets: inherit
 
   cache-node-js:
