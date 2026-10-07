@@ -1,0 +1,60 @@
+# Removes an e2e environment created by deploy-e2e-environment.yml. Dispatched
+# by opencrvs-core once its e2e tests have passed and the PR does not ask to
+# keep the environment.
+name: 17. Cleanup E2E environment
+run-name: 'Cleanup E2E environment ${{ inputs.stack }} (core: ${{ inputs.core-image-tag }})'
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        type: string
+        description: Stack name
+        required: true
+      core-image-tag:
+        description: Core image tag the environment was deployed with
+        required: true
+      core-branch:
+        description: core branch
+        required: false
+        default: 'develop'
+
+# Same group as deploy-e2e-environment.yml: a newer deploy to the same stack
+# cancels a cleanup that is still running.
+concurrency:
+  group: ${{ inputs.stack }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup-stack-k8s:
+    runs-on: [self-hosted]
+    env:
+      ENV: ${{ inputs.stack }}
+    steps:
+      - name: Checkout OpenCRVS helm charts from core repository ${{ inputs.core-image-tag }}
+        uses: actions/checkout@v7
+        with:
+          repository: opencrvs/opencrvs-core
+          path: core
+          ref: ${{ inputs.core-branch }}
+      - name: Verify branch status ${{ inputs.core-branch }}
+        working-directory: core
+        run: git status
+      - name: Get helm release values and Quote specific fields that are commonly numeric
+        id: get-values
+        run: |
+          helm get values opencrvs -n opencrvs-${ENV} -ojson > /tmp/opencrvs-${ENV}.json
+      - name: Cleanup environment
+        run: |
+          kubectl delete job -n opencrvs-${ENV} --ignore-not-found=true data-cleanup
+          helm template -f /tmp/opencrvs-${ENV}.json \
+              --set data_cleanup.enabled=true \
+              --set image.tag="${{ inputs.core-image-tag }}" \
+              --namespace opencrvs-${ENV} \
+              -s templates/data-cleanup-job.yaml \
+              core/charts/opencrvs-services/ | kubectl apply -n opencrvs-${ENV} --wait=true -f -
+          sleep 30;
+          kubectl logs job/data-cleanup -f --all-containers=true -n opencrvs-${ENV} || true
+          kubectl wait --for=condition=complete job/data-cleanup -n opencrvs-${ENV} --timeout=600s;
+      - name: Delete helm release and namespace
+        run: |
+          kubectl delete namespace opencrvs-${ENV}
