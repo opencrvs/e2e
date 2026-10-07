@@ -1,6 +1,6 @@
 # Deploys and seeds an e2e environment. E2E tests are not run here: opencrvs-core
 # dispatches this workflow, waits for it to finish, runs the tests itself and
-# then dispatches cleanup-e2e-environment.yml.
+# then dispatches cleanup-namespace-by-name.yml.
 name: 16. Deploy E2E environment
 run-name: 'Deploy E2E environment by ${{ inputs.actor || github.actor }} to ${{ inputs.stack }} (core: ${{ inputs.core-image-tag }})'
 on:
@@ -36,8 +36,7 @@ on:
         default: 'ghcr.io/opencrvs'
         type: string
 
-# Same group as deploy-and-e2e.yml and cleanup-e2e-environment.yml: they all
-# operate on the opencrvs-<stack> namespace.
+# Same group as deploy-and-e2e.yml: both operate on the opencrvs-<stack> namespace.
 concurrency:
   group: ${{ inputs.stack }}
   cancel-in-progress: true
@@ -90,3 +89,19 @@ jobs:
       branch: ${{ inputs.branch }}
       core-branch: ${{ inputs.core-branch }}
     secrets: inherit
+
+  # opencrvs-core decides per run whether the environment is kept (the
+  # '🔒 Keep e2e' PR label). k8s-deploy.yml only ever adds keep_namespace, so
+  # without this a removed label would leave the environment protected from
+  # cleanup-namespace-by-name.yml and the hourly cleanup until the PR is closed.
+  sync-keep-label:
+    name: Sync keep_namespace label
+    needs: [deploy]
+    if: "!cancelled() && needs.deploy.result == 'success'"
+    runs-on: [self-hosted, k8s, e2e]
+    env:
+      NAMESPACE: opencrvs-${{ inputs.stack }}
+      KEEP: ${{ inputs.keep-e2e }}
+    steps:
+      - name: Set keep_namespace=${{ inputs.keep-e2e }} on opencrvs-${{ inputs.stack }}
+        run: kubectl label namespace "$NAMESPACE" keep_namespace="$KEEP" --overwrite
