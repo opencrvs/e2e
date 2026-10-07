@@ -324,6 +324,51 @@ jobs:
         id: set-output
         run: |
           echo "result=$PREVIOUS_CONCLUSION" >> $GITHUB_OUTPUT
+          
+  flaky-report:
+    name: Report flaky tests
+    continue-on-error: true
+    needs: [test]
+    if: '!cancelled() && needs.test.result != ''skipped'''
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Download ctrf reports from this run
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ctrf-report-shard-*-${{ github.run_id }}
+          path: ctrf-reports
+
+      - name: Collect flaky tests
+        id: flaky
+        env:
+          STACK: ${{ github.event.client_payload.stack || inputs.stack }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # cat joins all shard reports into one stream; jq -s slurps them into an array.
+          find ctrf-reports -name '*.json' -exec cat {} + | jq -s '
+            [ .[].results.tests[]?
+              | select(.flaky == true)
+              | { test: "\((.filePath // "") | sub("^.*e2e/testcases/"; "")) › \(.name)",
+                  retries: (.retries // 0) } ]' > /tmp/flaky.json
+
+          count=$(jq length /tmp/flaky.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+          if [ "$count" -gt 0 ]; then
+            msg="*$count flaky test(s)* on \`$STACK\` (<$RUN_URL|run>):"$'\n'
+            msg+=$(jq -r '.[:10][] | "• `\(.test)` (retries: \(.retries))"' /tmp/flaky.json)
+            echo "text=$(printf '%s' "$msg" | jq -Rs .)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify Slack
+        if: steps.flaky.outputs.count != '0'
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C08FCLKER8X"
+            text: ${{ steps.flaky.outputs.text }}
 
   cleanup-stack-k8s:
     needs: [test, debug]
