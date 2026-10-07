@@ -106,7 +106,7 @@ jobs:
         id: open-pr
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.CORE_ISSUES_PR_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
           path: .
           branch: chore/refresh-shard-weights-${{ steps.find-runs.outputs.latest_run_id }}
           base: ${{ env.SOURCE_BRANCH }}
