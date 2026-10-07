@@ -119,11 +119,13 @@ jobs:
             Data-only change — see `packages/testland/e2e/SHARDING.md` for how this fits into CI sharding.
 
       # Reuses the channel/token/action version already used for e2e notifications.
+      # Reuses the channel/token already used for e2e notifications.
       - name: Notify Slack
         if: steps.open-pr.outputs.pull-request-url != ''
         uses: slackapi/slack-github-action@v4.0.0
         with:
-          channel-id: 'C08FCLKER8X'
-          slack-message: 'Shard weights refreshed from the last ${{ env.RUN_COUNT }} ${{ env.SOURCE_BRANCH }} e2e runs — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C08FCLKER8X"
+            text: "Shard weights refreshed from the last ${{ env.RUN_COUNT }} ${{ env.SOURCE_BRANCH }} e2e runs — please review and merge: ${{ steps.open-pr.outputs.pull-request-url }}"
