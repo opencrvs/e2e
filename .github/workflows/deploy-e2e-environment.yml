@@ -1,0 +1,92 @@
+# Deploys and seeds an e2e environment. E2E tests are not run here: opencrvs-core
+# dispatches this workflow, waits for it to finish, runs the tests itself and
+# then dispatches cleanup-e2e-environment.yml.
+name: 16. Deploy E2E environment
+run-name: 'Deploy E2E environment by ${{ inputs.actor || github.actor }} to ${{ inputs.stack }} (core: ${{ inputs.core-image-tag }})'
+on:
+  workflow_dispatch:
+    inputs:
+      core-image-tag:
+        description: Core image tag (also tags the testland image — testland ships in core)
+        required: true
+        default: 'v2.0.0'
+      stack:
+        type: string
+        description: Stack name
+        required: true
+      keep-e2e:
+        description: Keep environment after run
+        required: false
+        default: false
+        type: boolean
+      core-branch:
+        description: core branch
+        required: false
+        default: 'develop'
+      branch:
+        description: e2e branch
+        required: false
+        default: 'develop'
+      actor:
+        description: Actor name
+        required: false
+      registry:
+        description: registry url
+        required: false
+        default: 'ghcr.io/opencrvs'
+        type: string
+
+# Same group as deploy-and-e2e.yml and cleanup-e2e-environment.yml: they all
+# operate on the opencrvs-<stack> namespace.
+concurrency:
+  group: ${{ inputs.stack }}
+  cancel-in-progress: true
+
+jobs:
+  check-env-existance:
+    name: Check if environment exists
+    runs-on: [self-hosted, k8s, e2e]
+    outputs:
+      exists: ${{ steps.check.outputs.status }}
+    steps:
+      - name: check namespace
+        id: check
+        env:
+          ENV: ${{ inputs.stack }}
+        run: |
+          helm get values opencrvs -n opencrvs-${ENV} && status=true || status=false
+          echo "status=$status"  >> $GITHUB_OUTPUT
+
+  reset-data:
+    needs: [check-env-existance]
+    if: needs.check-env-existance.outputs.exists == 'true'
+    uses: ./.github/workflows/clear-all-data.yml
+    with:
+      environment: ${{ inputs.stack }}
+      branch: ${{ inputs.branch }}
+      core-branch: ${{ inputs.core-branch }}
+      data-cleanup-only: true
+    secrets: inherit
+
+  deploy:
+    uses: ./.github/workflows/k8s-deploy.yml
+    if: '!cancelled()'
+    needs: reset-data
+    with:
+      core-image-tag: ${{ inputs.core-image-tag }}
+      core-branch: ${{ inputs.core-branch }}
+      branch: ${{ inputs.branch }}
+      environment: ${{ inputs.stack }}
+      keep-e2e: ${{ inputs.keep-e2e }}
+      registry: ${{ inputs.registry || 'ghcr.io/opencrvs' }}
+    secrets: inherit
+
+  seed-data:
+    needs: [deploy]
+    if: "!cancelled() && needs.deploy.result == 'success'"
+    uses: ./.github/workflows/seed-data.yml
+    with:
+      environment: ${{ inputs.stack }}
+      branch: ${{ inputs.branch }}
+      core-branch: ${{ inputs.core-branch }}
+    secrets: inherit
