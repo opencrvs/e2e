@@ -325,6 +325,64 @@ jobs:
         run: |
           echo "result=$PREVIOUS_CONCLUSION" >> $GITHUB_OUTPUT
 
+  flaky-report:
+    name: Report flaky tests
+    continue-on-error: true
+    needs: [test]
+    if: needs.test.result == 'success'
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Download ctrf reports from this run
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ctrf-report-shard-*-${{ github.run_id }}
+          path: ctrf-reports
+
+      - name: Collect flaky tests and retry cost
+        id: flaky
+        env:
+          STACK: ${{ github.event.client_payload.stack || inputs.stack }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          find ctrf-reports -name '*.json' -exec cat {} + | jq -s '
+            [.[].results.tests[]?] as $tests
+            | {
+                flaky: [ $tests[] | select(.flaky == true)
+                  | { test: "\((.filePath // "") | sub("^.*e2e/testcases/"; "")) › \(.name)",
+                      retries: (.retries // 0) } ],
+                retryTime: ( [ $tests[] | select((.retries // 0) > 0)
+                    | { file: ((.filePath // "") | sub("^.*e2e/testcases/"; "")),
+                        ms: (.duration * .retries) } ]
+                  | group_by(.file)
+                  | map({ file: .[0].file, ms: (map(.ms) | add) })
+                  | sort_by(-.ms) )
+              }' > /tmp/stats.json
+
+          count=$(jq '.retryTime | length' /tmp/stats.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+          if [ "$count" -gt 0 ]; then
+            total=$(jq '[.retryTime[].ms] | add / 1000 | floor' /tmp/stats.json)
+            msg="*Retries cost ~${total}s of test time* on \`$STACK\` (<$RUN_URL|run>):"$'\n'
+            msg+=$(jq -r '.retryTime[:5][] | "• `\(.file)` ~\(.ms / 1000 | floor)s"' /tmp/stats.json)
+
+            if [ "$(jq '.flaky | length' /tmp/stats.json)" -gt 0 ]; then
+              msg+=$'\n\n'"*Flaky (passed on retry):*"$'\n'
+              msg+=$(jq -r '.flaky[:10][] | "• `\(.test)` (retries: \(.retries))"' /tmp/stats.json)
+            fi
+            echo "text=$(printf '%s' "$msg" | jq -Rs .)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify Slack
+        if: steps.flaky.outputs.count != '0'
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: "C08FCLKER8X"
+            text: ${{ steps.flaky.outputs.text }}
+
   cleanup-stack-k8s:
     needs: [test, debug]
     runs-on: [self-hosted]
