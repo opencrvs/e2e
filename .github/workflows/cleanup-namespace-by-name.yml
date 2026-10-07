@@ -92,14 +92,12 @@ jobs:
               yq '.' "${TEMPLATE_VALUES_FILE}" > "${VALUES_FILE}"
             fi
           fi
-      # FIXME: utilities.image.tag remove after v2.1.0 release
       - name: Cleanup environment
         run: |
           kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
           helm template -f /tmp/${namespace}.json \
               --set data_cleanup.enabled=true \
               --set data_cleanup.env.make_bucket=false \
-              --set utilities.image.tag=35b1e0f \
               --namespace ${namespace} \
               -s templates/data-cleanup-job.yaml \
               oci://ghcr.io/opencrvs/opencrvs-services:v2.1.0 | kubectl apply -n ${namespace} --wait=true -f -
