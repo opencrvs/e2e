@@ -1,8 +1,17 @@
 name: "15. Cleanup Namespace by Name"
 run-name: "Cleanup namespace ${{ inputs.namespace }}"
 
+# The single place that tears down an e2e environment. Run it by hand, or call
+# it from other workflows: cleanup-namespaces.yml (hourly, stale namespaces) and
+# opencrvs-core's deploy-to-feature-environment.yml (after e2e tests pass).
 on:
   workflow_dispatch:
+    inputs:
+      namespace:
+        description: "Full namespace name to clean up (e.g. opencrvs-my-branch)."
+        required: true
+        type: string
+  workflow_call:
     inputs:
       namespace:
         description: "Full namespace name to clean up (e.g. opencrvs-my-branch)."
@@ -15,6 +24,7 @@ jobs:
     runs-on: self-hosted
     outputs:
       namespace: ${{ steps.check.outputs.namespace }}
+      eligible: ${{ steps.check.outputs.eligible }}
     steps:
       - name: Validate and guard namespace
         id: check
@@ -40,19 +50,24 @@ jobs:
               exit 1
               ;;
           esac
-          if [ "$(kubectl get ns "$namespace" -o jsonpath='{.metadata.labels.keep_namespace}')" = "true" ]; then
-            echo "❌ Refusing to clean up '$namespace': keep_namespace=true"
-            exit 1
-          fi
           if ! kubectl get ns "$namespace" > /dev/null 2>&1; then
             echo "❌ Namespace '$namespace' does not exist"
             exit 1
           fi
+          # Skip rather than fail: callers (e.g. opencrvs-core) don't wait for this run,
+          # so a failure here would only leave a red run nobody looks at.
+          if [ "$(kubectl get ns "$namespace" -o jsonpath='{.metadata.labels.keep_namespace}')" = "true" ]; then
+            echo "::warning::Skipping cleanup of '$namespace': keep_namespace=true"
+            echo "eligible=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           echo "✅ '$namespace' is eligible for cleanup"
           echo "namespace=$namespace" >> $GITHUB_OUTPUT
+          echo "eligible=true" >> $GITHUB_OUTPUT
 
   cleanup:
     needs: validate
+    if: needs.validate.outputs.eligible == 'true'
     runs-on: self-hosted
     env:
       namespace: ${{ needs.validate.outputs.namespace }}
