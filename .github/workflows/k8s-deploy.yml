@@ -100,6 +100,7 @@ jobs:
       - name: Create GHCR pull secret for private registry images
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
           kubectl create secret docker-registry ghcr-credentials \
             --docker-server=ghcr.io \
