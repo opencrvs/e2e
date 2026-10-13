@@ -15,6 +15,11 @@ on:
         description: 'Core branch to deploy'
         required: false
         default: 'develop'
+      core-repo:
+        description: 'Core repository (owner/name)'
+        required: false
+        type: string
+        default: 'opencrvs/opencrvs-core'
   workflow_call:
     inputs:
       environment:
@@ -23,6 +28,9 @@ on:
         type: string
       core-branch:
         type: string
+      core-repo:
+        type: string
+        default: 'opencrvs/opencrvs-core'
       data-cleanup-only:
         description: 'Run only the data-cleanup job (skip postgres-on-deploy and data migrations)'
         type: boolean
@@ -66,7 +74,9 @@ jobs:
         - name: Checkout OpenCRVS helm charts from core repository by branch ${{ inputs.core-branch }}
           uses: actions/checkout@v7
           with:
-            repository: opencrvs/opencrvs-core
+            repository: ${{ inputs.core-repo || 'opencrvs/opencrvs-core' }}
+            token: ${{ secrets.CORE_REPO_TOKEN || github.token }}
+            persist-credentials: false
             path: core
             ref: ${{ inputs.core-branch }}
         - name: Verify branch status ${{ inputs.core-branch }}
