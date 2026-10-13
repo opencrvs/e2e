@@ -168,6 +168,7 @@ jobs:
           --namespace "opencrvs-${ENV}" \
           --set platform.repository=${{ inputs.registry }} \
           --set platform.tag="$CORE_IMAGE_TAG" \
+          --set platform.imagePullSecrets[0].name=ghcr-credentials \
           -f k8s-env/mosip-api/values.yaml \
           --set hostname=$ENV.e2e-k8s.opencrvs.dev \
           --set mosip_api.env.OPENCRVS_CLIENT_ID="$MOSIP_CLIENT_ID" \
