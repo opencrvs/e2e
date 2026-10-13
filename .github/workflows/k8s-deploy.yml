@@ -16,6 +16,9 @@ on:
       core-branch:
         type: string
         default: 'develop'
+      core-repo:
+        type: string
+        default: 'opencrvs/opencrvs-core'
       registry:
         type: string
         default: 'ghcr.io/opencrvs'
@@ -43,6 +46,11 @@ on:
         description: 'Core branch'
         required: false
         default: 'develop'
+      core-repo:
+        description: 'Core repository (owner/name)'
+        required: false
+        type: string
+        default: 'opencrvs/opencrvs-core'
       registry:
         description: 'Registry URL'
         required: false
@@ -72,7 +80,7 @@ jobs:
       - name: Checkout OpenCRVS helm charts from core repository ${{ inputs.core-image-tag }}
         uses: actions/checkout@v7
         with:
-          repository: opencrvs/opencrvs-core
+          repository: ${{ inputs.core-repo || 'opencrvs/opencrvs-core' }}
           path: core
           ref: ${{ inputs.core-branch }}
       - name: Verify branch status ${{ inputs.core-branch }}
