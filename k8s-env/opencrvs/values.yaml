@@ -13,7 +13,7 @@ otel:
   exporter_otlp_endpoint: "http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4317"
 
 platform:
-  tag: v2.0.0
+  tag: v2.1.0
 
 elasticsearch:
   auth_mode: auto
@@ -26,10 +26,15 @@ elasticsearch:
     - METRICBEAT:{{STACK}}_beats_system
     - APM:{{STACK}}_apm_system
 
-minio:
-  auth_mode: use_secret
+s3:
+  # host: seaweedfs.opencrvs-deps-e2e.svc.cluster.local
+  # public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
+  # host: storage.googleapis.com
+  # port: 443
+  # protocol: https
+  # public_endpoint: https://storage.googleapis.com
   host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  external_url: minio.e2e-k8s.opencrvs.dev
+  public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
 
 redis:
   auth_mode: use_secret
@@ -59,7 +64,6 @@ dashboards:
 
 gateway:
   env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
     DISABLE_RATE_LIMIT: "true"
   resources:
     memoryRequest: "512Mi"
@@ -93,9 +97,6 @@ countryconfig:
     # FIXME: In general these values should be passed externally using `--set key=value`
     ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.e2e-k8s.opencrvs.dev/authorize
     MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.e2e-k8s.opencrvs.dev/esignet/get-oidp-user-info
-    # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
-    # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
-    E2E_MINIO_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
     REFERENCE_DATA_DATABASE_URL: postgres://{{STACK_SANITIZED}}_ref_data:{{STACK_SANITIZED}}_ref_data_password@postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local:5432/{{STACK_SANITIZED}}__events
@@ -120,11 +121,11 @@ search:
 
 documents:
   env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
+    S3_BUCKET: {{STACK}}--ocrvs
 
 data_migration:
   env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
+    S3_BUCKET: {{STACK}}--ocrvs
     ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
 
 postgres_on_deploy:
@@ -142,7 +143,7 @@ data_seed:
 
 data_cleanup:
   env:
-    MINIO_BUCKET: {{STACK}}--ocrvs
+    S3_BUCKET: {{STACK}}--ocrvs
     ES_INDEX_PREFIX: events_{{STACK}}
     ELASTICSEARCH_INDEX_NAME: ocrvs--{{STACK}}
     ES_REINDEXING_STATUS_INDEX: reindexing_status_{{STACK}}
