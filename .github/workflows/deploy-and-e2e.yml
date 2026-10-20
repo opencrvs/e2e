@@ -113,7 +113,7 @@ jobs:
       environment: ${{ github.event.client_payload.stack || inputs.stack }}
       core-branch: ${{ inputs.core-branch }}
       core-repo: ${{ github.event.client_payload.core-repo || inputs.core-repo || 'opencrvs/opencrvs-core' }}
-      data-cleanup-only: true
+      data-cleanup-only: false
     secrets: inherit
 
   cache-node-js:
