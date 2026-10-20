@@ -28,6 +28,7 @@ elasticsearch:
 
 s3:
   auth_mode: use_secret
+  users_secret: s3-opencrvs-users
   host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
   external_url: minio.e2e-k8s.opencrvs.dev
 
