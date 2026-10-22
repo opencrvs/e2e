@@ -27,10 +27,8 @@ elasticsearch:
     - APM:{{STACK}}_apm_system
 
 s3:
-  auth_mode: use_secret
-  users_secret: s3-opencrvs-users
-  host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  external_url: minio.e2e-k8s.opencrvs.dev
+  host: seaweedfs-0.seaweedfs.opencrvs-deps-e2e.svc.cluster.local
+  public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
 
 redis:
   auth_mode: use_secret
