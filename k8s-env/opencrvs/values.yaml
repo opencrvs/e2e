@@ -27,10 +27,10 @@ elasticsearch:
     - APM:{{STACK}}_apm_system
 
 s3:
-  # host: seaweedfs-0.seaweedfs.opencrvs-deps-e2e.svc.cluster.local
-  # public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
-  host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
+  host: seaweedfs-0.seaweedfs.opencrvs-deps-e2e.svc.cluster.local
+  public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
+  # host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
+  # public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
 
 redis:
   auth_mode: use_secret
