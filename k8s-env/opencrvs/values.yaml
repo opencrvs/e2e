@@ -29,12 +29,12 @@ elasticsearch:
 s3:
   # host: seaweedfs.opencrvs-deps-e2e.svc.cluster.local
   # public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
-  host: storage.googleapis.com
-  port: 443
-  protocol: https
-  public_endpoint: https://storage.googleapis.com
-  # host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  # public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
+  # host: storage.googleapis.com
+  # port: 443
+  # protocol: https
+  # public_endpoint: https://storage.googleapis.com
+  host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
+  public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
 
 redis:
   auth_mode: use_secret
@@ -81,7 +81,7 @@ config:
 
 client:
   env:
-   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev https://storage.googleapis.com"
+   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
 countryconfig:
   image:
     # testland (packages/testland in opencrvs-core), published to ghcr by core's
