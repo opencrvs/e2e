@@ -27,8 +27,12 @@ elasticsearch:
     - APM:{{STACK}}_apm_system
 
 s3:
-  host: seaweedfs.opencrvs-deps-e2e.svc.cluster.local
-  public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
+  # host: seaweedfs.opencrvs-deps-e2e.svc.cluster.local
+  # public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
+  host: https://storage.googleapis.com
+  port: 443
+  protocol: https
+  public_endpoint: https://storage.googleapis.com
   # host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
   # public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
 
