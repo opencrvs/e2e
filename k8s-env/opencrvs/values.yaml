@@ -81,7 +81,7 @@ config:
 
 client:
   env:
-   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev"
+   CONTENT_SECURITY_POLICY_WILDCARD: "*.e2e-k8s.opencrvs.dev https://storage.googleapis.com"
 countryconfig:
   image:
     # testland (packages/testland in opencrvs-core), published to ghcr by core's
