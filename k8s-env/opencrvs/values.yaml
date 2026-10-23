@@ -64,7 +64,6 @@ dashboards:
 
 gateway:
   env:
-    S3_BUCKET: {{STACK}}--ocrvs
     DISABLE_RATE_LIMIT: "true"
   resources:
     memoryRequest: "512Mi"
@@ -98,9 +97,6 @@ countryconfig:
     # FIXME: In general these values should be passed externally using `--set key=value`
     ESIGNET_REDIRECT_URL: https://esignet-mock.{{STACK}}.e2e-k8s.opencrvs.dev/authorize
     MOSIP_API_USERINFO_URL: https://mosip-api.{{STACK}}.e2e-k8s.opencrvs.dev/esignet/get-oidp-user-info
-    # Country config passes minio details to client. 'ocrvs' is hardcoded. To get files working in E2E, countryconfig needs to be configured with the same bucket name as gateway, migration and documents.
-    # E2E prefix intention is to communicate, that this is only for E2E testing and not for production.
-    E2E_S3_BUCKET: {{STACK}}--ocrvs
     # In E2E environment, minio is shared between all services. STACK is omitted from the path. Differentiation is done by bucket name.
     E2E_MINIO_BASE_URL: https://minio.e2e-k8s.opencrvs.dev
     REFERENCE_DATA_DATABASE_URL: postgres://{{STACK_SANITIZED}}_ref_data:{{STACK_SANITIZED}}_ref_data_password@postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local:5432/{{STACK_SANITIZED}}__events
