@@ -29,7 +29,7 @@ elasticsearch:
 s3:
   # host: seaweedfs.opencrvs-deps-e2e.svc.cluster.local
   # public_endpoint: https://seaweedfs.e2e-k8s.opencrvs.dev/
-  host: https://storage.googleapis.com
+  host: storage.googleapis.com
   port: 443
   protocol: https
   public_endpoint: https://storage.googleapis.com
