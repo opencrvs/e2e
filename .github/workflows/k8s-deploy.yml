@@ -126,7 +126,7 @@ jobs:
           secrets=(
             "elasticsearch-admin-user"
             "redis-opencrvs-users"
-            "minio-opencrvs-users"
+            "s3-opencrvs-users"
             "postgres-admin-user"
           )
           for secret in "${secrets[@]}"; do
