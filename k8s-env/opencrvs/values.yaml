@@ -33,8 +33,8 @@ s3:
   # port: 443
   # protocol: https
   # public_endpoint: https://storage.googleapis.com
-  host: minio-0.minio.opencrvs-deps-e2e.svc.cluster.local
-  public_endpoint: https://minio.e2e-k8s.opencrvs.dev/
+  host: rustfs-0.rustfs.opencrvs-deps-e2e.svc.cluster.local
+  public_endpoint: https://s3.e2e-k8s.opencrvs.dev/
 
 redis:
   auth_mode: use_secret
