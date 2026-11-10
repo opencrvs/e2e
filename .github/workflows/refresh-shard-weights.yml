@@ -25,11 +25,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # .name is the dynamic run-name, not stable - match on head_branch instead.
-          # status= as a query param silently drops real conclusion=="success" runs - filter via jq instead.
-          # N runs, not 1 - a single run is noisy, and this only refreshes biweekly.
-          run_ids=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-and-e2e.yml/runs?per_page=30" \
-            --jq "[.workflow_runs[] | select(.head_branch == \"$SOURCE_BRANCH\") | select(.conclusion == \"success\")][:$RUN_COUNT] | map(.id)")
+          # Fetch enough results based on the source branch to get necessary matches. Naive implementation might hit 0 results.
+          run_ids=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-and-e2e.yml/runs?branch=$SOURCE_BRANCH&per_page=100" \
+            --jq "[.workflow_runs[] | select(.conclusion == \"success\")][:$RUN_COUNT] | map(.id)")
 
           if [ "$(echo "$run_ids" | jq 'length')" = "0" ]; then
             echo "No successful e2e run found for branch $SOURCE_BRANCH"
