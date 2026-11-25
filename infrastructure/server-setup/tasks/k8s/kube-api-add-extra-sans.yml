@@ -48,11 +48,13 @@
     merged_sans: >-
       {{
         (current_sans
-        + [kube_api_host | default(None)]
+        + [kube_api_host | default(None, true)]
         + root_config_sans
-        + [ansible_host | default(None)])
+        + [kube_master_node | default(None, true)]
+        + [ansible_host | default(None, true)])
         | select('defined')
         | reject('equalto', None)
+        | reject('equalto', '')
         | unique
         | list
       }}
@@ -110,9 +112,9 @@
   when: sans_update_needed
   copy:
     src: /etc/kubernetes/admin.conf
-    dest: /home/provision/.kube/config
-    owner: provision
-    group: provision
+    dest: "/home/{{ provisioning_user }}/.kube/config"
+    owner: "{{ provisioning_user }}"
+    group: "{{ provisioning_user }}"
     mode: '0600'
     remote_src: yes
     force: yes
