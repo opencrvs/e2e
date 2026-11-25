@@ -1,4 +1,4 @@
-- name: 'Precheck if encrypted file system exists so we dont try to bootstrap'
+- name: "Precheck if encrypted file system exists so we dont try to bootstrap"
   stat:
     path: "{{ data_file_path }}"
     get_checksum: False
@@ -11,7 +11,6 @@
   register: free_disk_size_result
   when:
     - disk_encryption_key is defined
-    - not encryptedFileSystemPreCheck.stat.exists
 
 - name: Normalize file size units (handles G, g, Gb, GB, etc.)
   set_fact:
@@ -20,19 +19,33 @@
     min_free_disk_size_gb: "{{ min_free_disk_size | regex_replace('[^0-9]', '') | int }}"
   when:
     - disk_encryption_key is defined
-    - not encryptedFileSystemPreCheck.stat.exists
+
+- name: Calculate minimum free space required by percentage of the encrypted partition
+  set_fact:
+    min_free_disk_percent_gb: "{{ (encrypted_file_size_gb | float * min_free_disk_percent | float / 100) | round(0, 'ceil') | int }}"
+  when:
+    - disk_encryption_key is defined
+
+- name: Reserve the larger of the fixed and percentage-based minimums
+  set_fact:
+    required_free_disk_size_gb: "{{ [min_free_disk_size_gb | int, min_free_disk_percent_gb | int] | max }}"
+  when:
+    - disk_encryption_key is defined
 
 - name: Calculate total required space (in GB)
   set_fact:
-    required_size_gb: "{{ encrypted_file_size_gb | int + min_free_disk_size_gb | int }}"
+    required_size_gb: "{{ encrypted_file_size_gb | int + required_free_disk_size_gb | int }}"
   when:
     - disk_encryption_key is defined
-    - not encryptedFileSystemPreCheck.stat.exists
-
 
 - name: Fail if not enough free space
   fail:
-    msg: "Not enough free disk space! Required: {{ required_size_gb }}G, Free: {{ free_disk_size_gb }}G"
+    msg: >-
+      Not enough free disk space on the root partition. Required: {{ required_size_gb }}G
+      (encrypted partition: {{ encrypted_file_size_gb }}G + reserved headroom: {{ required_free_disk_size_gb }}G,
+      i.e. the greater of {{ min_free_disk_size_gb }}G fixed minimum and {{ min_free_disk_percent }}% of the encrypted partition).
+      Currently available: {{ free_disk_size_gb }}G.
+      Please free up or add at least {{ required_size_gb | int - free_disk_size_gb | int }}G more to the root partition before continuing.
   when:
     - free_disk_size_gb is defined
     - required_size_gb is defined
@@ -40,7 +53,22 @@
     - not encryptedFileSystemPreCheck.stat.exists
     - free_disk_size_gb | int < required_size_gb | int
 
-- name: 'Bootstrap encrypted data folder'
+- name: Fail if not enough free space (allocated data partition)
+  fail:
+    msg: >-
+      Not enough free disk space on the root partition. The encrypted partition ({{ encrypted_file_size_gb }}G)
+      is already allocated, so only the reserved headroom is required as free space: {{ required_free_disk_size_gb }}G
+      (the greater of {{ min_free_disk_size_gb }}G fixed minimum and {{ min_free_disk_percent }}% of the encrypted partition).
+      Currently available: {{ free_disk_size_gb }}G.
+      Please free up or add at least {{ required_free_disk_size_gb | int - free_disk_size_gb | int }}G more to the root partition before continuing.
+  when:
+    - free_disk_size_gb is defined
+    - required_free_disk_size_gb is defined
+    - disk_encryption_key is defined
+    - encryptedFileSystemPreCheck.stat.exists
+    - free_disk_size_gb | int < required_free_disk_size_gb | int
+
+- name: "Bootstrap encrypted data folder"
   script: ./files/cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -p {{ disk_encryption_key }} -f {{ data_file_path }}
   when:
     - disk_encryption_key is defined
@@ -52,7 +80,7 @@
     state: present
   when: disk_encryption_key is defined
 
-- name: 'Register encrypted file system'
+- name: "Register encrypted file system"
   stat:
     path: "{{ data_file_path }}"
     get_checksum: False
@@ -66,7 +94,7 @@
   changed_when: false
   when: disk_encryption_key is defined
 
-- name: 'Mount encrypted data folder'
+- name: "Mount encrypted data folder"
   script: ../cryptfs/mount.sh -p {{ disk_encryption_key }} -f {{ data_file_path }}
   when:
     - disk_encryption_key is defined
@@ -74,32 +102,7 @@
     - is_mounted.rc != 0
 
   # Create data directories
-- name: Check postgres data directory
-  stat:
-    path: /data/postgres
-  register: postgres_data
-
-- name: 'Create postgres data directory'
-  file:
-    path: /data/postgres
-    state: directory
-  when: not postgres_data.stat.exists
-
-- name: Check postgres data backup directory
-  stat:
-    path: /data/backups/postgres
-  register: postgres_data_backup
-
-- name: 'Create postgres backup directory'
-  file:
-    path: /data/backups/postgres
-    state: directory
-    group: 1000
-    owner: 1000
-    mode: g+rwx
-  when: not postgres_data_backup.stat.exists
-
-- name: 'Create traefik data directory'
+- name: "Create traefik data directory"
   file:
     path: /data/traefik
     state: directory
@@ -110,7 +113,7 @@
     path: /data/elasticsearch
   register: elasticsearch_data
 
-- name: 'Create elasticsearch data directory'
+- name: "Create elasticsearch data directory"
   file:
     path: /data/elasticsearch
     state: directory
@@ -119,34 +122,22 @@
     mode: g+rwx
   when: not elasticsearch_data.stat.exists
 
-- name: Check metabase data directory
-  stat:
-    path: /data/metabase
-  register: metabase_data
-
-- name: 'Delete metabase data directory if exists'
+- name: "Delete metabase data directory if exists"
   file:
     path: /data/metabase
     state: absent
-  when: metabase_data.stat.exists
 
-- name: Check metabase data backup directory
-  stat:
-    path: /data/backups/metabase
-  register: metabase_data_backup
-
-- name: 'Delete metabase backup directory if exists'
+- name: "Delete metabase backup directory if exists"
   file:
     path: /data/backups/metabase
     state: absent
-  when: metabase_data_backup.stat.exists
 
 - name: Check minio data directory
   stat:
     path: /data/minio
   register: minio_data
 
-- name: 'Create minio data directory'
+- name: "Create minio data directory"
   file:
     path: /data/minio
     state: directory
@@ -160,7 +151,7 @@
     path: /data/backups/minio
   register: minio_data_backup
 
-- name: 'Create minio backup directory'
+- name: "Create minio backup directory"
   file:
     path: /data/backups/minio
     state: directory
@@ -174,7 +165,7 @@
     path: /data/vsexport
   register: vsexport_data
 
-- name: 'Create vsexport data directory'
+- name: "Create vsexport data directory"
   file:
     path: /data/vsexport
     state: directory
@@ -188,7 +179,7 @@
     path: /data/backups/vsexport
   register: vsexport_data_backup
 
-- name: 'Create vsexport backup directory'
+- name: "Create vsexport backup directory"
   file:
     path: /data/backups/vsexport
     state: directory
@@ -197,20 +188,20 @@
     mode: ugo+rwx
   when: not vsexport_data_backup.stat.exists
 
-- name: 'Create acme file for traefik'
+- name: "Create acme file for traefik"
   file:
     path: /data/traefik/acme.json
     state: touch
     owner: 65532
     group: 65532
     # Owner has rw, others no permissions
-    mode: '0600'
+    mode: "0600"
 
-- name: 'Create certs directory for traefik'
+- name: "Create certs directory for traefik"
   file:
     path: /data/traefik/certs
     state: directory
     owner: 65532
     group: 65532
     # Owner has rwx, group r, others no permissions
-    mode: '0740'
+    mode: "0740"

@@ -50,17 +50,36 @@
         file: tasks/k8s/install-containerd.yml
         apply:
           tags:
-            - containerd-setup
+            - k8s
       tags:
-        - containerd-setup
+        - k8s
     - name: Include Kubernetes installation tasks
       include_tasks:
         file: tasks/k8s/install-kubernetes.yml
         apply:
           tags:
-            - kubernetes-installation
+            - k8s
       tags:
-          - kubernetes-installation
+          - k8s
+    - name: Include Kubernetes private IP configuration tasks
+      include_tasks:
+        file: tasks/k8s/configure-private-ip.yml
+        apply:
+          tags:
+            - k8s
+      tags:
+          - k8s
+
+- name: Temporary UFW configuration for Kubernetes installation
+  hosts: master
+  become: yes
+  tags: k8s
+  tasks:
+    - name: "Setup UFW with allow by default"
+      ufw:
+        state: enabled
+        default: allow
+        direction: incoming
 
 - name: Kubernetes Master
   hosts: master
@@ -97,8 +116,15 @@
       include_tasks: tasks/k8s/install-helm.yml
     - name: Install cert-manager
       include_tasks: tasks/k8s/cert-manager.yml
-    - name: Install k8s self-hosted runner
-      include_tasks: tasks/k8s/self-hosted-runner.yml
+    - name: Install Traefik
+      include_tasks: tasks/k8s/install-traefik.yml
+    - name: Install k8s self-hosted runner (runner scale set)
+      include_tasks: tasks/k8s/self-hosted-runner-scale-set.yml
+      when: kube_runner_token is defined and kube_runner_token | trim != ''
+    # FIXME: Remove after v2.4 release, when the self-hosted runner scale set is the only supported option
+    - name: Remove legacy k8s self-hosted runner
+      include_tasks: tasks/k8s/self-hosted-runner-legacy-cleanup.yml
+      when: kube_runner_token is defined and kube_runner_token | trim != ''
 
 - name: Additional configuration
   become: yes
@@ -113,6 +139,16 @@
           tags:
             - k8s
       tags:
+        - k8s
+    - name: Create read-only operator role
+      include_tasks:
+        file: tasks/k8s/cluster-opencrvs-operator-role.yml
+        apply:
+          tags:
+            - users
+            - k8s
+      tags:
+        - users
         - k8s
     - name: Distribute kubeconfig into users directory
       include_tasks:
