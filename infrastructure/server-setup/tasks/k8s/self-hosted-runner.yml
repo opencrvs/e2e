@@ -15,7 +15,9 @@
         enabled: false
       authSecret:
         create: true
-        github_token: "{{ k8s_runner_token }}"
+        github_token: "{{ kube_runner_token }}"
+      podAnnotations:
+        opencrvs.org/lastdeploy-timestamp: "{{ ansible_facts['date_time']['epoch'] }}"
 
 - name: Create ServiceAccount for opencrvs-runner
   kubernetes.core.k8s:
@@ -47,6 +49,12 @@
 - name: Deploy opencrvs-infra-runner
   retries: 10
   delay: 60
+  vars:
+    base_labels:
+      - "self-hosted"
+      - "k8s"
+      - "{{ kube_cluster_env }}"
+    extra_labels: "{{ kube_self_hosted_runner_additional_labels | default('') | split(',') | reject('equalto','') | list }}"
   kubernetes.core.k8s:
     state: present
     definition:
@@ -61,8 +69,5 @@
           spec:
             serviceAccountName: opencrvs-runner
             repository: "{{ repository }}"
-            image: ghcr.io/opencrvs/opencrvs-github-runner:latest
-            labels:
-              - "self-hosted"
-              - "k8s"
-              - "{{ k8s_cluster_env }}"
+            image: "ghcr.io/opencrvs/opencrvs-github-runner:{{ arc_opencrvs_runner_version }}"
+            labels: "{{ base_labels + extra_labels }}"

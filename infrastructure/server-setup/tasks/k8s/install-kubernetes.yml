@@ -1,11 +1,5 @@
-- name: Create keyrings directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-
 - name: Download Kubernetes APT key
-  get_url:
+  ansible.builtin.get_url:
     url: "https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/Release.key"
     dest: /tmp/kubernetes.key
     mode: '0644'
@@ -20,19 +14,6 @@
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /"
     filename: kubernetes
     state: present
-
-- name: Prefer Kubernetes packages from pkgs.k8s.io
-  ansible.builtin.copy:
-    dest: /etc/apt/preferences.d/kubernetes-pkgs-k8s
-    mode: "0644"
-    content: |
-      Package: kubelet kubeadm kubectl
-      Pin: origin pkgs.k8s.io
-      Pin-Priority: 1001
-
-      Package: kubelet kubeadm kubectl
-      Pin: origin packages.microsoft.com
-      Pin-Priority: -1
 
 - name: Install specific Kubernetes version
   become: yes

@@ -18,19 +18,29 @@ backup_server_user_home: '/home/backup'
 # Amount of backups to keep (one week)
 amount_of_backups_to_keep: 7
 
-# Disk Encryption key location as an example (in production use a hardware security module)
+# Disk Encryption key location:
+# On single server deployments, the disk encryption key is stored on the same server as encrypted data.
 disk_encryption_key_path: /root/disk-encryption-key.txt
+# On deployments with a separate backup server, the disk encryption key is stored on the backup server 
+# and encrypted with backup encryption passphrase.
+remote_disk_encryption_key_path: /home/backup/disk-encryption-key.txt
 
 # Path to encrypted file with citizens data
 data_file_path: /cryptfs_file_sparse.img
 
 # Minimum required disk space for successful kubernetes deployment
-min_free_disk_size: "30g"
+min_free_disk_size: "50g"
+# Minimum free disk space to reserve, as a percentage of the encrypted partition size.
+# ext4 journal and inode-table overhead scales with partition size, so large encrypted
+# partitions need proportionally more headroom than the fixed min_free_disk_size above.
+# The larger of the two (fixed vs percentage-based) is required as free space.
+min_free_disk_percent: 10
+
 # Kubernetes components versions:
 # - kubeadm
 # - kubelet
 # - kubectl
-kubernetes_version: "v1.35"
+kubernetes_version: "v1.36"
 
 # Kubernetes Eviction Policy Configuration
 #
@@ -54,17 +64,42 @@ eviction_hard_imagefs: "10Gi"         # Minimum free space for container images
 eviction_soft_nodefs: "20Gi"          # Minimum free space on root (/) filesystem over time
 eviction_soft_imagefs: "20Gi"         # Minimum free space for container images over time
 
+# Ports required for Kubernetes cluster node-to-node communication (used for firewall/UFW rules)
+cluster_communication_ports:
+    # Kubelet API (required for all nodes)
+    - { port: 10250, proto: "tcp" }
+    # Overlay network (Calico/Weave/Flannel, if used—verify your CNI and usage)
+    - { port: 7946, proto: "tcp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 7946, proto: "udp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 8472, proto: "udp" }   # VXLAN (Flannel/Calico; verify if needed)
+    - { port: 4789, proto: "udp" }   # VXLAN (Calico; verify if needed)
+    - { port: 5473, proto: "tcp" }   # Typha (Calico)
+    - { port: 179, proto: "tcp" }    # BGP (Calico)
+    - { port: 179, proto: "udp" }    # BGP (Calico)
+
+# CIDR(s) allowed to access Kubernetes API server, comma-separated (used for UFW rules, default: cluster nodes only)
+kube_api_allowed_cidrs: ""
 
 # Container Network Interface plugin: Calico version
-calico_version: "v3.32.0"
+calico_version: "v3.32.1"
 # CNI configuration (read-only after installation)
 pod_network_cidr: "192.168.0.0/16"
 
-# Helm version
-helm_version: "v4.1.1"
+# Helm apt package version. Use a concrete apt version, for example "3.21.3-1".
+# Helm 4 is not yet compatible with kubernetes.core.helm module commands.
+# see: 
+# - https://docs.ansible.com/projects/ansible/latest/collections/kubernetes/core/helm_module.html
+# - https://github.com/helm/helm/pull/31828
+helm_version: "3.21.3-1"
+# Helm diff improves kubernetes.core.helm idempotency checks.
+helm_diff_plugin_version: "v3.15.10"
 
 # Certificate manager chart version
-cert_manager_version: "v1.20.2"
+cert_manager_version: "v1.21.0"
 
 # Action runner controller chart version
 arc_chart_version: "0.23.7"
+arc_opencrvs_runner_version: "latest"
+
+# Postgres: differencial backup support (pgBackRest) version
+pgbackrest_version: "2.59.0"

@@ -50,17 +50,36 @@
         file: tasks/k8s/install-containerd.yml
         apply:
           tags:
-            - containerd-setup
+            - k8s
       tags:
-        - containerd-setup
+        - k8s
     - name: Include Kubernetes installation tasks
       include_tasks:
         file: tasks/k8s/install-kubernetes.yml
         apply:
           tags:
-            - kubernetes-installation
+            - k8s
       tags:
-          - kubernetes-installation
+          - k8s
+    - name: Include Kubernetes private IP configuration tasks
+      include_tasks:
+        file: tasks/k8s/configure-private-ip.yml
+        apply:
+          tags:
+            - k8s
+      tags:
+          - k8s
+
+- name: Temporary UFW configuration for Kubernetes installation
+  hosts: master
+  become: yes
+  tags: k8s
+  tasks:
+    - name: "Setup UFW with allow by default"
+      ufw:
+        state: enabled
+        default: allow
+        direction: incoming
 
 - name: Kubernetes Master
   hosts: master
@@ -99,6 +118,7 @@
       include_tasks: tasks/k8s/cert-manager.yml
     - name: Install k8s self-hosted runner
       include_tasks: tasks/k8s/self-hosted-runner.yml
+      when: kube_runner_token is defined and kube_runner_token | trim != ''
 
 - name: Additional configuration
   become: yes
