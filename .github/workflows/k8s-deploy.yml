@@ -68,6 +68,11 @@ jobs:
       # countryconfig seeds the client, mosip-api authenticates as it.
       MOSIP_CLIENT_ID: ${{ secrets.OPENCRVS_MOSIP_CLIENT_ID }}
       MOSIP_CLIENT_SECRET: ${{ secrets.OPENCRVS_MOSIP_CLIENT_SECRET }}
+      # Country config's own OpenCRVS system client, for its calls to core
+      # (location lookups, MOSIP registration). Core's requests to country
+      # config are signed and carry no token it could reuse.
+      COUNTRY_CONFIG_CLIENT_ID: ${{ secrets.OPENCRVS_COUNTRY_CONFIG_CLIENT_ID }}
+      COUNTRY_CONFIG_CLIENT_SECRET: ${{ secrets.OPENCRVS_COUNTRY_CONFIG_CLIENT_SECRET }}
     runs-on:
       - self-hosted
       - k8s
@@ -157,6 +162,8 @@ jobs:
             --set data_seed.enabled=false \
             --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_ID="$MOSIP_CLIENT_ID" \
             --set countryconfig.env.MOSIP_INTEGRATION_CLIENT_SECRET="$MOSIP_CLIENT_SECRET" \
+            --set countryconfig.env.COUNTRY_CONFIG_CLIENT_ID="$COUNTRY_CONFIG_CLIENT_ID" \
+            --set countryconfig.env.COUNTRY_CONFIG_CLIENT_SECRET="$COUNTRY_CONFIG_CLIENT_SECRET" \
             --set environment="$ENV" \
             --set platform.repository=${{ inputs.registry }} \
             --set platform.imagePullSecrets[0].name=ghcr-credentials 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
