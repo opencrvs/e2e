@@ -56,7 +56,6 @@ jobs:
   seed:
     name: ${{ matrix.job-name }}
     needs: prepare
-    environment: ${{ inputs.environment }}
     env:
       namespace: opencrvs-${{ inputs.environment }}
     runs-on:
