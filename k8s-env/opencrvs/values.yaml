@@ -12,6 +12,10 @@ otel:
   deployment_environment: {{STACK}}
   exporter_otlp_endpoint: "http://opentelemetry-collector.opencrvs-deps-e2e.svc.cluster.local:4317"
 
+routing:
+  mode: path
+
+
 platform:
   tag: v2.1.0
 
