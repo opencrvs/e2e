@@ -48,5 +48,8 @@ if [ ! -d "$BACKUP_DIR" ]; then
     print_usage_and_exit
 fi
 
-# Delete subdirectories but keep latest according to AMOUNT_TO_KEEP
-find "$BACKUP_DIR" -mindepth 1 -name '????-??-??' -type d -print | sort -r | tail -n +$(("$AMOUNT_TO_KEEP" + 1)) | xargs rm -rf --
+find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d \
+  -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' -print0 |
+  sort -zr |
+  tail -zn +$((AMOUNT_TO_KEEP + 1)) |
+  xargs -0r rm -rf --

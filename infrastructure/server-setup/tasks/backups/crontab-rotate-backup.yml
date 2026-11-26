@@ -1,14 +1,38 @@
-- name: Copy rotate_backups.sh file to backup_server_user's home directory
+- name: Install rotate_backups.sh
   copy:
     src: ./files/rotate_backups.sh
-    dest: '{{ backup_server_user_home }}/rotate_backups.sh'
+    dest: '{{ rotate_backups_script_path }}'
+    owner: root
+    group: root
+    mode: '0755'
+
+# Clean up after previous versions that ran backup_server_user's own copy of the script as root
+- name: Remove root crontab entry that rotates backups
+  cron:
+    user: root
+    name: 'rotate backups in {{ backup_server_user_home }}/{{ kube_cluster_env }}'
+    state: absent
+
+- name: Remove rotate_backups.sh from backup_server_user's home directory
+  file:
+    path: '{{ backup_server_user_home }}/rotate_backups.sh'
+    state: absent
+
+- name: Create log file for backup rotation
+  file:
+    path: /var/log/opencrvs-rotate-backups.log
+    state: touch
     owner: '{{ backup_server_user }}'
-    mode: 0755
+    group: '{{ backup_server_user }}'
+    mode: '0644'
+    access_time: preserve
+    modification_time: preserve
+
 - name: 'Setup backup rotation'
   cron:
-    user: '{{ crontab_user }}'
-    name: 'rotate backups in {{ backup_server_user_home }}/{{ k8s_cluster_env }}'
+    user: '{{ backup_server_user }}'
+    name: 'rotate backups in {{ backup_server_user_home }}/{{ kube_cluster_env }}'
     minute: '0'
     hour: '0'
     # FIXME: We should have dedicated variable for backup
-    job: 'bash {{ backup_server_user_home }}/rotate_backups.sh --backup_dir={{ backup_server_user_home }}/{{ k8s_cluster_env }} --amount_to_keep={{ amount_of_backups_to_keep }} >> /var/log/opencrvs-rotate-backups.log 2>&1'
+    job: '{{ rotate_backups_script_path }} --backup_dir={{ backup_server_user_home }}/{{ kube_cluster_env }} --amount_to_keep={{ amount_of_backups_to_keep }} >> /var/log/opencrvs-rotate-backups.log 2>&1'

@@ -13,6 +13,15 @@
   ignore_unreachable: false
   become_method: sudo
   tasks:
+    - name: Check the user name
+      ansible.builtin.assert:
+        that:
+          - user is defined
+          - user is string
+          - user is match('^[a-z_][a-z0-9_-]{0,31}\Z')
+        fail_msg: "Invalid user name. Use lowercase letters, digits, '_' or '-' (up to 32 characters)."
+        quiet: true
+
     - name: Check if Google Authenticator file exists
       ansible.builtin.stat:
         path: "/home/{{ user }}/.google_authenticator"

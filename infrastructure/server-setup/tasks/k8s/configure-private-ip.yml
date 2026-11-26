@@ -1,0 +1,34 @@
+---
+- name: Determine kubelet node IP
+  set_fact:
+    kubelet_node_ip: >-
+      {{
+        (
+          kube_master_node
+          if inventory_hostname in groups['master']
+          else ansible_host
+        ) | default(ansible_facts['default_ipv4']['address'], true)
+      }}
+
+- name: Show Kubelet node IP
+  debug:
+    var: kubelet_node_ip
+
+- name: Configure kubelet node IP
+  become: yes
+  copy:
+    dest: /etc/default/kubelet
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      KUBELET_EXTRA_ARGS="--node-ip={{ kubelet_node_ip }}"
+  register: kubelet_default_file
+
+- name: Restart kubelet
+  become: yes
+  systemd:
+    name: kubelet
+    daemon_reload: true
+    state: restarted
+  when: kubelet_default_file.changed

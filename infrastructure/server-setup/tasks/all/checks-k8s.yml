@@ -2,44 +2,44 @@
 - name: Check if Kubernetes cluster is initialized
   ansible.builtin.stat:
     path: /etc/kubernetes/admin.conf
-  register: k8s_is_installed
+  register: kube_is_installed
 
 - name: Pre-flight checks block
-  when: k8s_is_installed.stat.exists
+  when: kube_is_installed.stat.exists
   block:
     - name: Get current Kubernetes version
       ansible.builtin.shell: kubectl version | grep 'Server Version' | awk '{print $3}' | sed 's/v//'
-      register: current_k8s_version_raw
+      register: current_kube_version_raw
 
     - name: Get target Kubernetes version
       ansible.builtin.shell: echo {{ kubernetes_version }} | sed 's/v//'
-      register: target_k8s_version_raw
+      register: target_kube_version_raw
 
     - name: Set version facts
       ansible.builtin.set_fact:
-        current_k8s_version: "{{ current_k8s_version_raw.stdout }}"
-        k8s_target_version: "{{ target_k8s_version_raw.stdout }}"
+        current_kube_version: "{{ current_kube_version_raw.stdout }}"
+        kube_target_version: "{{ target_kube_version_raw.stdout }}"
 
     - name: Display current and target versions
       ansible.builtin.debug:
         msg: |
-          Current Kubernetes version: {{ current_k8s_version }}
-          Target Kubernetes version: {{ k8s_target_version }}
-          Configuration files exist: {{ k8s_is_installed.stat.exists }}
+          Current Kubernetes version: {{ current_kube_version }}
+          Target Kubernetes version: {{ kube_target_version }}
+          Configuration files exist: {{ kube_is_installed.stat.exists }}
 
     - name: Parse version numbers
       ansible.builtin.set_fact:
-        current_major: "{{ current_k8s_version.split('.')[0] }}"
-        current_minor: "{{ current_k8s_version.split('.')[1] }}"
-        target_major: "{{ k8s_target_version.split('.')[0] }}"
-        target_minor: "{{ k8s_target_version.split('.')[1] }}"
+        current_major: "{{ current_kube_version.split('.')[0] }}"
+        current_minor: "{{ current_kube_version.split('.')[1] }}"
+        target_major: "{{ kube_target_version.split('.')[0] }}"
+        target_minor: "{{ kube_target_version.split('.')[1] }}"
 
     - name: Check if downgrade attempt
       ansible.builtin.fail:
         msg: |
           ❌ Downgrade detected!
-          Current version: {{ current_k8s_version }}
-          Target version: {{ k8s_target_version }}
+          Current version: {{ current_kube_version }}
+          Target version: {{ kube_target_version }}
           Please downgrade manually using kubeadm!
       when: 
         - (target_major | int < current_major | int) or
@@ -49,8 +49,8 @@
       ansible.builtin.fail:
         msg: |
           ❌ Invalid upgrade path detected!
-          Current version: {{ current_k8s_version }}
-          Target version: {{ k8s_target_version }}
+          Current version: {{ current_kube_version }}
+          Target version: {{ kube_target_version }}
           
           You are trying to skip minor versions. Kubernetes must be upgraded sequentially.
           
@@ -101,7 +101,7 @@
 
     - name: Check for deprecated APIs
       ansible.builtin.shell: |
-        /tmp/pluto detect-all-in-cluster --target-versions k8s=v{{ k8s_target_version }} -o wide
+        /tmp/pluto detect-all-in-cluster --target-versions k8s=v{{ kube_target_version }} -o wide
       register: pluto_check
       changed_when: false
       failed_when: false
@@ -122,7 +122,7 @@
     - name: Fail if critical API deprecations found
       ansible.builtin.fail:
         msg: |
-          ❌ Critical API deprecations detected that will break in {{ k8s_target_version }}
+          ❌ Critical API deprecations detected that will break in {{ kube_target_version }}
           Please remediate before upgrading.
       when:
         - pluto_check.stdout is defined
@@ -171,7 +171,7 @@
           ====================================
           ✅ All pre-flight checks passed!
           ====================================
-          Current version: {{ current_k8s_version }}
-          Target version: {{ k8s_target_version }}
+          Current version: {{ current_kube_version }}
+          Target version: {{ kube_target_version }}
           
           Proceeding with upgrade...

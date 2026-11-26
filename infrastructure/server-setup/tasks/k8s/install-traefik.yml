@@ -1,0 +1,57 @@
+# Traefik ingress controller.
+#
+# Traefik owns cluster-scoped resources (ClusterRole, IngressClass, CRDs), so it is installed by
+# provisioning and not by the GitHub Actions runner, which must not hold cluster-wide permissions.
+#
+# Values are read from the infrastructure repository checked out on the Ansible control node:
+#   environments/<kube_cluster_env>/traefik/values.yaml           (required, skipped when absent)
+#   environments/<kube_cluster_env>/traefik/values.override.yaml  (optional)
+#
+# Helm installs CRDs from the chart's crds/ directory only once and never upgrades them, so they are
+# applied here on every provision. Server-side apply with --force-conflicts takes over the fields
+# Helm set when it created them.
+- name: Install Traefik
+  vars:
+    traefik_values_dir: "{{ playbook_dir }}/../../environments/{{ kube_cluster_env }}/traefik"
+    # Lookups run on the control node, where the repository is checked out, the same as reading the values
+    traefik_values_exist: "{{ lookup('ansible.builtin.fileglob', traefik_values_dir ~ '/values.yaml') | length > 0 }}"
+    # Traefik binds host ports. With the default rolling update (maxSurge 1, maxUnavailable 0) the new
+    # pod cannot be scheduled while the old one holds them, so the old pod is stopped first instead.
+    traefik_default_values:
+      updateStrategy:
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 0
+    # Same merge as `helm -f values.yaml -f values.override.yaml`: maps are merged, lists replaced
+    traefik_values: >-
+      {{ traefik_default_values
+         | combine(lookup('ansible.builtin.file', traefik_values_dir ~ '/values.yaml') | from_yaml | default({}, true), recursive=True)
+         | combine(lookup('ansible.builtin.file', traefik_values_dir ~ '/values.override.yaml', errors='ignore') | from_yaml | default({}, true), recursive=True) }}
+  block:
+    - name: Skip Traefik, no values found
+      ansible.builtin.debug:
+        msg: "{{ traefik_values_dir }}/values.yaml does not exist, Traefik is not installed"
+      when: not traefik_values_exist
+
+    - name: Apply Traefik CRDs of chart version {{ traefik_chart_version }}
+      ansible.builtin.shell: |
+        set -o pipefail
+        helm show crds oci://ghcr.io/traefik/helm/traefik \
+          --version {{ traefik_chart_version }} \
+          | kubectl apply --server-side=true --force-conflicts -f -
+      args:
+        executable: /bin/bash
+      environment:
+        KUBECONFIG: /home/{{ provisioning_user }}/.kube/config
+      changed_when: false
+      when: traefik_values_exist
+
+    - name: Deploy Traefik via Helm
+      kubernetes.core.helm:
+        name: traefik
+        chart_ref: oci://ghcr.io/traefik/helm/traefik
+        chart_version: "{{ traefik_chart_version }}"
+        release_namespace: traefik
+        create_namespace: true
+        values: "{{ traefik_values }}"
+      when: traefik_values_exist
